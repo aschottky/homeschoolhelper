@@ -1,0 +1,553 @@
+.id-cards-page {
+  max-width: 1100px;
+}
+
+.id-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 32px;
+}
+
+.id-header h1 {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 2rem;
+  color: var(--forest-dark);
+  margin-bottom: 8px;
+}
+
+.id-header .header-icon {
+  color: var(--sage);
+}
+
+.id-header p {
+  color: var(--text-muted);
+}
+
+.header-actions {
+  display: flex;
+  gap: 12px;
+}
+
+/* Premium Gate */
+.id-cards-page .premium-gate {
+  text-align: center;
+  padding: 80px 40px;
+  background: white;
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-sm);
+}
+
+.id-cards-page .premium-icon {
+  width: 100px;
+  height: 100px;
+  background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 24px;
+  color: white;
+}
+
+.id-cards-page .premium-gate h2 {
+  font-size: 1.75rem;
+  color: var(--forest-dark);
+  margin-bottom: 12px;
+}
+
+.id-cards-page .premium-gate > p {
+  color: var(--text-muted);
+  font-size: 1.0625rem;
+  max-width: 500px;
+  margin: 0 auto 32px;
+}
+
+.id-cards-page .premium-features {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 16px;
+  margin-bottom: 32px;
+}
+
+.id-cards-page .premium-feature {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 20px;
+  background: var(--cream-light);
+  border-radius: var(--radius-lg);
+  font-size: 0.9375rem;
+  color: var(--text-dark);
+}
+
+.id-cards-page .premium-feature svg {
+  color: var(--forest);
+}
+
+/* Settings */
+.id-settings {
+  display: flex;
+  gap: 20px;
+  padding: 20px 24px;
+  background: white;
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-sm);
+  margin-bottom: 24px;
+}
+
+.setting-group {
+  flex: 1;
+}
+
+.setting-group label {
+  display: block;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 8px;
+}
+
+.setting-group .form-input {
+  width: 100%;
+}
+
+/* Warning Banner */
+.warning-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+  background: #fef3c7;
+  border-radius: var(--radius-lg);
+  margin-bottom: 24px;
+  color: #92400e;
+  font-size: 0.9375rem;
+}
+
+.warning-banner svg {
+  flex-shrink: 0;
+}
+
+/* Cards Grid */
+.cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 24px;
+  margin-bottom: 32px;
+}
+
+.id-card-wrapper {
+  background: white;
+  border-radius: var(--radius-xl);
+  padding: 20px;
+  box-shadow: var(--shadow-sm);
+  transition: all 0.3s ease;
+  border: 2px solid transparent;
+}
+
+.id-card-wrapper.selected {
+  border-color: var(--forest);
+  box-shadow: var(--shadow-md);
+}
+
+.card-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--sage-light);
+}
+
+.card-checkbox input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--forest);
+}
+
+.card-checkbox label {
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+/* ID Card Design */
+.id-card {
+  aspect-ratio: 3.375 / 2.125;
+  border-radius: 12px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.id-card.teacher {
+  background: linear-gradient(135deg, #1e3a5f 0%, #2d5a4a 100%);
+}
+
+.id-card.student {
+  background: linear-gradient(135deg, #2d5a4a 0%, #5a8f7b 100%);
+}
+
+.card-header {
+  padding: 12px 16px;
+  text-align: center;
+  background: rgba(255,255,255,0.1);
+}
+
+.school-badge {
+  width: 28px;
+  height: 28px;
+  background: rgba(255,255,255,0.2);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 6px;
+  color: white;
+}
+
+.card-header .school-name {
+  font-family: var(--font-display);
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: white;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.card-type {
+  font-size: 0.625rem;
+  color: rgba(255,255,255,0.8);
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  margin-top: 2px;
+}
+
+.card-body {
+  flex: 1;
+  display: flex;
+  gap: 12px;
+  padding: 12px 16px;
+  background: white;
+}
+
+.photo-area {
+  width: 70px;
+  height: 85px;
+  border-radius: 6px;
+  overflow: hidden;
+  background: #f0f0f0;
+  cursor: pointer;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.photo-area img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.photo-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #999;
+  gap: 4px;
+}
+
+.photo-placeholder span {
+  font-size: 0.625rem;
+  text-transform: uppercase;
+}
+
+.remove-photo {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 20px;
+  height: 20px;
+  background: rgba(0,0,0,0.6);
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.photo-area:hover .remove-photo {
+  opacity: 1;
+}
+
+.card-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.card-name {
+  font-family: var(--font-display);
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--forest-dark);
+  margin-bottom: 2px;
+}
+
+.card-title {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+}
+
+.card-details {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.detail-row {
+  display: flex;
+  gap: 8px;
+  font-size: 0.6875rem;
+}
+
+.detail-label {
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.detail-value {
+  color: var(--text-dark);
+  font-family: monospace;
+}
+
+.card-footer {
+  padding: 8px 16px;
+  background: rgba(0,0,0,0.05);
+  text-align: center;
+}
+
+.footer-text {
+  font-size: 0.5625rem;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* No Students */
+.no-students {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 60px 40px;
+  background: white;
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-sm);
+  color: var(--text-muted);
+}
+
+.no-students svg {
+  margin-bottom: 12px;
+  opacity: 0.5;
+}
+
+/* Print Tips */
+.print-tips {
+  background: white;
+  border-radius: var(--radius-xl);
+  padding: 24px;
+  box-shadow: var(--shadow-sm);
+}
+
+.print-tips h3 {
+  font-size: 1rem;
+  color: var(--forest-dark);
+  margin-bottom: 16px;
+}
+
+.print-tips ul {
+  list-style: disc;
+  padding-left: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.print-tips li {
+  color: var(--text-dark);
+  font-size: 0.9375rem;
+}
+
+/* Print View */
+.print-view {
+  display: none;
+}
+
+.close-print-view {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  padding: 12px 24px;
+  background: var(--forest);
+  color: white;
+  border-radius: var(--radius-lg);
+  font-weight: 600;
+  z-index: 1000;
+}
+
+/* Print Styles */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+
+  .print-view,
+  .print-view * {
+    visibility: visible;
+  }
+
+  .print-view {
+    display: block;
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background: white;
+    z-index: 9999;
+    padding: 0.25in;
+  }
+
+  .print-cards {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25in;
+  }
+
+  .print-card {
+    width: 3.375in;
+    height: 2.125in;
+    border-radius: 0.125in;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    box-shadow: none;
+    border: 1px solid #ccc;
+    page-break-inside: avoid;
+  }
+
+  .print-card.teacher {
+    background: linear-gradient(135deg, #1e3a5f 0%, #2d5a4a 100%);
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .print-card.student {
+    background: linear-gradient(135deg, #2d5a4a 0%, #5a8f7b 100%);
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .print-card .card-header {
+    padding: 8px 12px;
+    background: rgba(255,255,255,0.1);
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .print-card .school-badge {
+    width: 20px;
+    height: 20px;
+    margin-bottom: 4px;
+  }
+
+  .print-card .school-badge svg {
+    width: 12px;
+    height: 12px;
+  }
+
+  .print-card .school-name {
+    font-size: 10pt;
+  }
+
+  .print-card .card-type {
+    font-size: 6pt;
+  }
+
+  .print-card .card-body {
+    flex: 1;
+    padding: 8px 12px;
+    gap: 10px;
+  }
+
+  .print-card .photo-area {
+    width: 0.8in;
+    height: 1in;
+  }
+
+  .print-card .photo-placeholder.print {
+    background: #eee;
+  }
+
+  .print-card .card-name {
+    font-size: 11pt;
+  }
+
+  .print-card .card-title {
+    font-size: 8pt;
+  }
+
+  .print-card .detail-row {
+    font-size: 7pt;
+  }
+
+  .print-card .card-footer {
+    padding: 6px 12px;
+  }
+
+  .print-card .footer-text {
+    font-size: 6pt;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .id-header {
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .header-actions {
+    width: 100%;
+    flex-direction: column;
+  }
+
+  .id-settings {
+    flex-direction: column;
+  }
+
+  .cards-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .id-card {
+    aspect-ratio: auto;
+    min-height: 200px;
+  }
+}

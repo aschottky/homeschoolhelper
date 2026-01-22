@@ -1,0 +1,130 @@
+.ad-banner {
+  background: white;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--sage-light);
+}
+
+.ad-content {
+  padding: 20px 24px;
+  background: linear-gradient(135deg, rgba(var(--ad-color-rgb, 232, 168, 124), 0.08) 0%, white 100%);
+  border-left: 4px solid var(--ad-color, var(--terracotta));
+}
+
+.ad-label {
+  display: inline-block;
+  font-size: 0.6875rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--text-muted);
+  margin-bottom: 12px;
+  font-weight: 600;
+}
+
+.ad-main {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.ad-text h4 {
+  font-size: 1.125rem;
+  color: var(--forest-dark);
+  margin-bottom: 4px;
+  font-family: var(--font-body);
+}
+
+.ad-text p {
+  color: var(--text-muted);
+  font-size: 0.9375rem;
+  margin-bottom: 6px;
+}
+
+.ad-sponsor {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  opacity: 0.8;
+}
+
+.ad-cta {
+  padding: 10px 20px;
+  background: var(--ad-color, var(--terracotta));
+  color: white;
+  border-radius: var(--radius-md);
+  font-weight: 600;
+  font-size: 0.875rem;
+  white-space: nowrap;
+  transition: all 0.3s ease;
+}
+
+.ad-cta:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-sm);
+}
+
+.ad-remove {
+  display: block;
+  width: 100%;
+  padding: 10px;
+  background: var(--cream-light);
+  color: var(--forest);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  text-align: center;
+  transition: all 0.3s ease;
+  border-top: 1px solid var(--sage-light);
+}
+
+.ad-remove:hover {
+  background: var(--sage-light);
+  color: var(--forest-dark);
+}
+
+/* Vertical variant */
+.ad-vertical .ad-main {
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.ad-vertical .ad-cta {
+  width: 100%;
+  text-align: center;
+  margin-top: 8px;
+}
+
+/* Sidebar variant */
+.ad-sidebar {
+  margin-bottom: 24px;
+}
+
+.ad-sidebar .ad-content {
+  padding: 16px 20px;
+}
+
+.ad-sidebar .ad-text h4 {
+  font-size: 1rem;
+}
+
+.ad-sidebar .ad-text p {
+  font-size: 0.875rem;
+}
+
+/* Inline variant */
+.ad-inline {
+  margin: 24px 0;
+}
+
+@media (max-width: 640px) {
+  .ad-main {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .ad-cta {
+    width: 100%;
+    text-align: center;
+    margin-top: 12px;
+  }
+}
