@@ -159,11 +159,11 @@
 }
 
 .resource-forest .resource-link {
-  color: #C4E8D0; /* Much lighter green for visibility */
+  color: #E8F5ED; /* Very light green for maximum visibility */
 }
 
 .resource-sage .resource-link {
-  color: #B5D4BE; /* Lighter sage for visibility */
+  color: #D4E8DB; /* Very light sage for maximum visibility */
 }
 
 .resource-link:hover {
