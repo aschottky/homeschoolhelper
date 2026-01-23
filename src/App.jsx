@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import { SupabaseDataProvider } from './context/SupabaseDataContext'
 import { SubscriptionProvider } from './context/SubscriptionContext'
@@ -17,13 +17,31 @@ import './App.css'
 function AppContent() {
   const [currentPage, setCurrentPage] = useState('home')
   const { user, loading, isConfigured } = useAuth()
+  const [loadingTimeout, setLoadingTimeout] = useState(false)
 
-  // Show loading state while checking auth
-  if (loading && isConfigured) {
+  // Timeout fallback for loading state
+  useEffect(() => {
+    if (loading && isConfigured) {
+      const timeout = setTimeout(() => {
+        console.warn('Loading timeout - forcing render')
+        setLoadingTimeout(true)
+      }, 10000) // 10 second timeout
+
+      return () => clearTimeout(timeout)
+    } else {
+      setLoadingTimeout(false)
+    }
+  }, [loading, isConfigured])
+
+  // Show loading state while checking auth (but timeout after 10 seconds)
+  if (loading && isConfigured && !loadingTimeout) {
     return (
       <div className="app-loading">
         <div className="loading-spinner"></div>
         <p>Loading...</p>
+        <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', marginTop: '12px' }}>
+          Taking longer than expected? <a href="/" style={{ color: 'var(--forest)', textDecoration: 'underline' }}>Refresh page</a>
+        </p>
       </div>
     )
   }

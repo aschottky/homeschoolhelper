@@ -15,19 +15,38 @@ export function AuthProvider({ children }) {
       return
     }
 
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null)
-      if (session?.user) {
-        fetchProfile(session.user.id)
-      } else {
+    // Set a timeout to prevent infinite loading
+    const timeoutId = setTimeout(() => {
+      console.warn('Auth initialization timeout - proceeding anyway')
+      setLoading(false)
+    }, 10000) // 10 second timeout
+
+    // Get initial session with error handling
+    supabase.auth.getSession()
+      .then(({ data: { session }, error }) => {
+        clearTimeout(timeoutId)
+        if (error) {
+          console.error('Error getting session:', error)
+          setLoading(false)
+          return
+        }
+        setUser(session?.user ?? null)
+        if (session?.user) {
+          fetchProfile(session.user.id)
+        } else {
+          setLoading(false)
+        }
+      })
+      .catch((error) => {
+        clearTimeout(timeoutId)
+        console.error('Error initializing auth:', error)
         setLoading(false)
-      }
-    })
+      })
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        clearTimeout(timeoutId)
         setUser(session?.user ?? null)
         if (session?.user) {
           await fetchProfile(session.user.id)
@@ -38,17 +57,27 @@ export function AuthProvider({ children }) {
       }
     )
 
-    return () => subscription.unsubscribe()
+    return () => {
+      clearTimeout(timeoutId)
+      subscription.unsubscribe()
+    }
   }, [isConfigured])
 
   // Fetch user profile from database
   const fetchProfile = async (userId) => {
     try {
-      const { data, error } = await supabase
+      // Add timeout for profile fetch
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Profile fetch timeout')), 5000)
+      )
+      
+      const profilePromise = supabase
         .from('profiles')
         .select('*')
         .eq('id', userId)
         .single()
+
+      const { data, error } = await Promise.race([profilePromise, timeoutPromise])
 
       if (error && error.code !== 'PGRST116') {
         console.error('Error fetching profile:', error)
@@ -57,6 +86,8 @@ export function AuthProvider({ children }) {
       setProfile(data || null)
     } catch (error) {
       console.error('Error fetching profile:', error)
+      // Continue even if profile fetch fails
+      setProfile(null)
     } finally {
       setLoading(false)
     }
