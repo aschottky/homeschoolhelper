@@ -38,6 +38,7 @@ export function SupabaseDataProvider({ children: childrenProp }) {
   
   const [children, setChildren] = useState([])
   const [hourLogs, setHourLogs] = useState([])
+  const [schoolworkSamples, setSchoolworkSamples] = useState([])
   const [userState, setUserState] = useState('')
   const [homeschoolProfile, setHomeschoolProfile] = useState({
     homeschoolName: '',
@@ -69,11 +70,13 @@ export function SupabaseDataProvider({ children: childrenProp }) {
     const savedLogs = localStorage.getItem('homeschool_logs')
     const savedState = localStorage.getItem('homeschool_state')
     const savedProfile = localStorage.getItem('homeschool_profile')
+    const savedSamples = localStorage.getItem('homeschool_schoolwork_samples')
     
     if (savedChildren) setChildren(JSON.parse(savedChildren))
     if (savedLogs) setHourLogs(JSON.parse(savedLogs))
     if (savedState) setUserState(savedState)
     if (savedProfile) setHomeschoolProfile(prev => ({ ...prev, ...JSON.parse(savedProfile) }))
+    if (savedSamples) setSchoolworkSamples(JSON.parse(savedSamples))
     
     setIsLoaded(true)
     setLoading(false)
@@ -106,12 +109,15 @@ export function SupabaseDataProvider({ children: childrenProp }) {
         id: child.id,
         name: child.name,
         stateCode: child.state_code,
+        birthDate: child.birth_date || null,
+        gradeLevel: child.grade_level || null,
         createdAt: child.created_at,
         subjects: child.subjects?.map(s => ({
           id: s.id,
           name: s.name,
           requiredHours: s.required_hours,
-          color: s.color
+          color: s.color,
+          schoolworkReminderFrequency: s.schoolwork_reminder_frequency || null
         })) || []
       })) || []
 
@@ -194,12 +200,21 @@ export function SupabaseDataProvider({ children: childrenProp }) {
     }
   }, [homeschoolProfile, isLoaded, isConfigured, user])
 
+  useEffect(() => {
+    if (isLoaded && (!isConfigured || !user)) {
+      localStorage.setItem('homeschool_schoolwork_samples', JSON.stringify(schoolworkSamples))
+    }
+  }, [schoolworkSamples, isLoaded, isConfigured, user])
+
   // Add a new child
-  const addChild = async (name, useStateRequirements = false, stateCode = null) => {
+  const addChild = async (name, useStateRequirements = false, stateCode = null, birthDate = null, gradeLevel = null, trackHours = true) => {
     const effectiveState = stateCode || userState
-    const subjects = useStateRequirements && effectiveState
-      ? getSubjectsForState(effectiveState)
-      : DEFAULT_SUBJECTS
+    // Only create subjects if tracking hours is enabled
+    const subjects = trackHours 
+      ? (useStateRequirements && effectiveState
+          ? getSubjectsForState(effectiveState)
+          : DEFAULT_SUBJECTS)
+      : []
 
     if (isConfigured && user) {
       try {
@@ -209,36 +224,45 @@ export function SupabaseDataProvider({ children: childrenProp }) {
           .insert({
             user_id: user.id,
             name,
-            state_code: useStateRequirements ? effectiveState : null
+            state_code: useStateRequirements ? effectiveState : null,
+            birth_date: birthDate || null,
+            grade_level: gradeLevel || null
           })
           .select()
           .single()
 
         if (childError) throw childError
 
-        // Insert subjects
-        const { data: subjectsData, error: subjectsError } = await supabase
-          .from('subjects')
-          .insert(subjects.map(s => ({
-            child_id: childData.id,
-            name: s.name,
-            required_hours: s.requiredHours,
-            color: s.color
-          })))
-          .select()
+        // Insert subjects only if tracking hours
+        let subjectsData = []
+        if (trackHours && subjects.length > 0) {
+          const { data, error: subjectsError } = await supabase
+            .from('subjects')
+            .insert(subjects.map(s => ({
+              child_id: childData.id,
+              name: s.name,
+              required_hours: s.requiredHours,
+              color: s.color
+            })))
+            .select()
 
-        if (subjectsError) throw subjectsError
+          if (subjectsError) throw subjectsError
+          subjectsData = data || []
+        }
 
         const newChild = {
           id: childData.id,
           name: childData.name,
           stateCode: childData.state_code,
+          birthDate: childData.birth_date || null,
+          gradeLevel: childData.grade_level || null,
           createdAt: childData.created_at,
           subjects: subjectsData.map(s => ({
             id: s.id,
             name: s.name,
             requiredHours: s.required_hours,
-            color: s.color
+            color: s.color,
+            schoolworkReminderFrequency: s.schoolwork_reminder_frequency || null
           }))
         }
 
@@ -253,8 +277,10 @@ export function SupabaseDataProvider({ children: childrenProp }) {
       const newChild = {
         id: Date.now().toString(),
         name,
-        subjects: subjects.map(s => ({ ...s, id: `${Date.now()}-${s.id}` })),
+        subjects: trackHours ? subjects.map(s => ({ ...s, id: `${Date.now()}-${s.id}` })) : [],
         stateCode: useStateRequirements ? effectiveState : null,
+        birthDate: birthDate || null,
+        gradeLevel: gradeLevel || null,
         createdAt: new Date().toISOString()
       }
       setChildren(prev => [...prev, newChild])
@@ -262,20 +288,25 @@ export function SupabaseDataProvider({ children: childrenProp }) {
     }
   }
 
-  // Update child name
-  const updateChild = async (childId, name) => {
+  // Update child
+  const updateChild = async (childId, updates) => {
     if (isConfigured && user) {
       try {
+        const updateData = {}
+        if (updates.name !== undefined) updateData.name = updates.name
+        if (updates.birthDate !== undefined) updateData.birth_date = updates.birthDate || null
+        if (updates.gradeLevel !== undefined) updateData.grade_level = updates.gradeLevel || null
+        
         await supabase
           .from('children')
-          .update({ name })
+          .update(updateData)
           .eq('id', childId)
       } catch (error) {
         console.error('Error updating child:', error)
       }
     }
     setChildren(prev => prev.map(child => 
-      child.id === childId ? { ...child, name } : child
+      child.id === childId ? { ...child, ...updates } : child
     ))
   }
 
@@ -296,11 +327,12 @@ export function SupabaseDataProvider({ children: childrenProp }) {
   }
 
   // Add a subject to a child
-  const addSubject = async (childId, name, requiredHours, color) => {
+  const addSubject = async (childId, name, requiredHours, color, schoolworkReminderFrequency = null) => {
     const newSubject = {
       name,
       requiredHours: Number(requiredHours),
-      color: color || '#8FB39A'
+      color: color || '#8FB39A',
+      schoolworkReminderFrequency
     }
 
     if (isConfigured && user) {
@@ -311,7 +343,8 @@ export function SupabaseDataProvider({ children: childrenProp }) {
             child_id: childId,
             name: newSubject.name,
             required_hours: newSubject.requiredHours,
-            color: newSubject.color
+            color: newSubject.color,
+            schoolwork_reminder_frequency: newSubject.schoolworkReminderFrequency
           })
           .select()
           .single()
@@ -322,7 +355,8 @@ export function SupabaseDataProvider({ children: childrenProp }) {
           id: data.id,
           name: data.name,
           requiredHours: data.required_hours,
-          color: data.color
+          color: data.color,
+          schoolworkReminderFrequency: data.schoolwork_reminder_frequency || null
         }
 
         setChildren(prev => prev.map(child => 
@@ -350,13 +384,17 @@ export function SupabaseDataProvider({ children: childrenProp }) {
   const updateSubject = async (childId, subjectId, updates) => {
     if (isConfigured && user) {
       try {
+        const updateData = {
+          name: updates.name,
+          required_hours: updates.requiredHours,
+          color: updates.color
+        }
+        if (updates.schoolworkReminderFrequency !== undefined) {
+          updateData.schoolwork_reminder_frequency = updates.schoolworkReminderFrequency
+        }
         await supabase
           .from('subjects')
-          .update({
-            name: updates.name,
-            required_hours: updates.requiredHours,
-            color: updates.color
-          })
+          .update(updateData)
           .eq('id', subjectId)
       } catch (error) {
         console.error('Error updating subject:', error)
@@ -568,9 +606,98 @@ export function SupabaseDataProvider({ children: childrenProp }) {
     }
   }
 
+  // Add schoolwork sample
+  const addSchoolworkSample = async (childId, subjectId, imageUrl, fileName, fileSize, notes = '') => {
+    const newSample = {
+      childId,
+      subjectId,
+      imageUrl,
+      fileName: fileName || 'schoolwork.jpg',
+      fileSize: fileSize || 0,
+      notes,
+      uploadedAt: new Date().toISOString()
+    }
+
+    if (isConfigured && user) {
+      try {
+        const { data, error } = await supabase
+          .from('schoolwork_samples')
+          .insert({
+            child_id: childId,
+            subject_id: subjectId,
+            image_url: imageUrl,
+            file_name: fileName,
+            file_size: fileSize,
+            notes
+          })
+          .select()
+          .single()
+
+        if (error) throw error
+
+        const sample = {
+          id: data.id,
+          childId: data.child_id,
+          subjectId: data.subject_id,
+          imageUrl: data.image_url,
+          fileName: data.file_name,
+          fileSize: data.file_size,
+          notes: data.notes,
+          uploadedAt: data.uploaded_at
+        }
+
+        setSchoolworkSamples(prev => [sample, ...prev])
+        return sample
+      } catch (error) {
+        console.error('Error adding schoolwork sample:', error)
+        throw error
+      }
+    } else {
+      const sample = { ...newSample, id: Date.now().toString() }
+      setSchoolworkSamples(prev => [sample, ...prev])
+      // Save to localStorage
+      localStorage.setItem('homeschool_schoolwork_samples', JSON.stringify([...schoolworkSamples, sample]))
+      return sample
+    }
+  }
+
+  // Delete schoolwork sample
+  const deleteSchoolworkSample = async (sampleId) => {
+    if (isConfigured && user) {
+      try {
+        await supabase
+          .from('schoolwork_samples')
+          .delete()
+          .eq('id', sampleId)
+      } catch (error) {
+        console.error('Error deleting schoolwork sample:', error)
+        throw error
+      }
+    }
+    setSchoolworkSamples(prev => prev.filter(s => s.id !== sampleId))
+    // Update localStorage
+    if (!isConfigured || !user) {
+      localStorage.setItem('homeschool_schoolwork_samples', JSON.stringify(schoolworkSamples.filter(s => s.id !== sampleId)))
+    }
+  }
+
+  // Get schoolwork samples for a subject
+  const getSchoolworkSamples = (childId, subjectId) => {
+    return schoolworkSamples
+      .filter(sample => sample.childId === childId && sample.subjectId === subjectId)
+      .sort((a, b) => new Date(b.uploadedAt) - new Date(a.uploadedAt))
+  }
+
+  // Get last schoolwork upload date for a subject (for reminder checking)
+  const getLastSchoolworkUpload = (childId, subjectId) => {
+    const samples = getSchoolworkSamples(childId, subjectId)
+    return samples.length > 0 ? new Date(samples[0].uploadedAt) : null
+  }
+
   const value = {
     children,
     hourLogs,
+    schoolworkSamples,
     userState,
     setUserState,
     homeschoolProfile,
@@ -591,7 +718,11 @@ export function SupabaseDataProvider({ children: childrenProp }) {
     getLogs,
     getSubjectProgress,
     getSubjectsForState,
-    DEFAULT_SUBJECTS
+    DEFAULT_SUBJECTS,
+    addSchoolworkSample,
+    deleteSchoolworkSample,
+    getSchoolworkSamples,
+    getLastSchoolworkUpload
   }
 
   return (

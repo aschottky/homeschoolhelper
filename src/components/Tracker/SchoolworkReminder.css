@@ -1,0 +1,257 @@
+.schoolwork-reminders {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-width: 400px;
+}
+
+.reminder-card {
+  background: white;
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  border-left: 4px solid var(--terracotta);
+  animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.reminder-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 16px;
+}
+
+.reminder-subject {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  flex: 1;
+}
+
+.reminder-color {
+  width: 4px;
+  height: 40px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.reminder-subject h4 {
+  margin: 0 0 4px 0;
+  color: var(--forest-dark);
+  font-size: 1rem;
+}
+
+.reminder-subject p {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.8125rem;
+}
+
+.reminder-close {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: var(--radius-sm);
+  transition: all 0.2s ease;
+}
+
+.reminder-close:hover {
+  background: var(--cream-light);
+  color: var(--text-dark);
+}
+
+.reminder-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.reminder-actions .btn-tracker {
+  flex: 1;
+}
+
+/* Upload Modal */
+.schoolwork-upload-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  padding: 20px;
+}
+
+.upload-modal-content {
+  background: white;
+  border-radius: var(--radius-xl);
+  width: 100%;
+  max-width: 600px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+}
+
+.upload-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24px;
+  border-bottom: 1px solid var(--sage-light);
+}
+
+.upload-modal-header h3 {
+  margin: 0;
+  color: var(--forest-dark);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 8px;
+  border-radius: var(--radius-sm);
+  transition: all 0.2s ease;
+}
+
+.modal-close:hover {
+  background: var(--cream-light);
+  color: var(--text-dark);
+}
+
+.upload-subject-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 16px 24px;
+  background: var(--cream-light);
+  border-bottom: 1px solid var(--sage-light);
+  font-weight: 500;
+  color: var(--forest-dark);
+}
+
+.upload-subject-info .subject-color {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}
+
+.upload-form {
+  padding: 24px;
+}
+
+.upload-area {
+  margin-bottom: 20px;
+}
+
+.upload-dropzone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  border: 2px dashed var(--sage);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  background: var(--cream-light);
+}
+
+.upload-dropzone:hover {
+  border-color: var(--forest);
+  background: var(--sage-light);
+}
+
+.upload-dropzone p {
+  margin: 12px 0 4px 0;
+  color: var(--forest-dark);
+  font-weight: 500;
+}
+
+.upload-dropzone span {
+  color: var(--text-muted);
+  font-size: 0.8125rem;
+}
+
+.preview-container {
+  position: relative;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  border: 2px solid var(--sage-light);
+}
+
+.preview-container img {
+  width: 100%;
+  height: auto;
+  display: block;
+  max-height: 400px;
+  object-fit: contain;
+}
+
+.remove-preview {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: rgba(0, 0, 0, 0.7);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.remove-preview:hover {
+  background: rgba(0, 0, 0, 0.9);
+}
+
+.upload-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.upload-actions .btn-tracker {
+  flex: 1;
+}
+
+@media (max-width: 768px) {
+  .schoolwork-reminders {
+    right: 16px;
+    bottom: 16px;
+    left: 16px;
+    max-width: none;
+  }
+
+  .upload-modal-content {
+    margin: 0;
+    border-radius: var(--radius-lg);
+  }
+}

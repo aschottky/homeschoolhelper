@@ -2,8 +2,43 @@ import { useState } from 'react'
 import { useData } from '../../context/SupabaseDataContext'
 import { useSubscription } from '../../context/SubscriptionContext'
 import { STATES_LIST, STATE_REQUIREMENTS } from '../../data/stateRequirements'
-import { Plus, Trash2, Edit2, Check, X, Settings, ChevronDown, ChevronUp, MapPin, Sparkles, Lock } from 'lucide-react'
+import { Plus, Trash2, Edit2, Check, X, Settings, ChevronDown, ChevronUp, MapPin, Sparkles, Lock, Calendar, GraduationCap, User } from 'lucide-react'
 import './ChildManager.css'
+
+// Calculate age from birth date
+const calculateAge = (birthDate) => {
+  if (!birthDate) return null
+  
+  const today = new Date()
+  const birth = new Date(birthDate)
+  let age = today.getFullYear() - birth.getFullYear()
+  const monthDiff = today.getMonth() - birth.getMonth()
+  
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+    age--
+  }
+  
+  return age
+}
+
+// Format age display
+const formatAge = (birthDate) => {
+  const age = calculateAge(birthDate)
+  if (age === null) return null
+  
+  if (age === 0) {
+    const today = new Date()
+    const birth = new Date(birthDate)
+    const monthDiff = today.getMonth() - birth.getMonth() + (today.getFullYear() - birth.getFullYear()) * 12
+    if (monthDiff === 0) {
+      const dayDiff = today.getDate() - birth.getDate()
+      return dayDiff === 0 ? 'Newborn' : `${dayDiff} day${dayDiff !== 1 ? 's' : ''} old`
+    }
+    return `${monthDiff} month${monthDiff !== 1 ? 's' : ''} old`
+  }
+  
+  return `${age} year${age !== 1 ? 's' : ''} old`
+}
 
 function ChildManager() {
   const { 
@@ -23,41 +58,88 @@ function ChildManager() {
 
   const [newChildName, setNewChildName] = useState('')
   const [newChildState, setNewChildState] = useState(userState || '')
+  const [newChildBirthDate, setNewChildBirthDate] = useState('')
+  const [newChildGrade, setNewChildGrade] = useState('')
   const [useStateHours, setUseStateHours] = useState(isPremium)
+  const [trackHours, setTrackHours] = useState(true) // Default to tracking hours
+  const [showTrackingPrompt, setShowTrackingPrompt] = useState(false)
   const [editingChild, setEditingChild] = useState(null)
-  const [editChildName, setEditChildName] = useState('')
+  const [editChildData, setEditChildData] = useState({ name: '', birthDate: '', gradeLevel: '' })
   const [expandedChild, setExpandedChild] = useState(null)
-  const [newSubject, setNewSubject] = useState({ name: '', requiredHours: '', color: '#8FB39A' })
+  const [newSubject, setNewSubject] = useState({ name: '', requiredHours: '', color: '#8FB39A', schoolworkReminderFrequency: '' })
   const [editingSubject, setEditingSubject] = useState(null)
 
-  const handleAddChild = (e) => {
+  // Check if child is under mandatory tracking age (typically 6-7 years old)
+  const isUnderMandatoryTrackingAge = () => {
+    if (!newChildBirthDate || !newChildState) return false
+    
+    const age = calculateAge(newChildBirthDate)
+    if (age === null) return false
+    
+    // Most states require tracking starting at age 6 or 7 (compulsory education age)
+    // Default to 6 if state doesn't specify
+    const mandatoryAge = STATE_REQUIREMENTS[newChildState]?.mandatoryTrackingAge || 6
+    return age < mandatoryAge
+  }
+
+  const handleAddChild = async (e) => {
     e.preventDefault()
-    if (newChildName.trim()) {
-      const child = addChild(
-        newChildName.trim(), 
-        isPremium && useStateHours, 
-        newChildState || null
-      )
-      setNewChildName('')
-      if (newChildState && !userState) {
-        setUserState(newChildState)
-      }
+    if (!newChildName.trim()) return
+
+    // Check if we need to prompt about tracking
+    const underAge = isUnderMandatoryTrackingAge()
+    if (underAge && !showTrackingPrompt) {
+      setShowTrackingPrompt(true)
+      return
+    }
+
+    // Create child with or without subjects based on trackHours
+    const child = await addChild(
+      newChildName.trim(), 
+      trackHours && isPremium && useStateHours, 
+      newChildState || null,
+      newChildBirthDate || null,
+      newChildGrade || null,
+      trackHours // Pass whether to create subjects
+    )
+    
+    setNewChildName('')
+    setNewChildBirthDate('')
+    setNewChildGrade('')
+    setTrackHours(true) // Reset for next child
+    setShowTrackingPrompt(false)
+    
+    if (newChildState && !userState) {
+      setUserState(newChildState)
+    }
+    
+    if (trackHours) {
       setExpandedChild(child.id)
     }
   }
 
   const handleUpdateChild = (childId) => {
-    if (editChildName.trim()) {
-      updateChild(childId, editChildName.trim())
+    if (editChildData.name.trim()) {
+      updateChild(childId, {
+        name: editChildData.name.trim(),
+        birthDate: editChildData.birthDate || null,
+        gradeLevel: editChildData.gradeLevel || null
+      })
       setEditingChild(null)
-      setEditChildName('')
+      setEditChildData({ name: '', birthDate: '', gradeLevel: '' })
     }
   }
 
   const handleAddSubject = (childId) => {
     if (newSubject.name.trim() && newSubject.requiredHours) {
-      addSubject(childId, newSubject.name.trim(), newSubject.requiredHours, newSubject.color)
-      setNewSubject({ name: '', requiredHours: '', color: '#8FB39A' })
+      addSubject(
+        childId, 
+        newSubject.name.trim(), 
+        newSubject.requiredHours, 
+        newSubject.color,
+        newSubject.schoolworkReminderFrequency || null
+      )
+      setNewSubject({ name: '', requiredHours: '', color: '#8FB39A', schoolworkReminderFrequency: '' })
     }
   }
 
@@ -79,13 +161,14 @@ function ChildManager() {
         <form onSubmit={handleAddChild} className="add-child-form">
           <div className="form-row">
             <div className="form-group" style={{ flex: 2 }}>
-              <label>Child's Name</label>
+              <label>Child's Name *</label>
               <input
                 type="text"
                 className="form-input"
                 placeholder="Enter child's name"
                 value={newChildName}
                 onChange={(e) => setNewChildName(e.target.value)}
+                required
               />
             </div>
             <div className="form-group" style={{ flex: 1 }}>
@@ -102,6 +185,50 @@ function ChildManager() {
                 {STATES_LIST.map(state => (
                   <option key={state.code} value={state.code}>{state.name}</option>
                 ))}
+              </select>
+            </div>
+          </div>
+
+          <div className="form-row">
+            <div className="form-group" style={{ flex: 1 }}>
+              <label>
+                <Calendar size={14} style={{ marginRight: '6px', verticalAlign: 'middle' }} />
+                Birth Date
+              </label>
+              <input
+                type="date"
+                className="form-input"
+                value={newChildBirthDate}
+                onChange={(e) => setNewChildBirthDate(e.target.value)}
+                max={new Date().toISOString().split('T')[0]}
+              />
+            </div>
+            <div className="form-group" style={{ flex: 1 }}>
+              <label>
+                <GraduationCap size={14} style={{ marginRight: '6px', verticalAlign: 'middle' }} />
+                Grade Level
+              </label>
+              <select
+                className="form-select"
+                value={newChildGrade}
+                onChange={(e) => setNewChildGrade(e.target.value)}
+              >
+                <option value="">Select grade</option>
+                <option value="Early Learner">Early Learner</option>
+                <option value="Pre-K">Pre-K</option>
+                <option value="Kindergarten">Kindergarten</option>
+                <option value="1st Grade">1st Grade</option>
+                <option value="2nd Grade">2nd Grade</option>
+                <option value="3rd Grade">3rd Grade</option>
+                <option value="4th Grade">4th Grade</option>
+                <option value="5th Grade">5th Grade</option>
+                <option value="6th Grade">6th Grade</option>
+                <option value="7th Grade">7th Grade</option>
+                <option value="8th Grade">8th Grade</option>
+                <option value="9th Grade">9th Grade</option>
+                <option value="10th Grade">10th Grade</option>
+                <option value="11th Grade">11th Grade</option>
+                <option value="12th Grade">12th Grade</option>
               </select>
             </div>
           </div>
@@ -154,12 +281,105 @@ function ChildManager() {
             </div>
           )}
 
-          <button type="submit" className="btn-tracker btn-primary" disabled={!newChildName.trim()}>
-            <Plus size={20} />
-            Add Child
-          </button>
-        </form>
-      </div>
+              <button type="submit" className="btn-tracker btn-primary" disabled={!newChildName.trim()}>
+                <Plus size={20} />
+                Add Child
+              </button>
+            </form>
+
+            {/* Tracking Prompt Modal */}
+            {showTrackingPrompt && (
+              <div className="tracking-prompt-modal">
+                <div className="tracking-prompt-content">
+                  <div className="tracking-prompt-header">
+                    <AlertCircle size={24} className="prompt-icon" />
+                    <h3>Track School Hours?</h3>
+                  </div>
+                  <div className="tracking-prompt-body">
+                    <p>
+                      <strong>{newChildName}</strong> is under {STATE_REQUIREMENTS[newChildState]?.name || 'your state'}'s mandatory tracking age 
+                      ({STATE_REQUIREMENTS[newChildState]?.mandatoryTrackingAge || 6} years old).
+                    </p>
+                    <p>
+                      Would you like to track school hours for this child? You can still create their profile to track 
+                      outdoor hours and read-aloud books even if you choose not to track school hours.
+                    </p>
+                    <div className="tracking-options">
+                      <label className="tracking-option">
+                        <input
+                          type="radio"
+                          name="trackHours"
+                          checked={trackHours}
+                          onChange={() => setTrackHours(true)}
+                        />
+                        <span className="radio-custom" />
+                        <div>
+                          <strong>Yes, track school hours</strong>
+                          <small>Subjects and required hours will be set up</small>
+                        </div>
+                      </label>
+                      <label className="tracking-option">
+                        <input
+                          type="radio"
+                          name="trackHours"
+                          checked={!trackHours}
+                          onChange={() => setTrackHours(false)}
+                        />
+                        <span className="radio-custom" />
+                        <div>
+                          <strong>No, skip hour tracking</strong>
+                          <small>Profile will be created for outdoor hours and read-alouds only</small>
+                        </div>
+                      </label>
+                    </div>
+                  </div>
+                  <div className="tracking-prompt-actions">
+                    <button
+                      type="button"
+                      className="btn-tracker btn-secondary"
+                      onClick={() => {
+                        setShowTrackingPrompt(false)
+                        setTrackHours(true)
+                      }}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      className="btn-tracker btn-primary"
+                      onClick={async () => {
+                        const child = await addChild(
+                          newChildName.trim(), 
+                          trackHours && isPremium && useStateHours, 
+                          newChildState || null,
+                          newChildBirthDate || null,
+                          newChildGrade || null,
+                          trackHours
+                        )
+                        
+                        setNewChildName('')
+                        setNewChildBirthDate('')
+                        setNewChildGrade('')
+                        setTrackHours(true)
+                        setShowTrackingPrompt(false)
+                        
+                        if (newChildState && !userState) {
+                          setUserState(newChildState)
+                        }
+                        
+                        if (trackHours) {
+                          setExpandedChild(child.id)
+                        }
+                      }}
+                    >
+                      <Check size={18} />
+                      Continue
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
 
       {children.length === 0 ? (
         <div className="tracker-section">
@@ -178,28 +398,65 @@ function ChildManager() {
               <div className="child-row">
                 {editingChild === child.id ? (
                   <div className="edit-child-form">
-                    <input
-                      type="text"
-                      className="form-input"
-                      value={editChildName}
-                      onChange={(e) => setEditChildName(e.target.value)}
-                      autoFocus
-                    />
-                    <button 
-                      className="btn-tracker btn-primary btn-sm"
-                      onClick={() => handleUpdateChild(child.id)}
-                    >
-                      <Check size={16} />
-                    </button>
-                    <button 
-                      className="btn-tracker btn-secondary btn-sm"
-                      onClick={() => {
-                        setEditingChild(null)
-                        setEditChildName('')
-                      }}
-                    >
-                      <X size={16} />
-                    </button>
+                    <div className="form-row">
+                      <input
+                        type="text"
+                        className="form-input"
+                        placeholder="Name"
+                        value={editChildData.name}
+                        onChange={(e) => setEditChildData({ ...editChildData, name: e.target.value })}
+                        autoFocus
+                      />
+                      <input
+                        type="date"
+                        className="form-input"
+                        placeholder="Birth Date"
+                        value={editChildData.birthDate || ''}
+                        onChange={(e) => setEditChildData({ ...editChildData, birthDate: e.target.value })}
+                        max={new Date().toISOString().split('T')[0]}
+                      />
+                      <select
+                        className="form-select"
+                        value={editChildData.gradeLevel || ''}
+                        onChange={(e) => setEditChildData({ ...editChildData, gradeLevel: e.target.value })}
+                      >
+                        <option value="">Select grade</option>
+                        <option value="Early Learner">Early Learner</option>
+                        <option value="Pre-K">Pre-K</option>
+                        <option value="Kindergarten">Kindergarten</option>
+                        <option value="1st Grade">1st Grade</option>
+                        <option value="2nd Grade">2nd Grade</option>
+                        <option value="3rd Grade">3rd Grade</option>
+                        <option value="4th Grade">4th Grade</option>
+                        <option value="5th Grade">5th Grade</option>
+                        <option value="6th Grade">6th Grade</option>
+                        <option value="7th Grade">7th Grade</option>
+                        <option value="8th Grade">8th Grade</option>
+                        <option value="9th Grade">9th Grade</option>
+                        <option value="10th Grade">10th Grade</option>
+                        <option value="11th Grade">11th Grade</option>
+                        <option value="12th Grade">12th Grade</option>
+                      </select>
+                    </div>
+                    <div className="edit-actions">
+                      <button 
+                        className="btn-tracker btn-primary btn-sm"
+                        onClick={() => handleUpdateChild(child.id)}
+                      >
+                        <Check size={16} />
+                        Save
+                      </button>
+                      <button 
+                        className="btn-tracker btn-secondary btn-sm"
+                        onClick={() => {
+                          setEditingChild(null)
+                          setEditChildData({ name: '', birthDate: '', gradeLevel: '' })
+                        }}
+                      >
+                        <X size={16} />
+                        Cancel
+                      </button>
+                    </div>
                   </div>
                 ) : (
                   <>
@@ -209,12 +466,26 @@ function ChildManager() {
                       </div>
                       <div className="child-name-info">
                         <h3>{child.name}</h3>
-                        {child.stateCode && (
-                          <span className="child-state-badge">
-                            <MapPin size={12} />
-                            {STATE_REQUIREMENTS[child.stateCode]?.name || child.stateCode}
-                          </span>
-                        )}
+                        <div className="child-meta">
+                          {child.birthDate && (
+                            <span className="child-meta-item">
+                              <User size={12} />
+                              {formatAge(child.birthDate)}
+                            </span>
+                          )}
+                          {child.gradeLevel && (
+                            <span className="child-meta-item">
+                              <GraduationCap size={12} />
+                              {child.gradeLevel}
+                            </span>
+                          )}
+                          {child.stateCode && (
+                            <span className="child-state-badge">
+                              <MapPin size={12} />
+                              {STATE_REQUIREMENTS[child.stateCode]?.name || child.stateCode}
+                            </span>
+                          )}
+                        </div>
                       </div>
                       <span className="subject-count">{child.subjects.length} subjects</span>
                     </div>
@@ -223,9 +494,13 @@ function ChildManager() {
                         className="btn-tracker btn-secondary btn-icon-only"
                         onClick={() => {
                           setEditingChild(child.id)
-                          setEditChildName(child.name)
+                          setEditChildData({ 
+                            name: child.name,
+                            birthDate: child.birthDate || '',
+                            gradeLevel: child.gradeLevel || ''
+                          })
                         }}
-                        title="Edit name"
+                        title="Edit child info"
                       >
                         <Edit2 size={18} />
                       </button>
@@ -283,6 +558,20 @@ function ChildManager() {
                                 }
                               }}
                             />
+                            <select
+                              className="form-select reminder-select"
+                              value={subject.schoolworkReminderFrequency || ''}
+                              onChange={(e) => {
+                                updateSubject(child.id, subject.id, { 
+                                  schoolworkReminderFrequency: e.target.value || null 
+                                })
+                              }}
+                            >
+                              <option value="">No reminder</option>
+                              <option value="weekly">Weekly</option>
+                              <option value="biweekly">Biweekly</option>
+                              <option value="monthly">Monthly</option>
+                            </select>
                             <div className="color-picker-inline">
                               {colorOptions.map(color => (
                                 <button
@@ -310,6 +599,12 @@ function ChildManager() {
                               <span className="subject-logged">
                                 {getSubjectHours(child.id, subject.id).toFixed(1)} hrs logged
                               </span>
+                              {subject.schoolworkReminderFrequency && (
+                                <span className="subject-reminder-badge">
+                                  📸 {subject.schoolworkReminderFrequency === 'weekly' ? 'Weekly' : 
+                                       subject.schoolworkReminderFrequency === 'biweekly' ? 'Biweekly' : 'Monthly'} reminder
+                                </span>
+                              )}
                             </div>
                             <div className="subject-actions">
                               <button 
@@ -357,6 +652,19 @@ function ChildManager() {
                           onChange={(e) => setNewSubject({ ...newSubject, requiredHours: e.target.value })}
                         />
                       </div>
+                    </div>
+                    <div className="form-group">
+                      <label>Schoolwork Reminder</label>
+                      <select
+                        className="form-select"
+                        value={newSubject.schoolworkReminderFrequency}
+                        onChange={(e) => setNewSubject({ ...newSubject, schoolworkReminderFrequency: e.target.value })}
+                      >
+                        <option value="">No reminder</option>
+                        <option value="weekly">Weekly</option>
+                        <option value="biweekly">Biweekly</option>
+                        <option value="monthly">Monthly</option>
+                      </select>
                     </div>
                     <div className="color-picker">
                       <span>Color:</span>

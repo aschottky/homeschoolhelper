@@ -17,6 +17,7 @@ import Curriculum from './Curriculum'
 import Consultation from './Consultation'
 import Settings from './Settings'
 import Upgrade from './Upgrade'
+import SchoolworkReminder from './SchoolworkReminder'
 import { LayoutDashboard, Users, Clock, History, Trophy, GraduationCap, BookOpen, Sun, Lightbulb, Heart, CreditCard, MapPin, BookMarked, MessageSquare, Settings as SettingsIcon, Crown, ArrowLeft, Sparkles } from 'lucide-react'
 import './Tracker.css'
 
@@ -136,6 +137,7 @@ function Tracker({ onBack }) {
       <div className="tracker-main">
         {renderContent()}
       </div>
+      <SchoolworkReminder />
     </div>
   )
 }

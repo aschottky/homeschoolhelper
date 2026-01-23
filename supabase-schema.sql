@@ -94,6 +94,7 @@ create table if not exists public.subjects (
   name text not null,
   required_hours integer default 0,
   color text default '#8FB39A',
+  schoolwork_reminder_frequency text check (schoolwork_reminder_frequency in ('weekly', 'biweekly', 'monthly', null)),
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
@@ -293,6 +294,36 @@ create policy "Users can manage extracurricular logs of own children" on public.
       and children.user_id = auth.uid()
     )
   );
+
+-- =============================================
+-- SCHOOLWORK SAMPLES TABLE
+-- =============================================
+create table if not exists public.schoolwork_samples (
+  id uuid default uuid_generate_v4() primary key,
+  child_id uuid references public.children(id) on delete cascade not null,
+  subject_id uuid references public.subjects(id) on delete cascade not null,
+  image_url text not null, -- Base64 encoded image or URL
+  file_name text,
+  file_size integer, -- Size in bytes
+  notes text,
+  uploaded_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+-- Enable RLS
+alter table public.schoolwork_samples enable row level security;
+
+-- Schoolwork samples policies
+create policy "Users can manage schoolwork samples of own children" on public.schoolwork_samples
+  for all using (
+    exists (
+      select 1 from public.children
+      where children.id = schoolwork_samples.child_id
+      and children.user_id = auth.uid()
+    )
+  );
+
+-- Index for faster queries
+create index if not exists schoolwork_samples_child_subject_idx on public.schoolwork_samples(child_id, subject_id);
 
 -- =============================================
 -- READ ALOUD TRACKING TABLE (Premium Feature)
