@@ -25,7 +25,7 @@ function AppContent() {
       const timeout = setTimeout(() => {
         console.warn('Loading timeout - forcing render')
         setLoadingTimeout(true)
-      }, 10000) // 10 second timeout
+      }, 5000) // 5 second timeout (reduced from 10)
 
       return () => clearTimeout(timeout)
     } else {
@@ -33,8 +33,12 @@ function AppContent() {
     }
   }, [loading, isConfigured])
 
-  // Show loading state while checking auth (but timeout after 10 seconds)
-  if (loading && isConfigured && !loadingTimeout) {
+  // Only show loading for tracker/auth pages, not homepage
+  // Homepage should load immediately
+  const isAuthRequiredPage = currentPage === 'tracker' || currentPage === 'auth'
+  
+  // Show loading state only for auth-required pages (but timeout after 5 seconds)
+  if (loading && isConfigured && isAuthRequiredPage && !loadingTimeout) {
     return (
       <div className="app-loading">
         <div className="loading-spinner"></div>

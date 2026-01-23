@@ -118,7 +118,7 @@
 
 .resource-count {
   font-size: 0.875rem;
-  color: rgba(255, 255, 255, 0.85);
+  color: white; /* Full white for visibility */
   font-weight: 500;
 }
 
@@ -134,9 +134,9 @@
 }
 
 .resource-items li {
-  color: rgba(255, 255, 255, 0.9);
+  color: white; /* Full white for maximum visibility */
   padding: 8px 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
   font-size: 0.9375rem;
 }
 
@@ -151,22 +151,19 @@
   font-weight: 600;
   font-size: 0.9375rem;
   transition: all 0.3s ease;
+  color: white; /* Default white for visibility */
 }
 
 .resource-terracotta .resource-link {
-  color: var(--terracotta);
+  color: #E8A87C; /* Brighter terracotta */
 }
 
 .resource-forest .resource-link {
-  color: #B5D4BE;
+  color: #C4E8D0; /* Much lighter green for visibility */
 }
 
 .resource-sage .resource-link {
-  color: #8FB39A;
-}
-
-.resource-link {
-  color: rgba(255, 255, 255, 0.9);
+  color: #B5D4BE; /* Lighter sage for visibility */
 }
 
 .resource-link:hover {
