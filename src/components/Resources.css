@@ -58,17 +58,19 @@
 
 .resource-card {
   padding: 32px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.3);
   border-radius: var(--radius-xl);
   backdrop-filter: blur(12px);
   transition: all 0.4s ease;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
 }
 
 .resource-card:hover {
-  background: rgba(255, 255, 255, 0.1);
+  background: white;
   transform: translateY(-4px);
-  border-color: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.5);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
 }
 
 .resource-header {
@@ -105,25 +107,25 @@
 }
 
 .resource-terracotta .resource-icon {
-  color: var(--terracotta);
+  color: var(--terracotta-dark);
 }
 
 .resource-forest .resource-icon {
-  color: var(--sage-light);
+  color: var(--forest);
 }
 
 .resource-sage .resource-icon {
-  color: var(--sage);
+  color: var(--forest-dark);
 }
 
 .resource-count {
   font-size: 0.875rem;
-  color: white; /* Full white for visibility */
+  color: var(--text-muted);
   font-weight: 500;
 }
 
 .resource-card h3 {
-  color: white;
+  color: var(--forest-dark);
   margin-bottom: 16px;
   font-size: 1.25rem;
 }
@@ -134,9 +136,9 @@
 }
 
 .resource-items li {
-  color: white; /* Full white for maximum visibility */
+  color: var(--text-dark);
   padding: 8px 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+  border-bottom: 1px solid rgba(45, 90, 74, 0.1);
   font-size: 0.9375rem;
 }
 
@@ -151,19 +153,19 @@
   font-weight: 600;
   font-size: 0.9375rem;
   transition: all 0.3s ease;
-  color: white; /* Default white for visibility */
+  color: var(--forest); /* Default dark green for visibility on white */
 }
 
 .resource-terracotta .resource-link {
-  color: #E8A87C; /* Brighter terracotta */
+  color: var(--terracotta-dark); /* Darker terracotta for visibility */
 }
 
 .resource-forest .resource-link {
-  color: #E8F5ED; /* Very light green for maximum visibility */
+  color: var(--forest-dark); /* Dark green for visibility */
 }
 
 .resource-sage .resource-link {
-  color: #D4E8DB; /* Very light sage for maximum visibility */
+  color: var(--forest); /* Dark green for visibility */
 }
 
 .resource-link:hover {
