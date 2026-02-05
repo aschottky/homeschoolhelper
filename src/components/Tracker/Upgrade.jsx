@@ -1,15 +1,71 @@
+import { useState, useEffect } from 'react'
 import { useSubscription, TIERS, TIER_BENEFITS } from '../../context/SubscriptionContext'
-import { Check, X, Sparkles, Crown, Gift } from 'lucide-react'
+import { useAuth } from '../../context/AuthContext'
+import { redirectToCheckout } from '../../lib/stripe'
+import { Check, X, Sparkles, Crown, Gift, Loader } from 'lucide-react'
 import './Upgrade.css'
 
 function Upgrade() {
-  const { tier, isPremium, upgradeToPremium, downgradeToFree } = useSubscription()
+  const { tier, isPremium, upgradeToPremium, downgradeToFree, refreshSubscription } = useSubscription()
+  const { user, isConfigured } = useAuth()
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState(null)
+  const [checkoutSuccess, setCheckoutSuccess] = useState(false)
+
+  // Check for successful checkout return
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search)
+    const sessionId = urlParams.get('session_id')
+    const canceled = urlParams.get('canceled')
+
+    if (sessionId) {
+      // Successful checkout - refresh subscription
+      setCheckoutSuccess(true)
+      refreshSubscription()
+      // Clean up URL
+      window.history.replaceState({}, document.title, window.location.pathname)
+    } else if (canceled) {
+      setError('Checkout was canceled. You can try again anytime.')
+      window.history.replaceState({}, document.title, window.location.pathname)
+    }
+  }, [refreshSubscription])
+
+  const handleCheckout = async () => {
+    if (!user || !isConfigured) {
+      setError('Please sign in to upgrade to Premium')
+      return
+    }
+
+    setLoading(true)
+    setError(null)
+
+    try {
+      await redirectToCheckout()
+      // User will be redirected to Stripe, so this won't execute
+    } catch (err) {
+      console.error('Checkout error:', err)
+      setError(err.message || 'Failed to start checkout. Please try again.')
+      setLoading(false)
+    }
+  }
 
   return (
     <div className="upgrade">
       <div className="upgrade-header">
         <h1>Choose Your Plan</h1>
         <p>Select the plan that works best for your homeschool journey</p>
+        {checkoutSuccess && (
+          <div className="checkout-success-message">
+            <Check size={20} />
+            <span>Payment successful! Your Premium subscription is now active.</span>
+          </div>
+        )}
+        {error && (
+          <div className="checkout-error-message">
+            <X size={20} />
+            <span>{error}</span>
+          </div>
+        )}
       </div>
 
       <div className="plans-grid">
@@ -89,9 +145,22 @@ function Upgrade() {
               Current Plan
             </button>
           ) : (
-            <button className="plan-btn btn-primary" onClick={upgradeToPremium}>
-              <Sparkles size={18} />
-              Upgrade to Premium
+            <button 
+              className="plan-btn btn-primary" 
+              onClick={handleCheckout}
+              disabled={loading || !user || !isConfigured}
+            >
+              {loading ? (
+                <>
+                  <Loader size={18} className="spinning" />
+                  Processing...
+                </>
+              ) : (
+                <>
+                  <Sparkles size={18} />
+                  Upgrade to Premium
+                </>
+              )}
             </button>
           )}
         </div>

@@ -14,6 +14,53 @@
   color: var(--text-muted);
 }
 
+.checkout-success-message,
+.checkout-error-message {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  border-radius: var(--radius-md);
+  margin-top: 16px;
+  font-size: 0.9375rem;
+  font-weight: 500;
+}
+
+.checkout-success-message {
+  background: rgba(143, 179, 154, 0.1);
+  color: var(--forest-dark);
+  border: 1px solid rgba(143, 179, 154, 0.3);
+}
+
+.checkout-error-message {
+  background: rgba(220, 38, 38, 0.1);
+  color: #dc2626;
+  border: 1px solid rgba(220, 38, 38, 0.3);
+}
+
+.checkout-success-message svg,
+.checkout-error-message svg {
+  flex-shrink: 0;
+}
+
+.spinning {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.plan-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .plans-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);

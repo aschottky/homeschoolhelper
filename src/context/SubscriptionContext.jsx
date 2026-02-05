@@ -1,4 +1,6 @@
 import { createContext, useContext, useState, useEffect } from 'react'
+import { useAuth } from './AuthContext'
+import { supabase, isSupabaseConfigured } from '../lib/supabase'
 
 const SubscriptionContext = createContext()
 
@@ -41,30 +43,108 @@ export const TIER_BENEFITS = {
 }
 
 export function SubscriptionProvider({ children }) {
+  const { user, isConfigured: authConfigured } = useAuth()
+  const isSupabaseReady = isSupabaseConfigured() && authConfigured
   const [tier, setTier] = useState(TIERS.FREE)
   const [isLoaded, setIsLoaded] = useState(false)
+  const [loading, setLoading] = useState(true)
 
+  // Load subscription status from Supabase or localStorage
   useEffect(() => {
+    if (isSupabaseReady && user) {
+      loadSubscriptionFromSupabase()
+    } else {
+      loadSubscriptionFromLocalStorage()
+    }
+  }, [user, isSupabaseReady])
+
+  const loadSubscriptionFromSupabase = async () => {
+    setLoading(true)
+    try {
+      const { data: profile, error } = await supabase
+        .from('profiles')
+        .select('subscription_tier, subscription_status, subscription_end_date')
+        .eq('id', user.id)
+        .single()
+
+      if (error) {
+        console.error('Error loading subscription:', error)
+        loadSubscriptionFromLocalStorage()
+        return
+      }
+
+      // Check if subscription is still active
+      if (profile.subscription_tier === 'premium') {
+        const isActive = profile.subscription_status === 'active' || 
+                        profile.subscription_status === 'trialing'
+        
+        // Also check if subscription hasn't expired
+        if (profile.subscription_end_date) {
+          const endDate = new Date(profile.subscription_end_date)
+          const now = new Date()
+          if (endDate < now && !isActive) {
+            setTier(TIERS.FREE)
+          } else {
+            setTier(TIERS.PREMIUM)
+          }
+        } else {
+          setTier(isActive ? TIERS.PREMIUM : TIERS.FREE)
+        }
+      } else {
+        setTier(TIERS.FREE)
+      }
+    } catch (error) {
+      console.error('Error loading subscription:', error)
+      loadSubscriptionFromLocalStorage()
+    } finally {
+      setLoading(false)
+      setIsLoaded(true)
+    }
+  }
+
+  const loadSubscriptionFromLocalStorage = () => {
     const savedTier = localStorage.getItem('homeschool_tier')
     if (savedTier && Object.values(TIERS).includes(savedTier)) {
       setTier(savedTier)
     }
+    setLoading(false)
     setIsLoaded(true)
-  }, [])
+  }
 
+  // Save to localStorage as fallback
   useEffect(() => {
     if (isLoaded) {
       localStorage.setItem('homeschool_tier', tier)
     }
   }, [tier, isLoaded])
 
-  const upgradeToPremium = () => {
-    // In a real app, this would handle payment
-    setTier(TIERS.PREMIUM)
+  const upgradeToPremium = async () => {
+    // This will be handled by the Upgrade component with Stripe Checkout
+    // This function is kept for backward compatibility
+    console.log('Use handleCheckout in Upgrade component instead')
   }
 
-  const downgradeToFree = () => {
-    setTier(TIERS.FREE)
+  const downgradeToFree = async () => {
+    if (isSupabaseReady && user) {
+      // Update in Supabase (webhook will handle actual cancellation)
+      try {
+        await supabase
+          .from('profiles')
+          .update({ subscription_tier: 'free' })
+          .eq('id', user.id)
+        setTier(TIERS.FREE)
+      } catch (error) {
+        console.error('Error downgrading:', error)
+      }
+    } else {
+      setTier(TIERS.FREE)
+    }
+  }
+
+  const refreshSubscription = async () => {
+    if (isSupabaseReady && user) {
+      await loadSubscriptionFromSupabase()
+    }
   }
 
   const isPremium = tier === TIERS.PREMIUM
@@ -76,9 +156,11 @@ export function SubscriptionProvider({ children }) {
     currentTierBenefits,
     upgradeToPremium,
     downgradeToFree,
+    refreshSubscription,
     TIERS,
     TIER_BENEFITS,
-    isLoaded
+    isLoaded,
+    loading
   }
 
   return (

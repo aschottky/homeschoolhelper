@@ -173,6 +173,7 @@ export function AuthProvider({ children }) {
     profile,
     loading,
     isConfigured,
+    isAdmin: !!profile?.is_admin,
     signUp,
     signIn,
     signInWithProvider,

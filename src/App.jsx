@@ -75,42 +75,42 @@ function AppContent() {
   }
 
   return (
-    <div className="app">
-      <Navbar 
-        onOpenTracker={() => {
-          // If Supabase is configured and no user, show auth
-          // Otherwise go directly to tracker (demo mode)
-          if (isConfigured && !user) {
-            setCurrentPage('auth')
-          } else {
-            setCurrentPage('tracker')
-          }
-        }} 
-        onOpenAbout={() => setCurrentPage('about')}
-        onOpenAuth={() => setCurrentPage('auth')}
-        isLoggedIn={!!user}
-      />
-      <main>
-        <Hero onOpenTracker={() => {
-          if (isConfigured && !user) {
-            setCurrentPage('auth')
-          } else {
-            setCurrentPage('tracker')
-          }
-        }} />
-        <Features />
-        <Resources />
-        <Testimonials />
-        <CallToAction onOpenTracker={() => {
-          if (isConfigured && !user) {
-            setCurrentPage('auth')
-          } else {
-            setCurrentPage('tracker')
-          }
-        }} />
-      </main>
-      <Footer onOpenAbout={() => setCurrentPage('about')} />
-    </div>
+    <SupabaseDataProvider>
+      <div className="app">
+        <Navbar 
+          onOpenTracker={() => {
+            if (isConfigured && !user) {
+              setCurrentPage('auth')
+            } else {
+              setCurrentPage('tracker')
+            }
+          }} 
+          onOpenAbout={() => setCurrentPage('about')}
+          onOpenAuth={() => setCurrentPage('auth')}
+          isLoggedIn={!!user}
+        />
+        <main>
+          <Hero onOpenTracker={() => {
+            if (isConfigured && !user) {
+              setCurrentPage('auth')
+            } else {
+              setCurrentPage('tracker')
+            }
+          }} />
+          <Features />
+          <Resources />
+          <Testimonials />
+          <CallToAction onOpenTracker={() => {
+            if (isConfigured && !user) {
+              setCurrentPage('auth')
+            } else {
+              setCurrentPage('tracker')
+            }
+          }} />
+        </main>
+        <Footer onOpenAbout={() => setCurrentPage('about')} />
+      </div>
+    </SupabaseDataProvider>
   )
 }
 

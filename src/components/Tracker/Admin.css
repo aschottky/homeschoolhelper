@@ -1,0 +1,227 @@
+.admin-page {
+  padding: 1rem 0;
+}
+
+.admin-header {
+  margin-bottom: 1.25rem;
+}
+
+.admin-header h1 {
+  font-size: 1.5rem;
+  color: var(--forest-dark);
+  margin: 0 0 0.25rem 0;
+}
+
+.admin-header p {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+.admin-message {
+  padding: 0.5rem 0.75rem;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+  background: var(--sage-light);
+  color: var(--forest-dark);
+}
+
+.admin-message.error {
+  background: #fde8e8;
+  color: #b91c1c;
+}
+
+.admin-tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1.25rem;
+}
+
+.admin-tabs button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--text-dark);
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.admin-tabs button:hover {
+  background: var(--sage-light);
+  border-color: var(--sage);
+}
+
+.admin-tabs button.active {
+  background: var(--forest);
+  border-color: var(--forest);
+  color: #fff;
+}
+
+.admin-section {
+  background: #fff;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  padding: 1.25rem;
+}
+
+.admin-form.add-form {
+  margin-bottom: 1.5rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.admin-form h3,
+.admin-list h3 {
+  font-size: 1rem;
+  margin: 0 0 0.75rem 0;
+  color: var(--forest-dark);
+}
+
+.admin-form input,
+.admin-form select,
+.admin-form textarea {
+  display: block;
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  margin-bottom: 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 0.9rem;
+}
+
+.admin-form .form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.admin-form .form-row input,
+.admin-form .form-row select {
+  margin-bottom: 0;
+}
+
+.btn-admin {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: var(--forest);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.btn-admin:hover:not(:disabled) {
+  background: var(--forest-dark);
+}
+
+.btn-admin:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.admin-list ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.admin-list-item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1rem;
+  padding: 0.6rem 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.9rem;
+}
+
+.admin-list-item:last-child {
+  border-bottom: none;
+}
+
+.admin-list-item .item-title {
+  font-weight: 600;
+  color: var(--forest-dark);
+}
+
+.admin-list-item .item-meta {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+.admin-list-item .item-actions {
+  margin-left: auto;
+  display: flex;
+  gap: 0.25rem;
+}
+
+.admin-list-item .item-actions button {
+  padding: 0.25rem;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.admin-list-item .item-actions button:hover {
+  background: var(--sage-light);
+  color: var(--forest);
+}
+
+.edit-inline {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.edit-inline input,
+.edit-inline select,
+.edit-inline textarea {
+  padding: 0.4rem 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 0.9rem;
+}
+
+.edit-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.edit-actions button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.75rem;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  border: 1px solid var(--border);
+  background: #fff;
+  color: var(--text-dark);
+}
+
+.edit-actions button:first-child {
+  background: var(--forest);
+  color: #fff;
+  border-color: var(--forest);
+}
+
+.admin-empty {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  margin: 0;
+  padding: 0.5rem 0;
+}

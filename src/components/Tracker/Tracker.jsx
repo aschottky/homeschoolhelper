@@ -1,7 +1,9 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useData } from '../../context/SupabaseDataContext'
+import { useAuth } from '../../context/AuthContext'
 import { useSubscription } from '../../context/SubscriptionContext'
 import Dashboard from './Dashboard'
+import Admin from './Admin'
 import ChildManager from './ChildManager'
 import LogHours from './LogHours'
 import HoursHistory from './HoursHistory'
@@ -18,10 +20,10 @@ import Consultation from './Consultation'
 import Settings from './Settings'
 import Upgrade from './Upgrade'
 import SchoolworkReminder from './SchoolworkReminder'
-import { LayoutDashboard, Users, Clock, History, Trophy, GraduationCap, BookOpen, Sun, Lightbulb, Heart, CreditCard, MapPin, BookMarked, MessageSquare, Settings as SettingsIcon, Crown, ArrowLeft, Sparkles } from 'lucide-react'
+import { LayoutDashboard, Users, Clock, History, Trophy, GraduationCap, BookOpen, Sun, Lightbulb, Heart, CreditCard, MapPin, BookMarked, MessageSquare, Settings as SettingsIcon, Crown, ArrowLeft, Sparkles, Shield } from 'lucide-react'
 import './Tracker.css'
 
-const TABS = [
+const BASE_TABS = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { id: 'children', label: 'Children', icon: Users },
   { id: 'log', label: 'Log Hours', icon: Clock },
@@ -42,7 +44,16 @@ const TABS = [
 function Tracker({ onBack }) {
   const [activeTab, setActiveTab] = useState('dashboard')
   const { children } = useData()
+  const { isAdmin } = useAuth()
   const { isPremium, tier } = useSubscription()
+
+  const TABS = useMemo(() => {
+    const tabs = [...BASE_TABS]
+    if (isAdmin) {
+      tabs.push({ id: 'admin', label: 'Admin', icon: Shield })
+    }
+    return tabs
+  }, [isAdmin])
 
   const renderContent = () => {
     switch (activeTab) {
@@ -76,6 +87,8 @@ function Tracker({ onBack }) {
         return <Consultation />
       case 'settings':
         return <Settings />
+      case 'admin':
+        return <Admin />
       case 'upgrade':
         return <Upgrade />
       default:

@@ -52,11 +52,45 @@ export function SupabaseDataProvider({ children: childrenProp }) {
   })
   const [isLoaded, setIsLoaded] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [suggestedBooks, setSuggestedBooks] = useState([])
+  const [resources, setResources] = useState([])
+  const [readAloudLogs, setReadAloudLogs] = useState([])
+
+  // Load public data (suggested books, resources) when Supabase is configured
+  useEffect(() => {
+    if (!isConfigured) return
+    const loadPublic = async () => {
+      try {
+        const [booksRes, resourcesRes] = await Promise.all([
+          supabase.from('suggested_books').select('*').order('sort_order').order('title'),
+          supabase.from('resources').select('*').order('sort_order').order('category')
+        ])
+        if (booksRes.data) setSuggestedBooks(booksRes.data.map(b => ({
+          id: b.id,
+          title: b.title,
+          author: b.author || '',
+          ageGroup: b.age_group,
+          genre: b.genre || '',
+          description: b.description || '',
+          isDb: true
+        })))
+        if (resourcesRes.data) setResources(resourcesRes.data.map(r => ({
+          id: r.id,
+          category: r.category,
+          countLabel: r.count_label,
+          items: r.items || [],
+          color: r.color || 'sage',
+          link: r.link,
+          isDb: true
+        })))
+      } catch (_) { /* tables may not exist yet */ }
+    }
+    loadPublic()
+  }, [isConfigured])
 
   // Load data when user changes
   useEffect(() => {
     if (!isConfigured || !user) {
-      // Fall back to localStorage if not configured or no user
       loadFromLocalStorage()
       return
     }
@@ -165,12 +199,39 @@ export function SupabaseDataProvider({ children: childrenProp }) {
         setUserState(profile.state || '')
       }
 
+      // Load read-aloud logs for user's children
+      if (transformedChildren.length > 0) {
+        const childIds = transformedChildren.map(c => c.id)
+        const { data: logsData } = await supabase
+          .from('read_aloud_logs')
+          .select('*')
+          .in('child_id', childIds)
+        setReadAloudLogs(logsData?.map(l => ({
+          id: l.id,
+          childId: l.child_id,
+          bookId: l.book_id,
+          bookTitle: l.book_title,
+          bookAuthor: l.book_author,
+          status: l.status || (l.completed ? 'completed' : 'reading'),
+          completed: l.completed,
+          completedAt: l.completed_at,
+          startedAt: l.started_at,
+          notes: l.notes,
+          createdAt: l.created_at,
+          isCustom: String(l.book_id || '').startsWith('custom-')
+        })) || [])
+      } else {
+        setReadAloudLogs([])
+      }
+
+      setIsLoaded(true)
     } catch (error) {
       console.error('Error loading data from Supabase:', error)
-      // Set empty state instead of falling back to localStorage for logged-in users
       setChildren([])
       setHourLogs([])
+      setReadAloudLogs([])
       setIsLoaded(true)
+    } finally {
       setLoading(false)
     }
   }
@@ -694,6 +755,187 @@ export function SupabaseDataProvider({ children: childrenProp }) {
     return samples.length > 0 ? new Date(samples[0].uploadedAt) : null
   }
 
+  // --- Read-aloud (premium): status per child per book ---
+  const getReadAloudStatus = (childId, bookId) => {
+    const log = readAloudLogs.find(l => l.childId === childId && (l.bookId === bookId || l.bookTitle === bookId))
+    return log?.status ?? null
+  }
+
+  const setReadAloudStatus = async (childId, bookId, bookTitle, bookAuthor, status) => {
+    const existing = readAloudLogs.find(l => l.childId === childId && (l.bookId === bookId || l.bookTitle === bookTitle))
+    if (isConfigured && user) {
+      try {
+        if (existing) {
+          await supabase.from('read_aloud_logs').update({
+            status,
+            completed: status === 'completed',
+            completed_at: status === 'completed' ? new Date().toISOString() : null
+          }).eq('id', existing.id)
+        } else {
+          const { data } = await supabase.from('read_aloud_logs').insert({
+            child_id: childId,
+            book_id: bookId,
+            book_title: bookTitle,
+            book_author: bookAuthor || null,
+            status,
+            completed: status === 'completed',
+            completed_at: status === 'completed' ? new Date().toISOString() : null
+          }).select().single()
+          if (data) setReadAloudLogs(prev => [...prev, { id: data.id, childId, bookId, bookTitle, bookAuthor, status, completed: data.completed, completedAt: data.completed_at, createdAt: data.created_at }])
+          return
+        }
+        setReadAloudLogs(prev => prev.map(l => l.id === existing.id ? { ...l, status, completed: status === 'completed', completedAt: status === 'completed' ? new Date().toISOString() : null } : l))
+      } catch (e) {
+        console.error('Error saving read-aloud status:', e)
+        throw e
+      }
+    } else {
+      setReadAloudLogs(prev => {
+        const next = prev.filter(l => !(l.childId === childId && (l.bookId === bookId || l.bookTitle === bookTitle)))
+        if (status) next.push({ id: `local-${Date.now()}`, childId, bookId, bookTitle, bookAuthor, status, completed: status === 'completed', completedAt: status === 'completed' ? new Date().toISOString() : null, createdAt: new Date().toISOString() })
+        return next
+      })
+    }
+  }
+
+  const removeReadAloudStatus = async (childId, bookIdOrTitle) => {
+    const existing = readAloudLogs.find(l => l.childId === childId && (l.bookId === bookIdOrTitle || l.bookTitle === bookIdOrTitle))
+    if (existing?.id && !existing.id.startsWith('local-') && isConfigured && user) {
+      await supabase.from('read_aloud_logs').delete().eq('id', existing.id)
+    }
+    setReadAloudLogs(prev => prev.filter(l => !(l.childId === childId && (l.bookId === bookIdOrTitle || l.bookTitle === bookIdOrTitle))))
+  }
+
+  // --- Premium: custom read-aloud books (user's own list per child) ---
+  const addCustomReadAloudBook = async (childId, { title, author, ageGroup, genre }) => {
+    const bookId = `custom-${typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : Date.now()}`
+    const notes = JSON.stringify({ ageGroup: ageGroup || 'elementary', genre: genre || 'Other' })
+    const { data, error } = await supabase.from('read_aloud_logs').insert({
+      child_id: childId,
+      book_id: bookId,
+      book_title: title.trim(),
+      book_author: (author || '').trim() || null,
+      status: 'want',
+      completed: false,
+      notes
+    }).select().single()
+    if (error) throw error
+    setReadAloudLogs(prev => [...prev, {
+      id: data.id,
+      childId,
+      bookId: data.book_id,
+      bookTitle: data.book_title,
+      bookAuthor: data.book_author,
+      status: 'want',
+      completed: false,
+      notes: data.notes,
+      createdAt: data.created_at,
+      isCustom: true
+    }])
+    return data
+  }
+
+  const updateCustomReadAloudBook = async (logId, { title, author, ageGroup, genre }) => {
+    const updates = {}
+    if (title != null) updates.book_title = title.trim()
+    if (author != null) updates.book_author = author.trim() || null
+    if (ageGroup != null || genre != null) {
+      const log = readAloudLogs.find(l => l.id === logId)
+      const prev = log?.notes ? (() => { try { return JSON.parse(log.notes) } catch { return {} } })() : {}
+      updates.notes = JSON.stringify({ ageGroup: ageGroup ?? prev.ageGroup, genre: genre ?? prev.genre })
+    }
+    if (Object.keys(updates).length === 0) return
+    const { data, error } = await supabase.from('read_aloud_logs').update(updates).eq('id', logId).select().single()
+    if (error) throw error
+    setReadAloudLogs(prev => prev.map(l => l.id === logId ? { ...l, ...updates, bookTitle: updates.book_title ?? l.bookTitle, bookAuthor: updates.book_author !== undefined ? updates.book_author : l.bookAuthor, notes: updates.notes ?? l.notes } : l))
+    return data
+  }
+
+  const deleteCustomReadAloudBook = async (logId) => {
+    await supabase.from('read_aloud_logs').delete().eq('id', logId)
+    setReadAloudLogs(prev => prev.filter(l => l.id !== logId))
+  }
+
+  // --- Admin: suggested books ---
+  const addSuggestedBook = async (book) => {
+    const { data, error } = await supabase.from('suggested_books').insert({
+      title: book.title,
+      author: book.author || null,
+      age_group: book.ageGroup,
+      genre: book.genre || null,
+      description: book.description || null,
+      sort_order: book.sortOrder ?? 0
+    }).select().single()
+    if (error) throw error
+    setSuggestedBooks(prev => [...prev, { id: data.id, title: data.title, author: data.author || '', ageGroup: data.age_group, genre: data.genre || '', description: data.description || '', isDb: true }])
+    return data
+  }
+
+  const updateSuggestedBook = async (id, updates) => {
+    const { data, error } = await supabase.from('suggested_books').update({
+      ...(updates.title != null && { title: updates.title }),
+      ...(updates.author != null && { author: updates.author }),
+      ...(updates.ageGroup != null && { age_group: updates.ageGroup }),
+      ...(updates.genre != null && { genre: updates.genre }),
+      ...(updates.description != null && { description: updates.description }),
+      ...(updates.sortOrder != null && { sort_order: updates.sortOrder }),
+      updated_at: new Date().toISOString()
+    }).eq('id', id).select().single()
+    if (error) throw error
+    setSuggestedBooks(prev => prev.map(b => b.id === id ? { ...b, ...updates, id: b.id } : b))
+    return data
+  }
+
+  const deleteSuggestedBook = async (id) => {
+    await supabase.from('suggested_books').delete().eq('id', id)
+    setSuggestedBooks(prev => prev.filter(b => b.id !== id))
+  }
+
+  const refreshSuggestedBooks = async () => {
+    const { data } = await supabase.from('suggested_books').select('*').order('sort_order').order('title')
+    if (data) setSuggestedBooks(data.map(b => ({ id: b.id, title: b.title, author: b.author || '', ageGroup: b.age_group, genre: b.genre || '', description: b.description || '', isDb: true })))
+  }
+
+  // --- Admin: resources ---
+  const addResource = async (resource) => {
+    const { data, error } = await supabase.from('resources').insert({
+      category: resource.category,
+      count_label: resource.countLabel || null,
+      items: resource.items || [],
+      color: resource.color || 'sage',
+      link: resource.link || null,
+      sort_order: resource.sortOrder ?? 0
+    }).select().single()
+    if (error) throw error
+    setResources(prev => [...prev, { id: data.id, category: data.category, countLabel: data.count_label, items: data.items || [], color: data.color || 'sage', link: data.link, isDb: true }])
+    return data
+  }
+
+  const updateResource = async (id, updates) => {
+    const { data, error } = await supabase.from('resources').update({
+      ...(updates.category != null && { category: updates.category }),
+      ...(updates.countLabel != null && { count_label: updates.countLabel }),
+      ...(updates.items != null && { items: updates.items }),
+      ...(updates.color != null && { color: updates.color }),
+      ...(updates.link != null && { link: updates.link }),
+      ...(updates.sortOrder != null && { sort_order: updates.sortOrder }),
+      updated_at: new Date().toISOString()
+    }).eq('id', id).select().single()
+    if (error) throw error
+    setResources(prev => prev.map(r => r.id === id ? { ...r, ...updates, id: r.id } : r))
+    return data
+  }
+
+  const deleteResource = async (id) => {
+    await supabase.from('resources').delete().eq('id', id)
+    setResources(prev => prev.filter(r => r.id !== id))
+  }
+
+  const refreshResources = async () => {
+    const { data } = await supabase.from('resources').select('*').order('sort_order').order('category')
+    if (data) setResources(data.map(r => ({ id: r.id, category: r.category, countLabel: r.count_label, items: r.items || [], color: r.color || 'sage', link: r.link, isDb: true })))
+  }
+
   const value = {
     children,
     hourLogs,
@@ -722,7 +964,24 @@ export function SupabaseDataProvider({ children: childrenProp }) {
     addSchoolworkSample,
     deleteSchoolworkSample,
     getSchoolworkSamples,
-    getLastSchoolworkUpload
+    getLastSchoolworkUpload,
+    suggestedBooks,
+    resources,
+    getReadAloudStatus,
+    setReadAloudStatus,
+    removeReadAloudStatus,
+    readAloudLogs,
+    addCustomReadAloudBook,
+    updateCustomReadAloudBook,
+    deleteCustomReadAloudBook,
+    addSuggestedBook,
+    updateSuggestedBook,
+    deleteSuggestedBook,
+    refreshSuggestedBooks,
+    addResource,
+    updateResource,
+    deleteResource,
+    refreshResources
   }
 
   return (

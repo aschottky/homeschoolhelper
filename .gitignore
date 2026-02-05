@@ -35,3 +35,4 @@ dist-ssr
 # OS
 .DS_Store
 Thumbs.db
+supabase/.temp/

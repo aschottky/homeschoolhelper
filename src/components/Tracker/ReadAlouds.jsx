@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useData } from '../../context/SupabaseDataContext'
+import { useAuth } from '../../context/AuthContext'
 import { useSubscription } from '../../context/SubscriptionContext'
-import { AGE_GROUPS, SUGGESTED_BOOKS, getBooksByAgeGroup, GENRES } from '../../data/readAloudBooks'
+import { AGE_GROUPS, SUGGESTED_BOOKS, GENRES } from '../../data/readAloudBooks'
 import AdBanner from '../Ads/AdBanner'
-import { Book, BookOpen, Check, Plus, Trash2, Star, Filter, User, Sparkles, Lock, BookMarked, Clock, X } from 'lucide-react'
+import { Book, BookOpen, Check, Plus, Trash2, Pencil, Filter, Sparkles, Lock, BookMarked, X } from 'lucide-react'
 import './ReadAlouds.css'
 
 const READING_STATUS = {
@@ -11,9 +12,11 @@ const READING_STATUS = {
   READING: { id: 'reading', label: 'Currently Reading', icon: BookOpen, color: '#2D5A4A' },
   COMPLETED: { id: 'completed', label: 'Completed', icon: Check, color: '#8FB39A' }
 }
+const getStatusInfo = (statusId) => Object.values(READING_STATUS).find(s => s.id === statusId)
 
 function ReadAlouds() {
-  const { children } = useData()
+  const { children, suggestedBooks, readAloudLogs, getReadAloudStatus, setReadAloudStatus, removeReadAloudStatus, addCustomReadAloudBook, updateCustomReadAloudBook, deleteCustomReadAloudBook } = useData()
+  const { user, isConfigured } = useAuth()
   const { isPremium, upgradeToPremium } = useSubscription()
   
   const [selectedAgeGroup, setSelectedAgeGroup] = useState('all')
@@ -22,82 +25,126 @@ function ReadAlouds() {
   const [selectedChild, setSelectedChild] = useState('')
   const [readingList, setReadingList] = useState({})
   const [showAddBook, setShowAddBook] = useState(false)
-  const [newBook, setNewBook] = useState({ title: '', author: '', ageGroup: '', genre: '' })
+  const [newBook, setNewBook] = useState({ title: '', author: '', ageGroup: 'elementary', genre: 'Other' })
+  const [editingCustomBook, setEditingCustomBook] = useState(null)
+  const [savingCustom, setSavingCustom] = useState(false)
 
-  // Load reading list from localStorage
+  const useDbForStatus = isConfigured && user && isPremium
+
+  // Suggested books: from DB if any, else static list (same shape: id, title, author, ageGroup, genre, description)
+  const suggestedBookList = useMemo(() => {
+    if (suggestedBooks?.length > 0) {
+      return suggestedBooks.map(b => ({ id: b.id, title: b.title, author: b.author || '', ageGroup: b.ageGroup, genre: b.genre || '', description: b.description || '' }))
+    }
+    return SUGGESTED_BOOKS
+  }, [suggestedBooks])
+
+  const getBooksByAgeGroup = (ageGroupId) => suggestedBookList.filter(book => book.ageGroup === ageGroupId)
+
   useEffect(() => {
     const saved = localStorage.getItem('homeschool_reading_list')
-    if (saved) {
-      setReadingList(JSON.parse(saved))
-    }
+    if (saved) setReadingList(JSON.parse(saved))
   }, [])
 
-  // Save reading list to localStorage
   useEffect(() => {
     localStorage.setItem('homeschool_reading_list', JSON.stringify(readingList))
   }, [readingList])
 
-  // Filter books
-  const getFilteredBooks = () => {
-    let books = [...SUGGESTED_BOOKS]
-    
-    // Add custom books for the selected child
-    if (isPremium && selectedChild && readingList[selectedChild]?.customBooks) {
-      books = [...books, ...readingList[selectedChild].customBooks]
-    }
+  const customBooksForChild = useMemo(() => {
+    if (!selectedChild || !useDbForStatus) return []
+    return readAloudLogs
+      .filter(l => l.childId === selectedChild && String(l.bookId || '').startsWith('custom-'))
+      .map(l => {
+        let ageGroup = 'elementary'
+        let genre = 'Other'
+        if (l.notes) {
+          try {
+            const n = JSON.parse(l.notes)
+            if (n.ageGroup) ageGroup = n.ageGroup
+            if (n.genre) genre = n.genre
+          } catch (_) {}
+        }
+        return {
+          id: l.bookId,
+          logId: l.id,
+          title: l.bookTitle,
+          author: l.bookAuthor || '',
+          ageGroup,
+          genre,
+          description: 'Custom book',
+          isCustom: true
+        }
+      })
+  }, [selectedChild, useDbForStatus, readAloudLogs])
 
-    if (selectedAgeGroup !== 'all') {
-      books = books.filter(b => b.ageGroup === selectedAgeGroup)
+  const getFilteredBooks = () => {
+    let books = [...suggestedBookList]
+    if (isPremium && selectedChild) {
+      if (useDbForStatus) books = [...books, ...customBooksForChild]
+      else if (readingList[selectedChild]?.customBooks) books = [...books, ...readingList[selectedChild].customBooks]
     }
-    if (selectedGenre !== 'all') {
-      books = books.filter(b => b.genre === selectedGenre)
-    }
+    if (selectedAgeGroup !== 'all') books = books.filter(b => b.ageGroup === selectedAgeGroup)
+    if (selectedGenre !== 'all') books = books.filter(b => b.genre === selectedGenre)
     if (searchQuery) {
-      const query = searchQuery.toLowerCase()
-      books = books.filter(b => 
-        b.title.toLowerCase().includes(query) || 
-        b.author.toLowerCase().includes(query)
-      )
+      const q = searchQuery.toLowerCase()
+      books = books.filter(b => b.title.toLowerCase().includes(q) || (b.author && b.author.toLowerCase().includes(q)))
     }
     return books
   }
 
   const filteredBooks = getFilteredBooks()
 
-  // Get reading status for a book
   const getBookStatus = (childId, bookId) => {
+    if (useDbForStatus && childId) return getReadAloudStatus(childId, bookId) || null
     return readingList[childId]?.books?.[bookId]?.status || null
   }
 
-  // Set reading status for a book
-  const setBookStatus = (childId, bookId, status) => {
+  const setBookStatus = async (childId, bookId, status, book = null) => {
+    if (useDbForStatus && childId) {
+      const b = book || filteredBooks.find(x => x.id === bookId)
+      if (b) await setReadAloudStatus(childId, bookId, b.title, b.author || '', status)
+      return
+    }
     setReadingList(prev => ({
       ...prev,
       [childId]: {
         ...prev[childId],
-        books: {
-          ...prev[childId]?.books,
-          [bookId]: { status, updatedAt: new Date().toISOString() }
-        }
+        books: { ...prev[childId]?.books, [bookId]: { status, updatedAt: new Date().toISOString() } }
       }
     }))
   }
 
-  // Remove book status
   const removeBookStatus = (childId, bookId) => {
+    if (useDbForStatus && childId) {
+      removeReadAloudStatus(childId, bookId)
+      return
+    }
     setReadingList(prev => {
-      const newList = { ...prev }
-      if (newList[childId]?.books?.[bookId]) {
-        delete newList[childId].books[bookId]
-      }
-      return newList
+      const next = { ...prev }
+      if (next[childId]?.books?.[bookId]) delete next[childId].books[bookId]
+      return next
     })
   }
 
-  // Add custom book
-  const addCustomBook = (childId) => {
+  const addCustomBook = async (childId) => {
     if (!newBook.title.trim()) return
-    
+    if (useDbForStatus) {
+      setSavingCustom(true)
+      try {
+        await addCustomReadAloudBook(childId, {
+          title: newBook.title.trim(),
+          author: newBook.author.trim(),
+          ageGroup: newBook.ageGroup || 'elementary',
+          genre: newBook.genre || 'Other'
+        })
+        setNewBook({ title: '', author: '', ageGroup: 'elementary', genre: 'Other' })
+        setShowAddBook(false)
+      } catch (e) {
+        console.error(e)
+      }
+      setSavingCustom(false)
+      return
+    }
     const customBook = {
       id: `custom-${Date.now()}`,
       title: newBook.title.trim(),
@@ -107,39 +154,59 @@ function ReadAlouds() {
       description: 'Custom book added by user',
       isCustom: true
     }
-
     setReadingList(prev => ({
       ...prev,
       [childId]: {
         ...prev[childId],
         customBooks: [...(prev[childId]?.customBooks || []), customBook],
-        books: {
-          ...prev[childId]?.books,
-          [customBook.id]: { status: 'want', updatedAt: new Date().toISOString() }
-        }
+        books: { ...prev[childId]?.books, [customBook.id]: { status: 'want', updatedAt: new Date().toISOString() } }
       }
     }))
-
-    setNewBook({ title: '', author: '', ageGroup: '', genre: '' })
+    setNewBook({ title: '', author: '', ageGroup: 'elementary', genre: 'Other' })
     setShowAddBook(false)
   }
 
-  // Delete custom book
-  const deleteCustomBook = (childId, bookId) => {
+  const saveEditCustomBook = async () => {
+    if (!editingCustomBook?.logId) return
+    setSavingCustom(true)
+    try {
+      await updateCustomReadAloudBook(editingCustomBook.logId, {
+        title: editingCustomBook.title?.trim(),
+        author: editingCustomBook.author?.trim(),
+        ageGroup: editingCustomBook.ageGroup,
+        genre: editingCustomBook.genre
+      })
+      setEditingCustomBook(null)
+    } catch (e) {
+      console.error(e)
+    }
+    setSavingCustom(false)
+  }
+
+  const deleteCustomBook = (childId, bookId, logId) => {
+    if (useDbForStatus && logId) {
+      deleteCustomReadAloudBook(logId)
+      return
+    }
     setReadingList(prev => {
       const newList = { ...prev }
       if (newList[childId]) {
         newList[childId].customBooks = (newList[childId].customBooks || []).filter(b => b.id !== bookId)
-        if (newList[childId].books?.[bookId]) {
-          delete newList[childId].books[bookId]
-        }
+        if (newList[childId].books?.[bookId]) delete newList[childId].books[bookId]
       }
       return newList
     })
   }
 
-  // Get stats for a child
   const getChildStats = (childId) => {
+    if (useDbForStatus && childId) {
+      const logs = readAloudLogs.filter(l => l.childId === childId)
+      return {
+        wantToRead: logs.filter(l => l.status === 'want').length,
+        reading: logs.filter(l => l.status === 'reading').length,
+        completed: logs.filter(l => l.status === 'completed').length
+      }
+    }
     const books = readingList[childId]?.books || {}
     return {
       wantToRead: Object.values(books).filter(b => b.status === 'want').length,
@@ -306,10 +373,84 @@ function ReadAlouds() {
               <button 
                 className="btn-tracker btn-primary"
                 onClick={() => addCustomBook(selectedChild)}
-                disabled={!newBook.title.trim()}
+                disabled={!newBook.title.trim() || savingCustom}
               >
                 <Plus size={18} />
-                Add Book
+                {savingCustom ? 'Adding…' : 'Add Book'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Custom Book Modal */}
+      {editingCustomBook && (
+        <div className="modal-overlay" onClick={() => !savingCustom && setEditingCustomBook(null)}>
+          <div className="add-book-modal" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>Edit book</h3>
+              <button type="button" className="close-btn" onClick={() => !savingCustom && setEditingCustomBook(null)}>
+                <X size={20} />
+              </button>
+            </div>
+            <div className="modal-body">
+              <div className="form-group">
+                <label>Book Title *</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  value={editingCustomBook.title ?? ''}
+                  onChange={e => setEditingCustomBook(prev => ({ ...prev, title: e.target.value }))}
+                />
+              </div>
+              <div className="form-group">
+                <label>Author</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  value={editingCustomBook.author ?? ''}
+                  onChange={e => setEditingCustomBook(prev => ({ ...prev, author: e.target.value }))}
+                />
+              </div>
+              <div className="form-row">
+                <div className="form-group">
+                  <label>Age Group</label>
+                  <select
+                    className="form-select"
+                    value={editingCustomBook.ageGroup ?? 'elementary'}
+                    onChange={e => setEditingCustomBook(prev => ({ ...prev, ageGroup: e.target.value }))}
+                  >
+                    {AGE_GROUPS.map(ag => (
+                      <option key={ag.id} value={ag.id}>{ag.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label>Genre</label>
+                  <select
+                    className="form-select"
+                    value={editingCustomBook.genre ?? 'Other'}
+                    onChange={e => setEditingCustomBook(prev => ({ ...prev, genre: e.target.value }))}
+                  >
+                    {GENRES.map(g => (
+                      <option key={g} value={g}>{g}</option>
+                    ))}
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button type="button" className="btn-tracker btn-secondary" onClick={() => !savingCustom && setEditingCustomBook(null)}>
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="btn-tracker btn-primary"
+                onClick={saveEditCustomBook}
+                disabled={!editingCustomBook.title?.trim() || savingCustom}
+              >
+                {savingCustom ? 'Saving…' : 'Save'}
               </button>
             </div>
           </div>
@@ -368,7 +509,7 @@ function ReadAlouds() {
                         <Book size={14} />
                         <span>{book.title}</span>
                         {status && (
-                          <span className="status-indicator" style={{ background: READING_STATUS[status.toUpperCase()]?.color }} />
+                          <span className="status-indicator" style={{ background: getStatusInfo(status)?.color }} />
                         )}
                       </div>
                     )
@@ -432,9 +573,9 @@ function ReadAlouds() {
                           <div className="status-actions">
                             <span 
                               className="current-status"
-                              style={{ color: READING_STATUS[status.toUpperCase()]?.color }}
+                              style={{ color: getStatusInfo(status)?.color }}
                             >
-                              {READING_STATUS[status.toUpperCase()]?.label}
+                              {getStatusInfo(status)?.label}
                             </span>
                             <div className="status-buttons">
                               {Object.values(READING_STATUS).map(s => (
@@ -442,7 +583,7 @@ function ReadAlouds() {
                                   key={s.id}
                                   className={`status-btn ${status === s.id ? 'active' : ''}`}
                                   style={{ '--status-color': s.color }}
-                                  onClick={() => setBookStatus(selectedChild, book.id, s.id)}
+                                  onClick={() => setBookStatus(selectedChild, book.id, s.id, book)}
                                   title={s.label}
                                 >
                                   <s.icon size={14} />
@@ -460,7 +601,7 @@ function ReadAlouds() {
                         ) : (
                           <button
                             className="add-to-list-btn"
-                            onClick={() => setBookStatus(selectedChild, book.id, 'want')}
+                            onClick={() => setBookStatus(selectedChild, book.id, 'want', book)}
                           >
                             <Plus size={16} />
                             Add to List
@@ -468,17 +609,30 @@ function ReadAlouds() {
                         )}
 
                         {book.isCustom && (
-                          <button
-                            className="delete-custom-btn"
-                            onClick={() => {
-                              if (confirm('Delete this custom book?')) {
-                                deleteCustomBook(selectedChild, book.id)
-                              }
-                            }}
-                            title="Delete custom book"
-                          >
-                            <Trash2 size={14} />
-                          </button>
+                          <div className="custom-book-buttons">
+                            {useDbForStatus && book.logId && (
+                              <button
+                                type="button"
+                                className="edit-custom-btn"
+                                onClick={() => setEditingCustomBook({ logId: book.logId, title: book.title, author: book.author, ageGroup: book.ageGroup, genre: book.genre })}
+                                title="Edit book"
+                              >
+                                <Pencil size={14} />
+                              </button>
+                            )}
+                            <button
+                              type="button"
+                              className="delete-custom-btn"
+                              onClick={() => {
+                                if (confirm('Remove this book from your list?')) {
+                                  deleteCustomBook(selectedChild, book.id, book.logId)
+                                }
+                              }}
+                              title="Remove from list"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
                         )}
                       </div>
                     )}

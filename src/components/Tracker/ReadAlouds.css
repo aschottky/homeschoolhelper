@@ -501,10 +501,25 @@
   background: #fecaca;
 }
 
+.custom-book-buttons {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.edit-custom-btn,
 .delete-custom-btn {
   padding: 6px;
   color: var(--text-muted);
+  background: none;
+  border: none;
+  cursor: pointer;
+  border-radius: 4px;
   transition: color 0.2s ease;
+}
+
+.edit-custom-btn:hover {
+  color: var(--forest);
 }
 
 .delete-custom-btn:hover {
