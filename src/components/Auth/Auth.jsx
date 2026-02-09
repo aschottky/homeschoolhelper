@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { 
   BookOpen, Mail, Lock, User, Eye, EyeOff, ArrowLeft,
@@ -7,8 +8,15 @@ import {
 import './Auth.css'
 
 function Auth({ onBack, onSuccess }) {
-  const { signIn, signUp, signInWithProvider, resetPassword, isConfigured } = useAuth()
-  
+  const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const redirectTo = searchParams.get('redirect') || '/tracker/dashboard'
+  const { user, signIn, signUp, signInWithProvider, resetPassword, isConfigured } = useAuth()
+
+  useEffect(() => {
+    if (user) navigate(redirectTo, { replace: true })
+  }, [user, redirectTo, navigate])
+
   const [mode, setMode] = useState('login') // 'login', 'signup', 'forgot'
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -24,10 +32,10 @@ function Auth({ onBack, onSuccess }) {
     return (
       <div className="auth-page">
         <div className="auth-container">
-          <button className="back-btn" onClick={onBack}>
+          <Link to="/" className="back-btn">
             <ArrowLeft size={20} />
             Back to Home
-          </button>
+          </Link>
 
           <div className="auth-header">
             <div className="auth-logo">
@@ -56,7 +64,7 @@ function Auth({ onBack, onSuccess }) {
             </div>
           </div>
 
-          <button className="btn-primary demo-btn" onClick={onSuccess}>
+          <button className="btn-primary demo-btn" onClick={() => { onSuccess?.(); navigate(redirectTo, { replace: true }) }}>
             Continue in Demo Mode
           </button>
         </div>
@@ -73,7 +81,7 @@ function Auth({ onBack, onSuccess }) {
     try {
       if (mode === 'login') {
         await signIn(email, password)
-        onSuccess?.()
+        onSuccess ? onSuccess() : navigate(redirectTo, { replace: true })
       } else if (mode === 'signup') {
         if (password !== confirmPassword) {
           throw new Error('Passwords do not match')
@@ -109,10 +117,10 @@ function Auth({ onBack, onSuccess }) {
   return (
     <div className="auth-page">
       <div className="auth-container">
-        <button className="back-btn" onClick={onBack}>
+        <Link to="/" className="back-btn">
           <ArrowLeft size={20} />
           Back to Home
-        </button>
+        </Link>
 
         <div className="auth-header">
           <div className="auth-logo">

@@ -20,8 +20,11 @@
   margin-bottom: 32px;
 }
 
-/* Tracking Section */
+/* Tracking Section - sticky so it stays visible when scrolling the book list */
 .tracking-section {
+  position: sticky;
+  top: 0;
+  z-index: 10;
   background: white;
   border-radius: var(--radius-xl);
   padding: 24px;

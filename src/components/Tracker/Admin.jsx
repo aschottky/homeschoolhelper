@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useData } from '../../context/SupabaseDataContext'
-import { BookOpen, FolderOpen, Plus, Pencil, Trash2, X, Save } from 'lucide-react'
+import { BookOpen, FolderOpen, Plus, Pencil, Trash2, X, Save, ListPlus, ListMinus } from 'lucide-react'
 import { AGE_GROUPS } from '../../data/readAloudBooks'
 import './Admin.css'
 
@@ -13,11 +13,9 @@ function Admin() {
     addSuggestedBook,
     updateSuggestedBook,
     deleteSuggestedBook,
-    refreshSuggestedBooks,
     addResource,
     updateResource,
-    deleteResource,
-    refreshResources
+    deleteResource
   } = useData()
 
   const [activeSection, setActiveSection] = useState('books')
@@ -29,6 +27,9 @@ function Admin() {
   const [newResource, setNewResource] = useState({ category: '', countLabel: '', items: '', color: 'sage', link: '' })
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState(null)
+  const [selectedBookIds, setSelectedBookIds] = useState(new Set())
+  const [showBulkAdd, setShowBulkAdd] = useState(false)
+  const [bulkAddText, setBulkAddText] = useState('')
 
   useEffect(() => {
     setBooks(suggestedBooks)
@@ -77,9 +78,85 @@ function Admin() {
     setSaving(true)
     try {
       await deleteSuggestedBook(id)
+      setSelectedBookIds(prev => { const s = new Set(prev); s.delete(id); return s })
       showMsg('Book removed.')
     } catch (err) {
       showMsg(err.message || 'Failed to delete', true)
+    }
+    setSaving(false)
+  }
+
+  const toggleBookSelection = (id) => {
+    setSelectedBookIds(prev => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  const selectAllBooks = () => {
+    if (selectedBookIds.size === books.length) setSelectedBookIds(new Set())
+    else setSelectedBookIds(new Set(books.map(b => b.id)))
+  }
+
+  const handleBulkRemoveBooks = async () => {
+    const ids = Array.from(selectedBookIds)
+    if (ids.length === 0) {
+      showMsg('Select at least one book to remove.', true)
+      return
+    }
+    if (!confirm(`Remove ${ids.length} book(s) from the suggested list?`)) return
+    setSaving(true)
+    try {
+      for (const id of ids) await deleteSuggestedBook(id)
+      setSelectedBookIds(new Set())
+      showMsg(`${ids.length} book(s) removed.`)
+    } catch (err) {
+      showMsg(err.message || 'Bulk remove failed', true)
+    }
+    setSaving(false)
+  }
+
+  const handleBulkAddBooks = async (e) => {
+    e.preventDefault()
+    const lines = bulkAddText.trim().split('\n').map(l => l.trim()).filter(Boolean)
+    if (lines.length === 0) {
+      showMsg('Enter at least one line (Title / Author or Title by Author).', true)
+      return
+    }
+    const defaultAgeGroup = newBook.ageGroup || 'elementary'
+    const defaultGenre = newBook.genre || 'Other'
+    setSaving(true)
+    let added = 0
+    try {
+      for (const line of lines) {
+        let title = line
+        let author = ''
+        if (line.includes(' / ')) {
+          const [t, a] = line.split(' / ').map(s => s.trim())
+          title = t
+          author = a || ''
+        } else if (line.includes(' by ')) {
+          const i = line.indexOf(' by ')
+          title = line.slice(0, i).trim()
+          author = line.slice(i + 4).trim()
+        }
+        if (!title) continue
+        await addSuggestedBook({
+          title,
+          author: author || null,
+          ageGroup: defaultAgeGroup,
+          genre: defaultGenre,
+          description: null
+        })
+        added++
+      }
+      setBulkAddText('')
+      setShowBulkAdd(false)
+      showMsg(added ? `${added} book(s) added.` : 'No valid lines to add.', !added)
+    } catch (err) {
+      showMsg(err.message || 'Bulk add failed', true)
     }
     setSaving(false)
   }
@@ -201,13 +278,66 @@ function Admin() {
               value={newBook.description}
               onChange={e => setNewBook({ ...newBook, description: e.target.value })}
             />
-            <button type="submit" className="btn-admin" disabled={saving}>
-              <Plus size={18} /> Add Book
-            </button>
+            <div className="admin-form-actions">
+              <button type="submit" className="btn-admin" disabled={saving}>
+                <Plus size={18} /> Add Book
+              </button>
+              <button
+                type="button"
+                className="btn-admin btn-admin-secondary"
+                onClick={() => setShowBulkAdd(prev => !prev)}
+              >
+                <ListPlus size={18} /> Bulk add
+              </button>
+            </div>
           </form>
 
+          {showBulkAdd && (
+            <form onSubmit={handleBulkAddBooks} className="admin-form bulk-add-form">
+              <h3>Bulk add books</h3>
+              <p className="admin-hint">One book per line. Use &quot;Title / Author&quot; or &quot;Title by Author&quot;. Default age group and genre from the form above.</p>
+              <textarea
+                placeholder={"Charlotte's Web / E.B. White\nThe BFG / Roald Dahl\nJames and the Giant Peach by Roald Dahl"}
+                value={bulkAddText}
+                onChange={e => setBulkAddText(e.target.value)}
+                rows={6}
+                className="bulk-add-textarea"
+              />
+              <div className="edit-actions">
+                <button type="button" className="btn-admin btn-admin-secondary" onClick={() => { setShowBulkAdd(false); setBulkAddText('') }}>
+                  Cancel
+                </button>
+                <button type="submit" className="btn-admin" disabled={saving}>
+                  {saving ? 'Adding…' : 'Add all'}
+                </button>
+              </div>
+            </form>
+          )}
+
           <div className="admin-list">
-            <h3>Current suggested books ({books.length})</h3>
+            <div className="admin-list-header">
+              <h3>Current suggested books ({books.length})</h3>
+              {books.length > 0 && (
+                <div className="admin-bulk-actions">
+                  <label className="admin-checkbox-label">
+                    <input
+                      type="checkbox"
+                      checked={selectedBookIds.size === books.length && books.length > 0}
+                      onChange={selectAllBooks}
+                    />
+                    Select all
+                  </label>
+                  <button
+                    type="button"
+                    className="btn-admin btn-admin-danger"
+                    onClick={handleBulkRemoveBooks}
+                    disabled={selectedBookIds.size === 0 || saving}
+                  >
+                    <ListMinus size={16} /> Remove selected ({selectedBookIds.size})
+                  </button>
+                </div>
+              )}
+            </div>
             {books.length === 0 ? (
               <p className="admin-empty">No books in database yet. Add some above or they will use the built-in list.</p>
             ) : (
@@ -228,6 +358,13 @@ function Admin() {
                       </div>
                     ) : (
                       <>
+                        <label className="admin-list-item-checkbox">
+                          <input
+                            type="checkbox"
+                            checked={selectedBookIds.has(b.id)}
+                            onChange={() => toggleBookSelection(b.id)}
+                          />
+                        </label>
                         <span className="item-title">{b.title}</span>
                         {b.author && <span className="item-meta">{b.author}</span>}
                         <span className="item-meta">{AGE_GROUPS.find(ag => ag.id === b.ageGroup)?.name || b.ageGroup}</span>

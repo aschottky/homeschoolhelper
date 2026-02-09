@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import { SupabaseDataProvider } from './context/SupabaseDataContext'
 import { SubscriptionProvider } from './context/SubscriptionContext'
@@ -6,38 +7,60 @@ import Navbar from './components/Navbar'
 import Hero from './components/Hero'
 import Features from './components/Features'
 import Resources from './components/Resources'
-import Testimonials from './components/Testimonials'
 import CallToAction from './components/CallToAction'
 import Footer from './components/Footer'
 import Tracker from './components/Tracker/Tracker'
 import About from './components/About'
+import LegalHelp from './components/LegalHelp'
+import FeaturesPage from './components/FeaturesPage'
 import Auth from './components/Auth/Auth'
 import './App.css'
 
+function ScrollToTop() {
+  const { pathname, hash } = useLocation()
+  useEffect(() => {
+    if (hash) {
+      const id = hash.replace('#', '')
+      const el = document.getElementById(id)
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth' })
+      } else {
+        window.scrollTo(0, 0)
+      }
+    } else {
+      window.scrollTo(0, 0)
+    }
+  }, [pathname, hash])
+  return null
+}
+
+function TrackerGate({ children }) {
+  const { user, loading, isConfigured } = useAuth()
+  const location = useLocation()
+  const navigate = useNavigate()
+
+  if (!isConfigured) return children
+  if (!loading && !user && location.pathname.startsWith('/tracker')) {
+    navigate('/auth?redirect=' + encodeURIComponent(location.pathname + location.search), { replace: true })
+    return null
+  }
+  return children
+}
+
 function AppContent() {
-  const [currentPage, setCurrentPage] = useState('home')
   const { user, loading, isConfigured } = useAuth()
   const [loadingTimeout, setLoadingTimeout] = useState(false)
+  const location = useLocation()
+  const isAuthRequiredPage = location.pathname === '/tracker' || location.pathname.startsWith('/tracker/') || location.pathname === '/auth'
 
-  // Timeout fallback for loading state
   useEffect(() => {
-    if (loading && isConfigured) {
-      const timeout = setTimeout(() => {
-        console.warn('Loading timeout - forcing render')
-        setLoadingTimeout(true)
-      }, 5000) // 5 second timeout (reduced from 10)
-
-      return () => clearTimeout(timeout)
-    } else {
-      setLoadingTimeout(false)
+    if (loading && isConfigured && isAuthRequiredPage) {
+      const t = setTimeout(() => setLoadingTimeout(true), 5000)
+      return () => clearTimeout(t)
     }
-  }, [loading, isConfigured])
+    setLoadingTimeout(false)
+  }, [loading, isConfigured, isAuthRequiredPage])
 
-  // Only show loading for tracker/auth pages, not homepage
-  // Homepage should load immediately
-  const isAuthRequiredPage = currentPage === 'tracker' || currentPage === 'auth'
-  
-  // Show loading state only for auth-required pages (but timeout after 5 seconds)
   if (loading && isConfigured && isAuthRequiredPage && !loadingTimeout) {
     return (
       <div className="app-loading">
@@ -50,67 +73,59 @@ function AppContent() {
     )
   }
 
-  // Show auth page if requested
-  if (currentPage === 'auth') {
-    return (
-      <Auth 
-        onBack={() => setCurrentPage('home')} 
-        onSuccess={() => setCurrentPage('tracker')}
-      />
-    )
-  }
-
-  if (currentPage === 'tracker') {
-    return (
-      <SubscriptionProvider>
-        <SupabaseDataProvider>
-          <Tracker onBack={() => setCurrentPage('home')} />
-        </SupabaseDataProvider>
-      </SubscriptionProvider>
-    )
-  }
-
-  if (currentPage === 'about') {
-    return <About onBack={() => setCurrentPage('home')} />
-  }
-
   return (
-    <SupabaseDataProvider>
-      <div className="app">
-        <Navbar 
-          onOpenTracker={() => {
-            if (isConfigured && !user) {
-              setCurrentPage('auth')
-            } else {
-              setCurrentPage('tracker')
-            }
-          }} 
-          onOpenAbout={() => setCurrentPage('about')}
-          onOpenAuth={() => setCurrentPage('auth')}
-          isLoggedIn={!!user}
-        />
-        <main>
-          <Hero onOpenTracker={() => {
-            if (isConfigured && !user) {
-              setCurrentPage('auth')
-            } else {
-              setCurrentPage('tracker')
-            }
-          }} />
-          <Features />
-          <Resources />
-          <Testimonials />
-          <CallToAction onOpenTracker={() => {
-            if (isConfigured && !user) {
-              setCurrentPage('auth')
-            } else {
-              setCurrentPage('tracker')
-            }
-          }} />
-        </main>
-        <Footer onOpenAbout={() => setCurrentPage('about')} />
-      </div>
-    </SupabaseDataProvider>
+    <>
+      <ScrollToTop />
+      <Routes>
+        <Route path="/" element={
+          <SupabaseDataProvider>
+            <div className="app">
+              <Navbar />
+              <main>
+                <Hero />
+                <Features />
+                <Resources />
+                <CallToAction />
+              </main>
+              <Footer />
+            </div>
+          </SupabaseDataProvider>
+        } />
+        <Route path="/about" element={
+          <div className="app">
+            <Navbar />
+            <main><About /></main>
+            <Footer />
+          </div>
+        } />
+        <Route path="/legal-help" element={
+          <div className="app">
+            <Navbar />
+            <main><LegalHelp /></main>
+            <Footer />
+          </div>
+        } />
+        <Route path="/features" element={
+          <div className="app">
+            <Navbar />
+            <main><FeaturesPage /></main>
+            <Footer />
+          </div>
+        } />
+        <Route path="/auth" element={<Auth />} />
+        <Route path="/tracker" element={<Navigate to="/tracker/dashboard" replace />} />
+        <Route path="/tracker/:tab" element={
+          <TrackerGate>
+            <SubscriptionProvider>
+              <SupabaseDataProvider>
+                <Tracker />
+              </SupabaseDataProvider>
+            </SubscriptionProvider>
+          </TrackerGate>
+        } />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </>
   )
 }
 

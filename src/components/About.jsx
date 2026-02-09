@@ -1,14 +1,15 @@
-import { Heart, BookOpen, Users, Sparkles, ArrowLeft } from 'lucide-react'
+import { Link } from 'react-router-dom'
+import { Heart, BookOpen, Users, Sparkles, ArrowLeft, Shield } from 'lucide-react'
 import './About.css'
 
-function About({ onBack }) {
+function About() {
   return (
     <div className="about-page">
       <nav className="about-nav">
-        <button className="back-btn" onClick={onBack}>
+        <Link to="/" className="back-btn">
           <ArrowLeft size={20} />
           <span>Back to Home</span>
-        </button>
+        </Link>
       </nav>
 
       <header className="about-header">
@@ -81,7 +82,7 @@ function About({ onBack }) {
                   in curriculum planning, record-keeping, and creating engaging learning 
                   experiences. Her vision for a comprehensive yet simple tracking system 
                   inspired the creation of Homeschool Helper. Brittany ensures that every 
-                  feature we build truly serves the homeschool community.
+                  feature we build truly serves homeschooling families.
                 </p>
               </div>
             </div>
@@ -117,7 +118,7 @@ function About({ onBack }) {
                   Whether you're exploring Charlotte Mason, classical education, unit studies, 
                   or an eclectic approach, Javai can help you navigate the options and build 
                   a curriculum that works for your family. Her personalized consultations have 
-                  helped countless families discover their ideal homeschooling path.
+                  can help you discover an approach that works for your family.
                 </p>
                 <div className="expertise-tags">
                   <span className="tag">Curriculum Design</span>
@@ -159,10 +160,10 @@ function About({ onBack }) {
             </div>
             <div className="value-card">
               <div className="value-icon">
-                <Users size={24} />
+                <Shield size={24} />
               </div>
-              <h4>Community</h4>
-              <p>We're homeschoolers too, and we're in this together.</p>
+              <h4>Privacy</h4>
+              <p>Your data stays yours. No social feeds or sharing—just tools for your family's records.</p>
             </div>
           </div>
         </section>

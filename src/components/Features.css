@@ -48,6 +48,20 @@
   margin: 0 auto;
 }
 
+.features-explore-link {
+  display: inline-block;
+  margin-top: 24px;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--forest);
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.features-explore-link:hover {
+  color: var(--terracotta);
+}
+
 .features-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);

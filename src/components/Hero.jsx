@@ -1,7 +1,8 @@
-import { Sparkles, ArrowRight } from 'lucide-react'
+import { Link } from 'react-router-dom'
+import { ArrowRight } from 'lucide-react'
 import './Hero.css'
 
-function Hero({ onOpenTracker }) {
+function Hero() {
   return (
     <section className="hero">
       <div className="hero-bg">
@@ -13,45 +14,23 @@ function Hero({ onOpenTracker }) {
       
       <div className="container hero-container">
         <div className="hero-content">
-          <div className="hero-badge animate-fade-in">
-            <Sparkles className="badge-icon" />
-            <span>Trusted by 10,000+ families</span>
-          </div>
-          
-          <h1 className="hero-title animate-fade-in animate-delay-1">
+          <h1 className="hero-title animate-fade-in">
             Where learning feels like an <span className="highlight">adventure</span>
           </h1>
           
-          <p className="hero-subtitle animate-fade-in animate-delay-2">
+          <p className="hero-subtitle animate-fade-in">
             Track your homeschool hours with ease. Manage multiple children, 
             customize subjects, and monitor progress toward your educational goals.
           </p>
           
-          <div className="hero-actions animate-fade-in animate-delay-3">
-            <button onClick={onOpenTracker} className="btn btn-primary">
+          <div className="hero-actions animate-fade-in">
+            <Link to="/tracker/dashboard" className="btn btn-primary">
               Open Hours Tracker
               <ArrowRight className="btn-icon" />
-            </button>
+            </Link>
             <a href="#features" className="btn btn-secondary">
               Learn More
             </a>
-          </div>
-          
-          <div className="hero-stats animate-fade-in animate-delay-4">
-            <div className="stat">
-              <span className="stat-number">∞</span>
-              <span className="stat-label">Children Supported</span>
-            </div>
-            <div className="stat-divider"></div>
-            <div className="stat">
-              <span className="stat-number">Custom</span>
-              <span className="stat-label">Subjects & Hours</span>
-            </div>
-            <div className="stat-divider"></div>
-            <div className="stat">
-              <span className="stat-number">100%</span>
-              <span className="stat-label">Free & Local</span>
-            </div>
           </div>
         </div>
 

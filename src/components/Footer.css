@@ -5,7 +5,7 @@
 
 .footer-grid {
   display: grid;
-  grid-template-columns: 2fr 1fr 1fr 1fr;
+  grid-template-columns: 2fr 1fr 1fr;
   gap: 60px;
   margin-bottom: 60px;
 }
@@ -88,6 +88,7 @@
   transition: all 0.3s ease;
   background: none;
   border: none;
+  text-decoration: none;
   padding: 0;
   cursor: pointer;
   text-align: left;

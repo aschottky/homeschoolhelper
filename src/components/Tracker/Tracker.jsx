@@ -1,4 +1,5 @@
-import { useState, useMemo } from 'react'
+import { useMemo, useEffect } from 'react'
+import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useData } from '../../context/SupabaseDataContext'
 import { useAuth } from '../../context/AuthContext'
 import { useSubscription } from '../../context/SubscriptionContext'
@@ -11,6 +12,7 @@ import Badges from './Badges'
 import Grades from './Grades'
 import ReadAlouds from './ReadAlouds'
 import OutdoorHours from './OutdoorHours'
+import ExpenseTracker from './ExpenseTracker'
 import AlternativeActivities from './AlternativeActivities'
 import VolunteerExtracurricular from './VolunteerExtracurricular'
 import IDCards from './IDCards'
@@ -20,7 +22,7 @@ import Consultation from './Consultation'
 import Settings from './Settings'
 import Upgrade from './Upgrade'
 import SchoolworkReminder from './SchoolworkReminder'
-import { LayoutDashboard, Users, Clock, History, Trophy, GraduationCap, BookOpen, Sun, Lightbulb, Heart, CreditCard, MapPin, BookMarked, MessageSquare, Settings as SettingsIcon, Crown, ArrowLeft, Sparkles, Shield } from 'lucide-react'
+import { LayoutDashboard, Users, Clock, History, Trophy, GraduationCap, BookOpen, Sun, Lightbulb, Heart, CreditCard, MapPin, BookMarked, MessageSquare, Settings as SettingsIcon, Crown, Sparkles, Shield, DollarSign, LogOut } from 'lucide-react'
 import './Tracker.css'
 
 const BASE_TABS = [
@@ -32,6 +34,7 @@ const BASE_TABS = [
   { id: 'grades', label: 'Grades', icon: GraduationCap },
   { id: 'read-alouds', label: 'Read-Alouds', icon: BookOpen },
   { id: 'outdoor', label: 'Outdoor Hours', icon: Sun },
+  { id: 'expenses', label: 'Expenses', icon: DollarSign },
   { id: 'activities', label: 'Activity Ideas', icon: Lightbulb },
   { id: 'volunteer', label: 'Volunteer/EC', icon: Heart },
   { id: 'id-cards', label: 'ID Cards', icon: CreditCard },
@@ -41,11 +44,28 @@ const BASE_TABS = [
   { id: 'settings', label: 'Settings', icon: SettingsIcon },
 ]
 
-function Tracker({ onBack }) {
-  const [activeTab, setActiveTab] = useState('dashboard')
-  const { children } = useData()
-  const { isAdmin } = useAuth()
+const VALID_TABS = new Set(['dashboard', 'children', 'log', 'history', 'badges', 'grades', 'read-alouds', 'outdoor', 'expenses', 'activities', 'volunteer', 'id-cards', 'state', 'curriculum', 'consultation', 'settings', 'admin', 'upgrade'])
+
+function Tracker() {
+  const { tab: urlTab } = useParams()
+  const navigate = useNavigate()
+  const { children, homeschoolProfile } = useData()
+  const { user, isAdmin, signOut } = useAuth()
+  const displayName = homeschoolProfile?.homeschoolName?.trim() || user?.user_metadata?.full_name || user?.email?.split('@')[0] || ''
   const { isPremium, tier } = useSubscription()
+
+  const activeTab = useMemo(() => {
+    if (urlTab && VALID_TABS.has(urlTab)) return urlTab
+    return 'dashboard'
+  }, [urlTab])
+
+  useEffect(() => {
+    if (urlTab && !VALID_TABS.has(urlTab)) {
+      navigate('/tracker/dashboard', { replace: true })
+    }
+  }, [urlTab, navigate])
+
+  const setActiveTab = (tab) => navigate('/tracker/' + tab)
 
   const TABS = useMemo(() => {
     const tabs = [...BASE_TABS]
@@ -73,6 +93,8 @@ function Tracker({ onBack }) {
         return <ReadAlouds />
       case 'outdoor':
         return <OutdoorHours />
+      case 'expenses':
+        return <ExpenseTracker />
       case 'activities':
         return <AlternativeActivities />
       case 'volunteer':
@@ -99,26 +121,22 @@ function Tracker({ onBack }) {
   return (
     <div className="tracker">
       <div className="tracker-sidebar">
-        <button className="back-button" onClick={onBack}>
-          <ArrowLeft size={20} />
-          <span>Back to Home</span>
-        </button>
-        
-        <div className="sidebar-header">
-          <h2>Hours Tracker</h2>
-          <p>{children.length} {children.length === 1 ? 'child' : 'children'}</p>
-        </div>
+        {displayName && (
+          <div className="sidebar-header">
+            <p className="sidebar-display-name">{displayName}</p>
+          </div>
+        )}
 
         <nav className="sidebar-nav">
           {TABS.map(tab => (
-            <button
+            <Link
               key={tab.id}
+              to={'/tracker/' + tab.id}
               className={`nav-item ${activeTab === tab.id ? 'active' : ''}`}
-              onClick={() => setActiveTab(tab.id)}
             >
               <tab.icon size={20} />
               <span>{tab.label}</span>
-            </button>
+            </Link>
           ))}
         </nav>
 
@@ -129,22 +147,34 @@ function Tracker({ onBack }) {
               <span>Premium</span>
             </div>
           ) : (
-            <button className="tier-upgrade" onClick={() => setActiveTab('upgrade')}>
+            <Link to="/tracker/upgrade" className="tier-upgrade">
               <Sparkles size={16} />
               <span>Upgrade to Premium</span>
-            </button>
+            </Link>
           )}
-          <button 
+          <Link 
+            to="/tracker/upgrade"
             className="manage-plan-link"
-            onClick={() => setActiveTab('upgrade')}
           >
             {isPremium ? 'Manage Plan' : 'Compare Plans'}
-          </button>
+          </Link>
         </div>
 
         <div className="sidebar-help">
           <p>💡 Tip: Start by adding your children, then customize their subjects and required hours.</p>
         </div>
+
+        <button
+          type="button"
+          className="sidebar-signout"
+          onClick={async () => {
+            await signOut()
+            navigate('/')
+          }}
+        >
+          <LogOut size={20} />
+          <span>Sign Out</span>
+        </button>
       </div>
 
       <div className="tracker-main">

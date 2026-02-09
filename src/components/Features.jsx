@@ -1,4 +1,5 @@
-import { Calendar, BookMarked, Users, Lightbulb, BarChart3, HeartHandshake } from 'lucide-react'
+import { Link } from 'react-router-dom'
+import { Calendar, BookMarked, Shield, Lightbulb, BarChart3, HeartHandshake } from 'lucide-react'
 import './Features.css'
 
 const features = [
@@ -15,15 +16,15 @@ const features = [
     color: 'forest'
   },
   {
-    icon: Users,
-    title: 'Community Support',
-    description: 'Connect with thousands of homeschooling families. Share experiences, get advice, and find local co-ops.',
+    icon: Shield,
+    title: 'Privacy First',
+    description: 'Your data stays yours. Track hours and records without social features, forums, or sharing—just your family\'s homeschool records.',
     color: 'sage'
   },
   {
     icon: Lightbulb,
     title: 'Learning Resources',
-    description: 'Explore our vast library of worksheets, activities, videos, and interactive lessons across all subjects.',
+    description: 'We may offer worksheets, activities, videos, and lesson resources in the future. Stay tuned.',
     color: 'terracotta'
   },
   {
@@ -51,6 +52,9 @@ function Features() {
             We've thought through every aspect of your homeschool journey, 
             so you can focus on what matters most—your children.
           </p>
+          <Link to="/features" className="features-explore-link">
+            Explore all features →
+          </Link>
         </div>
 
         <div className="features-grid">

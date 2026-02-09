@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom'
 import { ArrowRight, CheckCircle } from 'lucide-react'
 import './CallToAction.css'
 
@@ -8,7 +9,7 @@ const benefits = [
   'Completely free'
 ]
 
-function CallToAction({ onOpenTracker }) {
+function CallToAction() {
   return (
     <section id="cta" className="cta">
       <div className="cta-pattern"></div>
@@ -55,10 +56,10 @@ function CallToAction({ onOpenTracker }) {
                 </div>
               </div>
 
-              <button onClick={onOpenTracker} className="cta-submit">
+              <Link to="/tracker/dashboard" className="cta-submit">
                 Open Hours Tracker
                 <ArrowRight className="btn-icon" />
-              </button>
+              </Link>
               <p className="form-disclaimer">
                 All data is stored locally in your browser. Nothing is sent to any server.
               </p>

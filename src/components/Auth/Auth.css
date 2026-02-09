@@ -28,6 +28,7 @@
   font-weight: 500;
   font-size: 0.875rem;
   transition: all 0.2s ease;
+  text-decoration: none;
 }
 
 .auth-container .back-btn:hover {

@@ -14,6 +14,33 @@ const READING_STATUS = {
 }
 const getStatusInfo = (statusId) => Object.values(READING_STATUS).find(s => s.id === statusId)
 
+// Map child age (from birthDate) or grade to read-aloud age group id
+function getAgeGroupForChild(child) {
+  if (!child) return null
+  if (child.birthDate) {
+    const birth = new Date(child.birthDate)
+    const today = new Date()
+    let age = today.getFullYear() - birth.getFullYear()
+    if (today.getMonth() < birth.getMonth() || (today.getMonth() === birth.getMonth() && today.getDate() < birth.getDate())) age--
+    if (age <= 3) return 'toddler'
+    if (age <= 5) return 'preschool'
+    if (age <= 7) return 'early-elementary'
+    if (age <= 9) return 'elementary'
+    if (age <= 11) return 'upper-elementary'
+    if (age <= 14) return 'middle-school'
+    return 'middle-school'
+  }
+  if (child.gradeLevel) {
+    const g = String(child.gradeLevel).toLowerCase()
+    if (g.includes('early learner')) return 'preschool'
+    if (g.includes('1st') || g.includes('2nd')) return 'early-elementary'
+    if (g.includes('3rd') || g.includes('4th')) return 'elementary'
+    if (g.includes('5th') || g.includes('6th')) return 'upper-elementary'
+    if (g.includes('7th') || g.includes('8th') || g.includes('9th') || g.includes('10th') || g.includes('11th') || g.includes('12th')) return 'middle-school'
+  }
+  return null
+}
+
 function ReadAlouds() {
   const { children, suggestedBooks, readAloudLogs, getReadAloudStatus, setReadAloudStatus, removeReadAloudStatus, addCustomReadAloudBook, updateCustomReadAloudBook, deleteCustomReadAloudBook } = useData()
   const { user, isConfigured } = useAuth()
@@ -30,6 +57,14 @@ function ReadAlouds() {
   const [savingCustom, setSavingCustom] = useState(false)
 
   const useDbForStatus = isConfigured && user && isPremium
+
+  // When a child is selected, auto-filter to that child's age group
+  useEffect(() => {
+    if (!selectedChild || !isPremium) return
+    const child = children.find(c => c.id === selectedChild)
+    const ageGroup = getAgeGroupForChild(child)
+    if (ageGroup) setSelectedAgeGroup(ageGroup)
+  }, [selectedChild, isPremium, children])
 
   // Suggested books: from DB if any, else static list (same shape: id, title, author, ageGroup, genre, description)
   const suggestedBookList = useMemo(() => {
