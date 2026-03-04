@@ -211,6 +211,68 @@
   color: var(--text-muted);
 }
 
+/* ── Book filters ── */
+.books-count {
+  font-weight: 400;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.admin-book-filters {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+  padding: 0.75rem;
+  background: var(--bg-light, #f9f7f4);
+  border-radius: 8px;
+  border: 1px solid var(--border-light, #e8e0d8);
+}
+
+.admin-filter-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.filter-pill {
+  padding: 0.2rem 0.65rem;
+  border-radius: 999px;
+  border: 1.5px solid var(--sage-light, #c8dbd0);
+  background: transparent;
+  color: var(--forest, #2D5A4A);
+  font-size: 0.78rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  white-space: nowrap;
+}
+
+.filter-pill:hover {
+  background: var(--sage-light, #c8dbd0);
+}
+
+.filter-pill.active {
+  background: var(--forest, #2D5A4A);
+  color: #fff;
+  border-color: var(--forest, #2D5A4A);
+}
+
+.filter-pill-genre {
+  border-color: #f0d9a0;
+  color: #92400e;
+}
+
+.filter-pill-genre:hover {
+  background: #fef3c7;
+}
+
+.filter-pill-genre.active {
+  background: #92400e;
+  color: #fff;
+  border-color: #92400e;
+}
+
 .admin-list-item-checkbox {
   flex-shrink: 0;
   display: inline-flex;

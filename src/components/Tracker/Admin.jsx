@@ -377,11 +377,20 @@ function Admin() {
   const [selectedBookIds, setSelectedBookIds] = useState(new Set())
   const [showBulkAdd, setShowBulkAdd] = useState(false)
   const [bulkAddText, setBulkAddText] = useState('')
+  const [filterAge, setFilterAge] = useState('all')
+  const [filterGenre, setFilterGenre] = useState('all')
 
   useEffect(() => {
     setBooks(suggestedBooks)
     setResList(resources)
   }, [suggestedBooks, resources])
+
+  // Derived filter options from live book list
+  const bookGenres = [...new Set(books.map(b => b.genre).filter(Boolean))].sort()
+  const filteredBooks = books.filter(b =>
+    (filterAge === 'all' || b.ageGroup === filterAge) &&
+    (filterGenre === 'all' || b.genre === filterGenre)
+  )
 
   const showMsg = (text, isError = false) => {
     setMessage({ text, isError })
@@ -444,8 +453,8 @@ function Admin() {
   }
 
   const selectAllBooks = () => {
-    if (selectedBookIds.size === books.length) setSelectedBookIds(new Set())
-    else setSelectedBookIds(new Set(books.map(b => b.id)))
+    if (selectedBookIds.size === filteredBooks.length) setSelectedBookIds(new Set())
+    else setSelectedBookIds(new Set(filteredBooks.map(b => b.id)))
   }
 
   const handleBulkRemoveBooks = async () => {
@@ -678,14 +687,22 @@ function Admin() {
 
           <div className="admin-list">
             <div className="admin-list-header">
-              <h3>Current suggested books ({books.length})</h3>
+              <h3>
+                Current suggested books&nbsp;
+                <span className="books-count">
+                  {filteredBooks.length}{filteredBooks.length !== books.length && ` of ${books.length}`}
+                </span>
+              </h3>
               {books.length > 0 && (
                 <div className="admin-bulk-actions">
                   <label className="admin-checkbox-label">
                     <input
                       type="checkbox"
-                      checked={selectedBookIds.size === books.length && books.length > 0}
-                      onChange={selectAllBooks}
+                      checked={selectedBookIds.size === filteredBooks.length && filteredBooks.length > 0}
+                      onChange={() => {
+                        if (selectedBookIds.size === filteredBooks.length) setSelectedBookIds(new Set())
+                        else setSelectedBookIds(new Set(filteredBooks.map(b => b.id)))
+                      }}
                     />
                     Select all
                   </label>
@@ -700,11 +717,47 @@ function Admin() {
                 </div>
               )}
             </div>
+
+            {books.length > 0 && (
+              <div className="admin-book-filters">
+                <div className="admin-filter-pills">
+                  <button
+                    className={`filter-pill ${filterAge === 'all' ? 'active' : ''}`}
+                    onClick={() => setFilterAge('all')}
+                  >All ages</button>
+                  {AGE_GROUPS.map(ag => (
+                    <button
+                      key={ag.id}
+                      className={`filter-pill ${filterAge === ag.id ? 'active' : ''}`}
+                      onClick={() => setFilterAge(ag.id)}
+                    >{ag.name}</button>
+                  ))}
+                </div>
+                {bookGenres.length > 0 && (
+                  <div className="admin-filter-pills admin-filter-pills-genre">
+                    <button
+                      className={`filter-pill filter-pill-genre ${filterGenre === 'all' ? 'active' : ''}`}
+                      onClick={() => setFilterGenre('all')}
+                    >All genres</button>
+                    {bookGenres.map(g => (
+                      <button
+                        key={g}
+                        className={`filter-pill filter-pill-genre ${filterGenre === g ? 'active' : ''}`}
+                        onClick={() => setFilterGenre(g)}
+                      >{g}</button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
             {books.length === 0 ? (
               <p className="admin-empty">No books in database yet. Add some above or they will use the built-in list.</p>
+            ) : filteredBooks.length === 0 ? (
+              <p className="admin-empty">No books match the selected filters.</p>
             ) : (
               <ul>
-                {books.map(b => (
+                {filteredBooks.map(b => (
                   <li key={b.id} className="admin-list-item">
                     {editingBook?.id === b.id ? (
                       <div className="edit-inline">
