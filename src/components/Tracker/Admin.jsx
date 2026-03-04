@@ -633,6 +633,13 @@ function Admin() {
                   <option key={ag.id} value={ag.id}>{ag.name}</option>
                 ))}
               </select>
+              <input
+                type="text"
+                placeholder="Short description (optional)"
+                value={newBook.description}
+                onChange={e => setNewBook({ ...newBook, description: e.target.value })}
+              />
+            </div>
             <div className="admin-form-actions">
               <button type="submit" className="btn-admin" disabled={saving}>
                 <Plus size={18} /> Add Book
