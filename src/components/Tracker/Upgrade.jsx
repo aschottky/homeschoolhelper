@@ -12,18 +12,37 @@ function Upgrade() {
   const [error, setError] = useState(null)
   const [checkoutSuccess, setCheckoutSuccess] = useState(false)
 
-  // Check for successful checkout return
+  // Check for successful checkout return and activate subscription
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search)
     const sessionId = urlParams.get('session_id')
     const canceled = urlParams.get('canceled')
 
     if (sessionId) {
-      // Successful checkout - refresh subscription
-      setCheckoutSuccess(true)
-      refreshSubscription()
-      // Clean up URL
       window.history.replaceState({}, document.title, window.location.pathname)
+      const checkoutApiUrl = import.meta.env.VITE_CHECKOUT_API_URL
+      if (checkoutApiUrl) {
+        setLoading(true)
+        fetch(checkoutApiUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'verify', session_id: sessionId }),
+        })
+          .then(r => r.json())
+          .then(data => {
+            if (data.success) {
+              setCheckoutSuccess(true)
+              refreshSubscription()
+            } else {
+              setError(data.error || 'Could not activate subscription. Please contact support.')
+            }
+          })
+          .catch(() => setError('Could not verify payment. Please contact support.'))
+          .finally(() => setLoading(false))
+      } else {
+        setCheckoutSuccess(true)
+        refreshSubscription()
+      }
     } else if (canceled) {
       setError('Checkout was canceled. You can try again anytime.')
       window.history.replaceState({}, document.title, window.location.pathname)

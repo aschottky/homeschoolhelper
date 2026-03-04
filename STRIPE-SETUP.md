@@ -6,7 +6,7 @@ This guide walks you through setting up Stripe payments for the Homeschool Helpe
 
 We'll use:
 - **Stripe Checkout** (hosted payment page) - easiest to implement and PCI compliant
-- **Supabase Edge Functions** - serverless backend for secure API key handling
+- **Backend for checkout**: either **Supabase Edge Functions** or **Google Cloud Functions (2nd gen)** — see `gcp-checkout/README.md` for the GCP option (scale-to-zero, avoids Supabase auth/session issues)
 - **Stripe Webhooks** - to update subscription status automatically
 
 ## Step 1: Create Stripe Account
@@ -151,6 +151,29 @@ Use Stripe test cards:
 - **Success**: `4242 4242 4242 4242`
 - **Decline**: `4000 0000 0000 0002`
 - Use any future expiry date, any CVC, any ZIP
+
+## Testing the upgrade flow locally
+
+1. **App and Supabase**: Run the app locally with `npm run dev`. Use a `.env` with your real Supabase project:
+   - `VITE_SUPABASE_URL=https://YOUR_PROJECT_REF.supabase.co`
+   - `VITE_SUPABASE_ANON_KEY=your_anon_key`
+   - `VITE_STRIPE_PUBLISHABLE_KEY=pk_test_...`
+   The **Edge Function** (create-checkout-session) runs on Supabase, not in your Node app. So when you click "Upgrade to Premium", the browser sends your session to `https://YOUR_PROJECT_REF.supabase.co/functions/v1/create-checkout-session`.
+
+2. **Deploy the function**: Ensure the latest Edge Function is deployed so your local app talks to the real function:
+   ```bash
+   supabase functions deploy create-checkout-session
+   supabase functions deploy stripe-webhook
+   ```
+   Set secrets in Supabase Dashboard (Project → Edge Functions → create-checkout-session → Secrets): `STRIPE_SECRET_KEY`, `STRIPE_PRICE_ID`, and in Supabase project settings the function has access to `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` automatically. Add `SITE_URL` (e.g. `http://localhost:5173`) for correct redirects after checkout.
+
+3. **Optional – run Edge Functions on your machine**: With [Supabase CLI](https://supabase.com/docs/guides/cli) installed and linked to your project:
+   ```bash
+   supabase functions serve create-checkout-session --env-file supabase/.env.local
+   ```
+   In `supabase/.env.local` set `STRIPE_SECRET_KEY`, `STRIPE_PRICE_ID`, `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `SITE_URL=http://localhost:5173`. Then either use the local function URL in your app (would require a small code change to point to localhost) or keep using the deployed function for simplicity.
+
+4. **Sign in then upgrade**: In the local app, sign in with a real Supabase user (same project as the function), go to Tracker → Upgrade, and click "Upgrade to Premium". You should be redirected to Stripe Checkout; use a test card to complete.
 
 ## Production Checklist
 

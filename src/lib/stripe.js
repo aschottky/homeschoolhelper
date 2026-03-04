@@ -34,48 +34,55 @@ export const createCheckoutSession = async () => {
     throw new Error('No access token. Please sign out and sign in again.')
   }
 
-  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL?.replace(/\/$/, '')
-  const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || ''
-  if (!supabaseUrl || supabaseUrl.includes('YOUR_SUPABASE') || !anonKey) {
-    throw new Error('Supabase not configured. Check .env: VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY must match the project where Edge Functions are deployed.')
-  }
+  const checkoutApiUrl = import.meta.env.VITE_CHECKOUT_API_URL?.trim()
+  const useGcpCheckout = !!checkoutApiUrl
 
-  // Check if this token was issued for the current project (ref in JWT payload; ignore aud "authenticated")
-  try {
-    const payload = JSON.parse(atob(token.split('.')[1]))
-    const tokenRef = payload.ref
-    const urlRef = supabaseUrl.replace('https://', '').split('.')[0]
-    if (tokenRef != null && urlRef && tokenRef !== urlRef) {
-      throw new Error(
+  if (!useGcpCheckout) {
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL?.replace(/\/$/, '')
+    const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || ''
+    if (!supabaseUrl || supabaseUrl.includes('YOUR_SUPABASE') || !anonKey) {
+      throw new Error('Supabase not configured. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY, or use VITE_CHECKOUT_API_URL for Google Cloud checkout.')
+    }
+
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]))
+      const tokenRef = payload.ref
+      const urlRef = supabaseUrl.replace('https://', '').split('.')[0]
+      if (tokenRef != null && urlRef && tokenRef !== urlRef) {
+        throw new Error(
         'Your saved session is for a different Supabase project. Clear this site’s data: DevTools → Application → Storage → Clear site data. Then reload, sign in again, and try upgrading.'
-      )
+        )
+      }
+    } catch (e) {
+      if (e.message?.includes('different Supabase project')) throw e
     }
-  } catch (e) {
-    if (e.message?.includes('different Supabase project')) throw e
-  }
-
-  // Preflight: validate JWT with Auth API
-  const authCheck = await fetch(`${supabaseUrl}/auth/v1/user`, {
-    headers: { Authorization: `Bearer ${token}`, apikey: anonKey },
-  })
-  if (!authCheck.ok) {
-    if (authCheck.status === 401) {
-      throw new Error(
+    const authCheck = await fetch(`${supabaseUrl}/auth/v1/user`, {
+      headers: { Authorization: `Bearer ${token}`, apikey: anonKey },
+    })
+    if (!authCheck.ok) {
+      if (authCheck.status === 401) {
+        throw new Error(
         'Session invalid for this project. Clear site data: open DevTools (F12) → Application → Storage → “Clear site data”. Then reload, sign in again, and try upgrading.'
-      )
+        )
+      }
+      throw new Error('Auth check failed. Please sign out and sign in again.')
     }
-    throw new Error('Auth check failed. Please sign out and sign in again.')
   }
 
-  const url = `${supabaseUrl}/functions/v1/create-checkout-session`
+  const url = useGcpCheckout
+    ? checkoutApiUrl
+    : `${import.meta.env.VITE_SUPABASE_URL?.replace(/\/$/, '')}/functions/v1/create-checkout-session`
+  const headers = {
+    'Content-Type': 'application/json',
+    Authorization: `Bearer ${token}`,
+  }
+  if (!useGcpCheckout) {
+    headers.apikey = import.meta.env.VITE_SUPABASE_ANON_KEY || ''
+  }
   const res = await fetch(url, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`,
-      apikey: anonKey,
-    },
-    body: '{}',
+    headers,
+    body: JSON.stringify({ access_token: token }),
   })
 
   const data = await res.json().catch(() => ({}))
@@ -102,19 +109,11 @@ export const createCheckoutSession = async () => {
 export const redirectToCheckout = async () => {
   try {
     const sessionData = await createCheckoutSession()
-    const stripe = await getStripe()
 
-    if (!stripe) {
-      throw new Error('Stripe not initialized')
-    }
-
-    // Redirect to Stripe Checkout
-    const { error } = await stripe.redirectToCheckout({
-      sessionId: sessionData.sessionId,
-    })
-
-    if (error) {
-      throw error
+    if (sessionData.url) {
+      window.location.href = sessionData.url
+    } else {
+      throw new Error('No checkout URL returned from server')
     }
   } catch (error) {
     console.error('Error redirecting to checkout:', error)
