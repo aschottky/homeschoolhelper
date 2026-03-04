@@ -1,11 +1,349 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useData } from '../../context/SupabaseDataContext'
-import { BookOpen, FolderOpen, Plus, Pencil, Trash2, X, Save, ListPlus, ListMinus } from 'lucide-react'
+import { useAuth } from '../../context/AuthContext'
+import { BookOpen, FolderOpen, Users, Plus, Pencil, Trash2, X, Save, ListPlus, ListMinus, ChevronDown, ChevronUp, Crown, RefreshCw, ExternalLink, ShieldCheck, ShieldOff, ArrowUpCircle, ArrowDownCircle, Loader } from 'lucide-react'
 import { AGE_GROUPS } from '../../data/readAloudBooks'
 import './Admin.css'
 
+const CHECKOUT_API = import.meta.env.VITE_CHECKOUT_API_URL
+
+async function callAdminApi(action, payload, token) {
+  const res = await fetch(CHECKOUT_API, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ action, access_token: token, ...payload }),
+  })
+  const data = await res.json().catch(() => ({}))
+  if (!res.ok) throw new Error(data?.error || `Request failed (${res.status})`)
+  return data
+}
+
+function formatDate(ts) {
+  if (!ts) return '—'
+  return new Date(typeof ts === 'number' ? ts * 1000 : ts).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
+}
+
+function formatAmount(cents, currency = 'usd') {
+  return new Intl.NumberFormat('en-US', { style: 'currency', currency: currency.toUpperCase() }).format(cents / 100)
+}
+
+const TIER_BADGE = {
+  premium: 'badge-premium',
+  free: 'badge-free',
+}
+const STATUS_BADGE = {
+  active: 'badge-active',
+  trialing: 'badge-trialing',
+  canceled: 'badge-canceled',
+  past_due: 'badge-past-due',
+}
+
 const RESOURCE_COLORS = ['terracotta', 'forest', 'sage']
 
+// ── Users Tab ────────────────────────────────────────────────────────────────
+function UsersTab({ token }) {
+  const [users, setUsers] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+  const [search, setSearch] = useState('')
+  const [expandedId, setExpandedId] = useState(null)
+  const [billingData, setBillingData] = useState({})
+  const [billingLoading, setBillingLoading] = useState({})
+  const [editingId, setEditingId] = useState(null)
+  const [editForm, setEditForm] = useState({})
+  const [saving, setSaving] = useState(false)
+  const [msg, setMsg] = useState(null)
+
+  const showMsg = (text, isError = false) => {
+    setMsg({ text, isError })
+    setTimeout(() => setMsg(null), 3500)
+  }
+
+  const loadUsers = useCallback(async () => {
+    setLoading(true); setError(null)
+    try {
+      const data = await callAdminApi('admin-list-users', {}, token)
+      setUsers(data.users || [])
+    } catch (err) {
+      setError(err.message)
+    }
+    setLoading(false)
+  }, [token])
+
+  useEffect(() => { loadUsers() }, [loadUsers])
+
+  const loadBilling = async (userId) => {
+    if (billingData[userId]) return
+    setBillingLoading(prev => ({ ...prev, [userId]: true }))
+    try {
+      const data = await callAdminApi('admin-billing-history', { target_user_id: userId }, token)
+      setBillingData(prev => ({ ...prev, [userId]: data }))
+    } catch (err) {
+      setBillingData(prev => ({ ...prev, [userId]: { error: err.message } }))
+    }
+    setBillingLoading(prev => ({ ...prev, [userId]: false }))
+  }
+
+  const toggleExpand = (userId) => {
+    if (expandedId === userId) { setExpandedId(null); return }
+    setExpandedId(userId)
+    loadBilling(userId)
+  }
+
+  const startEdit = (user) => {
+    setEditingId(user.id)
+    setEditForm({
+      subscription_tier: user.subscription_tier || 'free',
+      subscription_status: user.subscription_status || '',
+      is_admin: !!user.is_admin,
+      full_name: user.full_name || '',
+    })
+  }
+
+  const saveEdit = async (userId) => {
+    setSaving(true)
+    try {
+      await callAdminApi('admin-update-user', { target_user_id: userId, updates: editForm }, token)
+      setUsers(prev => prev.map(u => u.id === userId ? { ...u, ...editForm } : u))
+      setBillingData(prev => { const n = { ...prev }; delete n[userId]; return n })
+      setEditingId(null)
+      showMsg('User updated.')
+    } catch (err) {
+      showMsg(err.message, true)
+    }
+    setSaving(false)
+  }
+
+  const quickUpdate = async (userId, updates) => {
+    setSaving(true)
+    try {
+      await callAdminApi('admin-update-user', { target_user_id: userId, updates }, token)
+      setUsers(prev => prev.map(u => u.id === userId ? { ...u, ...updates } : u))
+      setBillingData(prev => { const n = { ...prev }; delete n[userId]; return n })
+      showMsg('Updated.')
+    } catch (err) {
+      showMsg(err.message, true)
+    }
+    setSaving(false)
+  }
+
+  const filtered = users.filter(u => {
+    const q = search.toLowerCase()
+    return !q || (u.auth_email || u.email || '').toLowerCase().includes(q) || (u.full_name || '').toLowerCase().includes(q)
+  })
+
+  if (!CHECKOUT_API) return (
+    <div className="admin-empty" style={{ padding: '1rem' }}>
+      <strong>VITE_CHECKOUT_API_URL</strong> is not configured. Set it in your <code>.env</code> to enable user management.
+    </div>
+  )
+
+  return (
+    <div className="admin-users">
+      {msg && <div className={`admin-message ${msg.isError ? 'error' : ''}`} style={{ marginBottom: '1rem' }}>{msg.text}</div>}
+
+      <div className="users-toolbar">
+        <input
+          className="users-search"
+          placeholder="Search by email or name…"
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+        />
+        <button className="btn-admin btn-admin-secondary" onClick={loadUsers} disabled={loading} title="Refresh">
+          <RefreshCw size={16} className={loading ? 'spinning' : ''} />
+          {loading ? 'Loading…' : `${users.length} users`}
+        </button>
+      </div>
+
+      {error && <div className="admin-message error">{error}</div>}
+
+      {!loading && filtered.length === 0 && (
+        <p className="admin-empty">No users found.</p>
+      )}
+
+      <div className="users-list">
+        {filtered.map(user => {
+          const isExpanded = expandedId === user.id
+          const isEditing = editingId === user.id
+          const billing = billingData[user.id]
+          const isPremium = user.subscription_tier === 'premium'
+
+          return (
+            <div key={user.id} className={`user-card ${isExpanded ? 'expanded' : ''}`}>
+              {/* Row */}
+              <div className="user-row" onClick={() => !isEditing && toggleExpand(user.id)}>
+                <div className="user-avatar">
+                  {(user.full_name || user.auth_email || '?').charAt(0).toUpperCase()}
+                </div>
+                <div className="user-info">
+                  <div className="user-name">
+                    {user.full_name || <span className="user-no-name">No name</span>}
+                    {user.is_admin && <span className="badge badge-admin" title="Admin"><ShieldCheck size={12} /> Admin</span>}
+                  </div>
+                  <div className="user-email">{user.auth_email || user.email || '—'}</div>
+                </div>
+                <div className="user-meta">
+                  <span className={`badge ${TIER_BADGE[user.subscription_tier] || 'badge-free'}`}>
+                    {user.subscription_tier === 'premium' ? <><Crown size={11} /> Premium</> : 'Free'}
+                  </span>
+                  {user.subscription_status && user.subscription_status !== user.subscription_tier && (
+                    <span className={`badge ${STATUS_BADGE[user.subscription_status] || ''}`}>
+                      {user.subscription_status}
+                    </span>
+                  )}
+                </div>
+                <div className="user-joined">{formatDate(user.auth_created_at)}</div>
+                <div className="user-expand-icon">
+                  {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                </div>
+              </div>
+
+              {/* Expanded detail panel */}
+              {isExpanded && (
+                <div className="user-detail" onClick={e => e.stopPropagation()}>
+                  <div className="user-detail-cols">
+
+                    {/* Left: profile edit */}
+                    <div className="user-detail-col">
+                      <h4>Profile</h4>
+                      {isEditing ? (
+                        <div className="user-edit-form">
+                          <label>Full name
+                            <input value={editForm.full_name} onChange={e => setEditForm(f => ({ ...f, full_name: e.target.value }))} placeholder="Full name" />
+                          </label>
+                          <label>Subscription tier
+                            <select value={editForm.subscription_tier} onChange={e => setEditForm(f => ({ ...f, subscription_tier: e.target.value }))}>
+                              <option value="free">Free</option>
+                              <option value="premium">Premium</option>
+                            </select>
+                          </label>
+                          <label>Subscription status
+                            <select value={editForm.subscription_status} onChange={e => setEditForm(f => ({ ...f, subscription_status: e.target.value }))}>
+                              <option value="">— none —</option>
+                              <option value="active">active</option>
+                              <option value="trialing">trialing</option>
+                              <option value="canceled">canceled</option>
+                              <option value="past_due">past_due</option>
+                            </select>
+                          </label>
+                          <label className="user-edit-checkbox">
+                            <input type="checkbox" checked={editForm.is_admin} onChange={e => setEditForm(f => ({ ...f, is_admin: e.target.checked }))} />
+                            Admin user
+                          </label>
+                          <div className="edit-actions" style={{ marginTop: '0.5rem' }}>
+                            <button className="btn-admin" onClick={() => saveEdit(user.id)} disabled={saving}>
+                              {saving ? <Loader size={14} className="spinning" /> : <Save size={14} />} Save
+                            </button>
+                            <button className="btn-admin btn-admin-secondary" onClick={() => setEditingId(null)} disabled={saving}>
+                              <X size={14} /> Cancel
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="user-profile-view">
+                          <div className="profile-row"><span>Email</span><strong>{user.auth_email || user.email || '—'}</strong></div>
+                          <div className="profile-row"><span>Name</span><strong>{user.full_name || '—'}</strong></div>
+                          <div className="profile-row"><span>Tier</span><strong>{user.subscription_tier || 'free'}</strong></div>
+                          <div className="profile-row"><span>Status</span><strong>{user.subscription_status || '—'}</strong></div>
+                          <div className="profile-row"><span>Renews</span><strong>{formatDate(user.subscription_end_date)}</strong></div>
+                          <div className="profile-row"><span>Confirmed</span><strong>{user.email_confirmed ? 'Yes' : 'No'}</strong></div>
+                          <div className="profile-row"><span>Last sign-in</span><strong>{formatDate(user.last_sign_in)}</strong></div>
+                          <div className="profile-row"><span>Joined</span><strong>{formatDate(user.auth_created_at)}</strong></div>
+                          <div className="user-quick-actions">
+                            <button className="btn-admin" onClick={() => startEdit(user)}>
+                              <Pencil size={14} /> Edit
+                            </button>
+                            {!isPremium ? (
+                              <button className="btn-admin" style={{ background: '#d97706' }} onClick={() => quickUpdate(user.id, { subscription_tier: 'premium', subscription_status: 'active' })} disabled={saving}>
+                                <ArrowUpCircle size={14} /> Grant Premium
+                              </button>
+                            ) : (
+                              <button className="btn-admin btn-admin-danger" onClick={() => quickUpdate(user.id, { subscription_tier: 'free', subscription_status: 'canceled' })} disabled={saving}>
+                                <ArrowDownCircle size={14} /> Revoke Premium
+                              </button>
+                            )}
+                            {!user.is_admin ? (
+                              <button className="btn-admin btn-admin-secondary" onClick={() => quickUpdate(user.id, { is_admin: true })} disabled={saving}>
+                                <ShieldCheck size={14} /> Make Admin
+                              </button>
+                            ) : (
+                              <button className="btn-admin btn-admin-secondary" onClick={() => quickUpdate(user.id, { is_admin: false })} disabled={saving}>
+                                <ShieldOff size={14} /> Remove Admin
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Right: billing history */}
+                    <div className="user-detail-col">
+                      <h4>Billing History</h4>
+                      {billingLoading[user.id] && (
+                        <div className="billing-loading"><Loader size={18} className="spinning" /> Loading…</div>
+                      )}
+                      {billing?.error && <p className="admin-empty">{billing.error}</p>}
+                      {billing && !billing.error && (
+                        <>
+                          {billing.subscription && (
+                            <div className="billing-subscription">
+                              <div className="profile-row">
+                                <span>Stripe status</span>
+                                <strong className={`badge ${STATUS_BADGE[billing.subscription.status] || ''}`}>{billing.subscription.status}</strong>
+                              </div>
+                              <div className="profile-row">
+                                <span>Current period</span>
+                                <strong>{formatDate(billing.subscription.current_period_start)} → {formatDate(billing.subscription.current_period_end)}</strong>
+                              </div>
+                              {billing.subscription.cancel_at_period_end && (
+                                <div className="profile-row"><span>Cancels</span><strong>at period end</strong></div>
+                              )}
+                            </div>
+                          )}
+                          {!billing.subscription && !billing.profile?.stripe_customer_id && (
+                            <p className="admin-empty">No Stripe customer yet.</p>
+                          )}
+                          {billing.invoices?.length > 0 ? (
+                            <table className="billing-table">
+                              <thead>
+                                <tr>
+                                  <th>Date</th>
+                                  <th>Description</th>
+                                  <th>Amount</th>
+                                  <th>Status</th>
+                                  <th></th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {billing.invoices.map(inv => (
+                                  <tr key={inv.id}>
+                                    <td>{formatDate(inv.created)}</td>
+                                    <td>{inv.description || `${formatDate(inv.period_start)} – ${formatDate(inv.period_end)}`}</td>
+                                    <td>{formatAmount(inv.amount_paid || inv.amount_due, inv.currency)}</td>
+                                    <td><span className={`badge ${inv.status === 'paid' ? 'badge-active' : 'badge-past-due'}`}>{inv.status}</span></td>
+                                    <td>{inv.hosted_invoice_url && <a href={inv.hosted_invoice_url} target="_blank" rel="noreferrer" title="View invoice"><ExternalLink size={14} /></a>}</td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          ) : (
+                            billing.profile?.stripe_customer_id && <p className="admin-empty">No invoices found.</p>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+// ── Main Admin Component ──────────────────────────────────────────────────────
 function Admin() {
   const {
     suggestedBooks,
@@ -17,6 +355,15 @@ function Admin() {
     updateResource,
     deleteResource
   } = useData()
+  const { user } = useAuth()
+  const [adminToken, setAdminToken] = useState('')
+  useEffect(() => {
+    import('../../lib/supabase').then(({ supabase }) => {
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        if (session?.access_token) setAdminToken(session.access_token)
+      })
+    })
+  }, [user])
 
   const [activeSection, setActiveSection] = useState('books')
   const [books, setBooks] = useState([])
@@ -235,6 +582,12 @@ function Admin() {
         >
           <FolderOpen size={18} /> Resources
         </button>
+        <button
+          className={activeSection === 'users' ? 'active' : ''}
+          onClick={() => setActiveSection('users')}
+        >
+          <Users size={18} /> Users
+        </button>
       </div>
 
       {activeSection === 'books' && (
@@ -379,6 +732,12 @@ function Admin() {
               </ul>
             )}
           </div>
+        </div>
+      )}
+
+      {activeSection === 'users' && (
+        <div className="admin-section" style={{ padding: '1rem' }}>
+          <UsersTab token={adminToken} />
         </div>
       )}
 
