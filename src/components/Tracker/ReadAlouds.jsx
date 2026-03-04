@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { useData } from '../../context/SupabaseDataContext'
 import { useAuth } from '../../context/AuthContext'
 import { useSubscription } from '../../context/SubscriptionContext'
-import { AGE_GROUPS, SUGGESTED_BOOKS, GENRES } from '../../data/readAloudBooks'
+import { AGE_GROUPS, SUGGESTED_BOOKS } from '../../data/readAloudBooks'
 import AdBanner from '../Ads/AdBanner'
 import { Book, BookOpen, Check, Plus, Trash2, Pencil, Filter, Sparkles, Lock, BookMarked, X } from 'lucide-react'
 import './ReadAlouds.css'
@@ -66,13 +66,19 @@ function ReadAlouds() {
     if (ageGroup) setSelectedAgeGroup(ageGroup)
   }, [selectedChild, isPremium, children])
 
-  // Suggested books: from DB if any, else static list (same shape: id, title, author, ageGroup, genre, description)
+  // Suggested books: from DB if any, else static list (same shape: id, title, author, illustrator, ageGroup, genre, description)
   const suggestedBookList = useMemo(() => {
     if (suggestedBooks?.length > 0) {
-      return suggestedBooks.map(b => ({ id: b.id, title: b.title, author: b.author || '', ageGroup: b.ageGroup, genre: b.genre || '', description: b.description || '' }))
+      return suggestedBooks.map(b => ({ id: b.id, title: b.title, author: b.author || '', illustrator: b.illustrator || '', ageGroup: b.ageGroup, genre: b.genre || '', description: b.description || '' }))
     }
     return SUGGESTED_BOOKS
   }, [suggestedBooks])
+
+  // Derive genres dynamically from whichever book source is active
+  const activeGenres = useMemo(() => {
+    const genres = [...new Set(suggestedBookList.map(b => b.genre).filter(g => g && g !== 'Other'))].sort()
+    return genres
+  }, [suggestedBookList])
 
   const getBooksByAgeGroup = (ageGroupId) => suggestedBookList.filter(book => book.ageGroup === ageGroupId)
 
@@ -390,7 +396,7 @@ function ReadAlouds() {
                     onChange={(e) => setNewBook({ ...newBook, genre: e.target.value })}
                   >
                     <option value="">Select genre</option>
-                    {GENRES.map(g => (
+                    {activeGenres.map(g => (
                       <option key={g} value={g}>{g}</option>
                     ))}
                     <option value="Other">Other</option>
@@ -467,7 +473,7 @@ function ReadAlouds() {
                     value={editingCustomBook.genre ?? 'Other'}
                     onChange={e => setEditingCustomBook(prev => ({ ...prev, genre: e.target.value }))}
                   >
-                    {GENRES.map(g => (
+                    {activeGenres.map(g => (
                       <option key={g} value={g}>{g}</option>
                     ))}
                     <option value="Other">Other</option>
@@ -518,7 +524,7 @@ function ReadAlouds() {
           onChange={(e) => setSelectedGenre(e.target.value)}
         >
           <option value="all">All Genres</option>
-          {GENRES.map(g => (
+          {activeGenres.map(g => (
             <option key={g} value={g}>{g}</option>
           ))}
         </select>
@@ -601,7 +607,9 @@ function ReadAlouds() {
                       <p className="book-desc">{book.description}</p>
                       <div className="book-meta">
                         <span className="book-age">{ageGroup?.name}</span>
-                        <span className="book-genre">{book.genre}</span>
+                        {book.genre && book.genre !== 'Other' && (
+                          <span className="book-genre">{book.genre}</span>
+                        )}
                       </div>
                     </div>
 
