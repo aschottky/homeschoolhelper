@@ -12,6 +12,14 @@ function Upgrade() {
   const [error, setError] = useState(null)
   const [checkoutSuccess, setCheckoutSuccess] = useState(false)
 
+  // Pre-warm the GCP function on page load so cold start is already done when user clicks
+  useEffect(() => {
+    const checkoutApiUrl = import.meta.env.VITE_CHECKOUT_API_URL
+    if (checkoutApiUrl) {
+      fetch(checkoutApiUrl, { method: 'OPTIONS' }).catch(() => {})
+    }
+  }, [])
+
   // Check for successful checkout return and activate subscription
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search)
