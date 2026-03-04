@@ -699,11 +699,17 @@ function Admin() {
                   <li key={b.id} className="admin-list-item">
                     {editingBook?.id === b.id ? (
                       <div className="edit-inline">
-                        <input value={editingBook.title} onChange={e => setEditingBook({ ...editingBook, title: e.target.value })} placeholder="Title" />
-                        <input value={editingBook.author} onChange={e => setEditingBook({ ...editingBook, author: e.target.value })} placeholder="Author" />
-                        <select value={editingBook.ageGroup} onChange={e => setEditingBook({ ...editingBook, ageGroup: e.target.value })}>
-                          {AGE_GROUPS.map(ag => <option key={ag.id} value={ag.id}>{ag.name}</option>)}
-                        </select>
+                        <div className="form-row">
+                          <input value={editingBook.title} onChange={e => setEditingBook({ ...editingBook, title: e.target.value })} placeholder="Title" />
+                          <input value={editingBook.author} onChange={e => setEditingBook({ ...editingBook, author: e.target.value })} placeholder="Author" />
+                        </div>
+                        <div className="form-row">
+                          <select value={editingBook.ageGroup} onChange={e => setEditingBook({ ...editingBook, ageGroup: e.target.value })}>
+                            {AGE_GROUPS.map(ag => <option key={ag.id} value={ag.id}>{ag.name} ({ag.ages})</option>)}
+                          </select>
+                          <input value={editingBook.genre || ''} onChange={e => setEditingBook({ ...editingBook, genre: e.target.value })} placeholder="Genre" />
+                        </div>
+                        <input value={editingBook.description || ''} onChange={e => setEditingBook({ ...editingBook, description: e.target.value })} placeholder="Short description (optional)" />
                         <div className="edit-actions">
                           <button type="button" onClick={() => handleUpdateBook(b.id, editingBook)}><Save size={16} /> Save</button>
                           <button type="button" onClick={() => setEditingBook(null)}><X size={16} /> Cancel</button>
@@ -720,9 +726,10 @@ function Admin() {
                         </label>
                         <span className="item-title">{b.title}</span>
                         {b.author && <span className="item-meta">{b.author}</span>}
-                        <span className="item-meta">{AGE_GROUPS.find(ag => ag.id === b.ageGroup)?.name || b.ageGroup}</span>
+                        <span className="item-meta item-tag">{AGE_GROUPS.find(ag => ag.id === b.ageGroup)?.name || b.ageGroup}</span>
+                        {b.genre && <span className="item-meta item-tag item-tag-genre">{b.genre}</span>}
                         <div className="item-actions">
-                          <button type="button" onClick={() => setEditingBook({ id: b.id, title: b.title, author: b.author || '', ageGroup: b.ageGroup })} title="Edit"><Pencil size={14} /></button>
+                          <button type="button" onClick={() => setEditingBook({ id: b.id, title: b.title, author: b.author || '', ageGroup: b.ageGroup, genre: b.genre || '', description: b.description || '' })} title="Edit"><Pencil size={14} /></button>
                           <button type="button" onClick={() => handleDeleteBook(b.id)} title="Delete"><Trash2 size={14} /></button>
                         </div>
                       </>

@@ -254,6 +254,21 @@
   font-size: 0.85rem;
 }
 
+.admin-list-item .item-tag {
+  display: inline-block;
+  padding: 0.1rem 0.45rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  background: var(--sage-light);
+  color: var(--forest-dark);
+  font-weight: 500;
+}
+
+.admin-list-item .item-tag-genre {
+  background: #fef3c7;
+  color: #92400e;
+}
+
 .admin-list-item .item-actions {
   margin-left: auto;
   display: flex;
