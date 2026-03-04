@@ -10,6 +10,7 @@ CREATE TABLE IF NOT EXISTS public.suggested_books (
   id uuid DEFAULT uuid_generate_v4() PRIMARY KEY,
   title text NOT NULL,
   author text,
+  illustrator text,
   age_group text NOT NULL,
   genre text,
   description text,
@@ -17,6 +18,9 @@ CREATE TABLE IF NOT EXISTS public.suggested_books (
   created_at timestamptz DEFAULT now() NOT NULL,
   updated_at timestamptz DEFAULT now() NOT NULL
 );
+
+-- If the table already exists, add the illustrator column (safe to run again)
+ALTER TABLE public.suggested_books ADD COLUMN IF NOT EXISTS illustrator text;
 
 ALTER TABLE public.suggested_books ENABLE ROW LEVEL SECURITY;
 

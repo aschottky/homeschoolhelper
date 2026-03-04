@@ -42,52 +42,66 @@ serve(async (req) => {
       throw new Error('Missing Stripe configuration')
     }
 
-    const authHeader = req.headers.get('Authorization')
-    if (!authHeader) {
-      throw new Error('No authorization header')
+    let authHeader = req.headers.get('Authorization')
+    let body: { access_token?: string } = {}
+    try {
+      body = (await req.json()) as { access_token?: string }
+    } catch {
+      /* body may be empty */
+    }
+    const tokenFromBody = body?.access_token?.trim()
+    if (tokenFromBody) {
+      authHeader = `Bearer ${tokenFromBody}`
+    }
+    if (!authHeader?.startsWith('Bearer ')) {
+      return jsonError('No authorization. Please sign out and sign in again, then try upgrading.', 401)
     }
 
-    const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? ''
+    const supabaseUrl = (Deno.env.get('SUPABASE_URL') ?? '').replace(/\/$/, '')
     const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY') ?? ''
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
 
-    // Validate JWT and get user by calling Auth API directly (avoids Supabase client getUser() quirks in Deno)
-    const userRes = await fetch(`${supabaseUrl}/auth/v1/user`, {
-      headers: {
-        Authorization: authHeader,
-        apikey: supabaseAnonKey,
-      },
-    })
-    if (!userRes.ok) {
-      const errBody = await userRes.json().catch(() => ({}))
-      const msg = (errBody as { msg?: string }).msg ?? (userRes.status === 401 ? 'Invalid JWT' : 'Unauthorized')
-      throw new Error(msg)
+    if (!supabaseUrl || !supabaseAnonKey) {
+      throw new Error('Server configuration error: missing Supabase URL or anon key')
     }
-    const authUser = (await userRes.json()) as { id: string; email?: string }
-    const user = { id: authUser.id, email: authUser.email ?? '' }
+    if (!supabaseServiceKey) {
+      throw new Error('Server configuration error: SUPABASE_SERVICE_ROLE_KEY not set for Edge Function')
+    }
 
-    const supabaseClient = createClient(supabaseUrl, supabaseAnonKey, {
-      global: { headers: { Authorization: authHeader } },
-    })
+    // Validate JWT using Supabase client getClaims (works with current JWT signing keys)
+    const rawToken = authHeader.replace(/^Bearer\s+/i, '').trim()
+    const authClient = createClient(supabaseUrl, supabaseAnonKey)
+    const { data: claimsData, error: claimsError } = await authClient.auth.getClaims(rawToken)
+    const claims = claimsData?.claims as { sub?: string; email?: string } | undefined
+    if (claimsError || !claims?.sub) {
+      throw new Error('Session expired or invalid. Please sign out and sign in again, then try upgrading.')
+    }
+    const user = { id: claims.sub, email: (claims.email as string) ?? '' }
 
-    let { data: profile, error: profileError } = await supabaseClient
+    // Use service role for profile access so RLS and missing profile rows don't block checkout
+    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey)
+
+    let { data: profile, error: profileError } = await supabaseAdmin
       .from('profiles')
       .select('stripe_customer_id, email')
       .eq('id', user.id)
       .maybeSingle()
 
-    if (profileError) throw new Error('Failed to fetch profile')
+    if (profileError) throw new Error('Failed to load profile. Please try again or sign out and sign in.')
 
     if (!profile) {
-      const { error: insertError } = await supabaseClient
+      const { error: insertError } = await supabaseAdmin
         .from('profiles')
         .insert({ id: user.id, email: user.email ?? '' })
-      if (insertError) throw new Error('Profile not found. Please sign out and sign in again.')
-      const { data: newProfile, error: fetchAgain } = await supabaseClient
+      if (insertError) {
+        throw new Error('Could not create profile. Please sign out and sign in again, then try upgrading.')
+      }
+      const { data: newProfile, error: fetchAgain } = await supabaseAdmin
         .from('profiles')
         .select('stripe_customer_id, email')
         .eq('id', user.id)
         .single()
-      if (fetchAgain || !newProfile) throw new Error('Failed to create profile')
+      if (fetchAgain || !newProfile) throw new Error('Profile setup failed. Please sign out and sign in again.')
       profile = newProfile
     }
 
@@ -105,7 +119,7 @@ serve(async (req) => {
       const customer = await custRes.json() as { id: string }
       customerId = customer.id
 
-      await supabaseClient
+      await supabaseAdmin
         .from('profiles')
         .update({ stripe_customer_id: customerId })
         .eq('id', user.id)
@@ -118,7 +132,7 @@ serve(async (req) => {
       'line_items[0][price]': stripePriceId,
       'line_items[0][quantity]': '1',
       'payment_method_types[0]': 'card',
-      success_url: `${siteUrl}/tracker?session_id={CHECKOUT_SESSION_ID}`,
+      success_url: `${siteUrl}/tracker/upgrade?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${siteUrl}/tracker/upgrade?canceled=true`,
       'metadata[supabase_user_id]': user.id,
     })
@@ -136,6 +150,7 @@ serve(async (req) => {
     )
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error'
-    return jsonError(message, 400)
+    const isAuthError = /session expired|invalid|sign out and sign in/i.test(message)
+    return jsonError(message, isAuthError ? 401 : 400)
   }
 })

@@ -389,6 +389,13 @@
 .book-author {
   font-size: 0.8125rem;
   color: var(--sage);
+  margin-bottom: 2px;
+}
+
+.book-illustrator {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-style: italic;
   margin-bottom: 8px;
 }
 

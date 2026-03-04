@@ -69,6 +69,7 @@ export function SupabaseDataProvider({ children: childrenProp }) {
           id: b.id,
           title: b.title,
           author: b.author || '',
+          illustrator: b.illustrator || '',
           ageGroup: b.age_group,
           genre: b.genre || '',
           description: b.description || '',
@@ -861,13 +862,14 @@ export function SupabaseDataProvider({ children: childrenProp }) {
     const { data, error } = await supabase.from('suggested_books').insert({
       title: book.title,
       author: book.author || null,
+      illustrator: book.illustrator || null,
       age_group: book.ageGroup,
       genre: book.genre || null,
       description: book.description || null,
       sort_order: book.sortOrder ?? 0
     }).select().single()
     if (error) throw error
-    setSuggestedBooks(prev => [...prev, { id: data.id, title: data.title, author: data.author || '', ageGroup: data.age_group, genre: data.genre || '', description: data.description || '', isDb: true }])
+    setSuggestedBooks(prev => [...prev, { id: data.id, title: data.title, author: data.author || '', illustrator: data.illustrator || '', ageGroup: data.age_group, genre: data.genre || '', description: data.description || '', isDb: true }])
     return data
   }
 
@@ -875,6 +877,7 @@ export function SupabaseDataProvider({ children: childrenProp }) {
     const { data, error } = await supabase.from('suggested_books').update({
       ...(updates.title != null && { title: updates.title }),
       ...(updates.author != null && { author: updates.author }),
+      ...(updates.illustrator != null && { illustrator: updates.illustrator }),
       ...(updates.ageGroup != null && { age_group: updates.ageGroup }),
       ...(updates.genre != null && { genre: updates.genre }),
       ...(updates.description != null && { description: updates.description }),
@@ -893,7 +896,7 @@ export function SupabaseDataProvider({ children: childrenProp }) {
 
   const refreshSuggestedBooks = async () => {
     const { data } = await supabase.from('suggested_books').select('*').order('sort_order').order('title')
-    if (data) setSuggestedBooks(data.map(b => ({ id: b.id, title: b.title, author: b.author || '', ageGroup: b.age_group, genre: b.genre || '', description: b.description || '', isDb: true })))
+    if (data) setSuggestedBooks(data.map(b => ({ id: b.id, title: b.title, author: b.author || '', illustrator: b.illustrator || '', ageGroup: b.age_group, genre: b.genre || '', description: b.description || '', isDb: true })))
   }
 
   // --- Admin: resources ---

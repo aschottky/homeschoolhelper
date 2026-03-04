@@ -595,6 +595,9 @@ function ReadAlouds() {
                     <div className="book-content">
                       <h4>{book.title}</h4>
                       <p className="book-author">by {book.author}</p>
+                      {book.illustrator && (
+                        <p className="book-illustrator">illus. {book.illustrator}</p>
+                      )}
                       <p className="book-desc">{book.description}</p>
                       <div className="book-meta">
                         <span className="book-age">{ageGroup?.name}</span>

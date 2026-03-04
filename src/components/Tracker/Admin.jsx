@@ -370,7 +370,7 @@ function Admin() {
   const [resList, setResList] = useState([])
   const [editingBook, setEditingBook] = useState(null)
   const [editingResource, setEditingResource] = useState(null)
-  const [newBook, setNewBook] = useState({ title: '', author: '', ageGroup: 'elementary', genre: '', description: '' })
+  const [newBook, setNewBook] = useState({ title: '', author: '', illustrator: '', ageGroup: 'elementary', genre: '', description: '' })
   const [newResource, setNewResource] = useState({ category: '', countLabel: '', items: '', color: 'sage', link: '' })
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState(null)
@@ -396,11 +396,12 @@ function Admin() {
       await addSuggestedBook({
         title: newBook.title.trim(),
         author: newBook.author.trim() || null,
+        illustrator: newBook.illustrator.trim() || null,
         ageGroup: newBook.ageGroup,
         genre: newBook.genre || null,
         description: newBook.description.trim() || null
       })
-      setNewBook({ title: '', author: '', ageGroup: 'elementary', genre: '', description: '' })
+      setNewBook({ title: '', author: '', illustrator: '', ageGroup: 'elementary', genre: '', description: '' })
       showMsg('Book added.')
     } catch (err) {
       showMsg(err.message || 'Failed to add book', true)
@@ -610,6 +611,20 @@ function Admin() {
               />
             </div>
             <div className="form-row">
+              <input
+                type="text"
+                placeholder="Illustrator (optional)"
+                value={newBook.illustrator}
+                onChange={e => setNewBook({ ...newBook, illustrator: e.target.value })}
+              />
+              <input
+                type="text"
+                placeholder="Genre"
+                value={newBook.genre}
+                onChange={e => setNewBook({ ...newBook, genre: e.target.value })}
+              />
+            </div>
+            <div className="form-row">
               <select
                 value={newBook.ageGroup}
                 onChange={e => setNewBook({ ...newBook, ageGroup: e.target.value })}
@@ -618,19 +633,6 @@ function Admin() {
                   <option key={ag.id} value={ag.id}>{ag.name}</option>
                 ))}
               </select>
-              <input
-                type="text"
-                placeholder="Genre"
-                value={newBook.genre}
-                onChange={e => setNewBook({ ...newBook, genre: e.target.value })}
-              />
-            </div>
-            <input
-              type="text"
-              placeholder="Short description (optional)"
-              value={newBook.description}
-              onChange={e => setNewBook({ ...newBook, description: e.target.value })}
-            />
             <div className="admin-form-actions">
               <button type="submit" className="btn-admin" disabled={saving}>
                 <Plus size={18} /> Add Book
@@ -704,12 +706,15 @@ function Admin() {
                           <input value={editingBook.author} onChange={e => setEditingBook({ ...editingBook, author: e.target.value })} placeholder="Author" />
                         </div>
                         <div className="form-row">
+                          <input value={editingBook.illustrator || ''} onChange={e => setEditingBook({ ...editingBook, illustrator: e.target.value })} placeholder="Illustrator (optional)" />
+                          <input value={editingBook.genre || ''} onChange={e => setEditingBook({ ...editingBook, genre: e.target.value })} placeholder="Genre" />
+                        </div>
+                        <div className="form-row">
                           <select value={editingBook.ageGroup} onChange={e => setEditingBook({ ...editingBook, ageGroup: e.target.value })}>
                             {AGE_GROUPS.map(ag => <option key={ag.id} value={ag.id}>{ag.name} ({ag.ages})</option>)}
                           </select>
-                          <input value={editingBook.genre || ''} onChange={e => setEditingBook({ ...editingBook, genre: e.target.value })} placeholder="Genre" />
+                          <input value={editingBook.description || ''} onChange={e => setEditingBook({ ...editingBook, description: e.target.value })} placeholder="Short description (optional)" />
                         </div>
-                        <input value={editingBook.description || ''} onChange={e => setEditingBook({ ...editingBook, description: e.target.value })} placeholder="Short description (optional)" />
                         <div className="edit-actions">
                           <button type="button" onClick={() => handleUpdateBook(b.id, editingBook)}><Save size={16} /> Save</button>
                           <button type="button" onClick={() => setEditingBook(null)}><X size={16} /> Cancel</button>
@@ -726,10 +731,11 @@ function Admin() {
                         </label>
                         <span className="item-title">{b.title}</span>
                         {b.author && <span className="item-meta">{b.author}</span>}
+                        {b.illustrator && <span className="item-meta" title="Illustrator">illus. {b.illustrator}</span>}
                         <span className="item-meta item-tag">{AGE_GROUPS.find(ag => ag.id === b.ageGroup)?.name || b.ageGroup}</span>
                         {b.genre && <span className="item-meta item-tag item-tag-genre">{b.genre}</span>}
                         <div className="item-actions">
-                          <button type="button" onClick={() => setEditingBook({ id: b.id, title: b.title, author: b.author || '', ageGroup: b.ageGroup, genre: b.genre || '', description: b.description || '' })} title="Edit"><Pencil size={14} /></button>
+                          <button type="button" onClick={() => setEditingBook({ id: b.id, title: b.title, author: b.author || '', illustrator: b.illustrator || '', ageGroup: b.ageGroup, genre: b.genre || '', description: b.description || '' })} title="Edit"><Pencil size={14} /></button>
                           <button type="button" onClick={() => handleDeleteBook(b.id)} title="Delete"><Trash2 size={14} /></button>
                         </div>
                       </>
