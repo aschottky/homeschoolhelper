@@ -25,13 +25,13 @@ function Footer() {
                 <Mail size={18} />
                 hello@homeschoolhelper.com
               </a>
-              <a href="tel:+1234567890">
+              <a href="tel:+18053317942">
                 <Phone size={18} />
-                (123) 456-7890
+                (805) 331-7942
               </a>
               <span>
                 <MapPin size={18} />
-                Portland, Oregon
+                Fordland, Missouri
               </span>
             </div>
           </div>
