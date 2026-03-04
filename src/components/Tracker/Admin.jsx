@@ -96,7 +96,7 @@ function UsersTab({ token }) {
       subscription_tier: user.subscription_tier || 'free',
       subscription_status: user.subscription_status || '',
       is_admin: !!user.is_admin,
-      full_name: user.full_name || '',
+      parent_name: user.parent_name || '',
     })
   }
 
@@ -129,7 +129,7 @@ function UsersTab({ token }) {
 
   const filtered = users.filter(u => {
     const q = search.toLowerCase()
-    return !q || (u.auth_email || u.email || '').toLowerCase().includes(q) || (u.full_name || '').toLowerCase().includes(q)
+    return !q || (u.auth_email || u.email || '').toLowerCase().includes(q) || (u.parent_name || '').toLowerCase().includes(q)
   })
 
   if (!CHECKOUT_API) return (
@@ -173,11 +173,11 @@ function UsersTab({ token }) {
               {/* Row */}
               <div className="user-row" onClick={() => !isEditing && toggleExpand(user.id)}>
                 <div className="user-avatar">
-                  {(user.full_name || user.auth_email || '?').charAt(0).toUpperCase()}
+                  {(user.parent_name || user.auth_email || '?').charAt(0).toUpperCase()}
                 </div>
                 <div className="user-info">
                   <div className="user-name">
-                    {user.full_name || <span className="user-no-name">No name</span>}
+                    {user.parent_name || <span className="user-no-name">No name</span>}
                     {user.is_admin && <span className="badge badge-admin" title="Admin"><ShieldCheck size={12} /> Admin</span>}
                   </div>
                   <div className="user-email">{user.auth_email || user.email || '—'}</div>
@@ -209,7 +209,7 @@ function UsersTab({ token }) {
                       {isEditing ? (
                         <div className="user-edit-form">
                           <label>Full name
-                            <input value={editForm.full_name} onChange={e => setEditForm(f => ({ ...f, full_name: e.target.value }))} placeholder="Full name" />
+                            <input value={editForm.parent_name} onChange={e => setEditForm(f => ({ ...f, parent_name: e.target.value }))} placeholder="Full name" />
                           </label>
                           <label>Subscription tier
                             <select value={editForm.subscription_tier} onChange={e => setEditForm(f => ({ ...f, subscription_tier: e.target.value }))}>
@@ -242,7 +242,7 @@ function UsersTab({ token }) {
                       ) : (
                         <div className="user-profile-view">
                           <div className="profile-row"><span>Email</span><strong>{user.auth_email || user.email || '—'}</strong></div>
-                          <div className="profile-row"><span>Name</span><strong>{user.full_name || '—'}</strong></div>
+                          <div className="profile-row"><span>Name</span><strong>{user.parent_name || '—'}</strong></div>
                           <div className="profile-row"><span>Tier</span><strong>{user.subscription_tier || 'free'}</strong></div>
                           <div className="profile-row"><span>Status</span><strong>{user.subscription_status || '—'}</strong></div>
                           <div className="profile-row"><span>Renews</span><strong>{formatDate(user.subscription_end_date)}</strong></div>

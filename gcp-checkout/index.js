@@ -128,7 +128,7 @@ export async function createCheckoutSession(req, res) {
       // Fetch all profiles
       const { data: profiles, error: profilesErr } = await supabase
         .from('profiles')
-        .select('id, email, full_name, is_admin, subscription_tier, subscription_status, subscription_end_date, stripe_customer_id, stripe_subscription_id, created_at, updated_at')
+        .select('id, email, parent_name, is_admin, subscription_tier, subscription_status, subscription_end_date, stripe_customer_id, stripe_subscription_id, created_at, updated_at')
         .order('created_at', { ascending: false })
       if (profilesErr) throw new Error(profilesErr.message)
 
@@ -221,7 +221,7 @@ export async function createCheckoutSession(req, res) {
       if (!target_user_id || !updates) { sendError('Missing target_user_id or updates', 400); return }
 
       // Allowed fields admins can update
-      const allowed = ['subscription_tier', 'subscription_status', 'subscription_end_date', 'is_admin', 'full_name']
+      const allowed = ['subscription_tier', 'subscription_status', 'subscription_end_date', 'is_admin', 'parent_name']
       const safeUpdates = {}
       allowed.forEach(k => { if (k in updates) safeUpdates[k] = updates[k] })
 
