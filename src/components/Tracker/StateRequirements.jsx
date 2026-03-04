@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useSubscription } from '../../context/SubscriptionContext'
 import { STATE_REQUIREMENTS, COMPLIANCE_LEVELS, STATES_LIST } from '../../data/stateRequirements'
 import AdBanner from '../Ads/AdBanner'
-import { MapPin, ExternalLink, Clock, Calendar, BookOpen, AlertCircle, Check, Sparkles, Lock } from 'lucide-react'
+import { MapPin, ExternalLink, Clock, Calendar, BookOpen, AlertTriangle, Check, Sparkles, Lock } from 'lucide-react'
 import './StateRequirements.css'
 
 function StateRequirements() {
@@ -131,7 +131,7 @@ function StateRequirements() {
 
               {selectedStateData.notes && (
                 <div className="state-notes">
-                  <AlertCircle size={18} />
+                  <AlertTriangle size={18} />
                   <p>{selectedStateData.notes}</p>
                 </div>
               )}
@@ -201,7 +201,7 @@ function StateRequirements() {
               )}
 
               <div className="disclaimer">
-                <AlertCircle size={16} />
+                <AlertTriangle size={16} />
                 <p>
                   <strong>Disclaimer:</strong> This information is provided as a general guide only. 
                   Homeschool laws change frequently. Always verify current requirements with your 

@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useData } from '../../context/SupabaseDataContext'
 import { useSubscription } from '../../context/SubscriptionContext'
 import { STATES_LIST, STATE_REQUIREMENTS } from '../../data/stateRequirements'
-import { Plus, Trash2, Edit2, Check, X, Settings, ChevronDown, ChevronUp, MapPin, Sparkles, Lock, Calendar, GraduationCap, User } from 'lucide-react'
+import { Plus, Trash2, Edit2, Check, X, Settings, ChevronDown, ChevronUp, MapPin, Sparkles, Lock, Calendar, GraduationCap, User, AlertTriangle } from 'lucide-react'
 import './ChildManager.css'
 
 // Calculate age from birth date
@@ -292,7 +292,7 @@ function ChildManager() {
               <div className="tracking-prompt-modal">
                 <div className="tracking-prompt-content">
                   <div className="tracking-prompt-header">
-                    <AlertCircle size={24} className="prompt-icon" />
+                    <AlertTriangle size={24} className="prompt-icon" />
                     <h3>Track School Hours?</h3>
                   </div>
                   <div className="tracking-prompt-body">

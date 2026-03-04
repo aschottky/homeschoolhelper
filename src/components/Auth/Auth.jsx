@@ -3,7 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { 
   BookOpen, Mail, Lock, User, Eye, EyeOff, ArrowLeft,
-  Loader2, AlertCircle, CheckCircle
+  Loader2, AlertTriangle, CheckCircle
 } from 'lucide-react'
 import './Auth.css'
 
@@ -46,7 +46,7 @@ function Auth({ onBack, onSuccess }) {
           </div>
 
           <div className="demo-notice">
-            <AlertCircle size={24} />
+            <AlertTriangle size={24} />
             <div>
               <h3>Setup Required</h3>
               <p>
@@ -140,7 +140,7 @@ function Auth({ onBack, onSuccess }) {
 
         {error && (
           <div className="auth-alert error">
-            <AlertCircle size={18} />
+            <AlertTriangle size={18} />
             {error}
           </div>
         )}
