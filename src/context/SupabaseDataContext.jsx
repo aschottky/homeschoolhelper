@@ -874,13 +874,15 @@ export function SupabaseDataProvider({ children: childrenProp }) {
   }
 
   const updateSuggestedBook = async (id, updates) => {
+    // Convert empty strings to null so optional fields can be properly cleared
+    const nullify = v => (v === '' || v == null) ? null : v
     const { data, error } = await supabase.from('suggested_books').update({
       ...(updates.title != null && { title: updates.title }),
-      ...(updates.author != null && { author: updates.author }),
-      ...(updates.illustrator != null && { illustrator: updates.illustrator }),
+      ...('author' in updates && { author: nullify(updates.author) }),
+      ...('illustrator' in updates && { illustrator: nullify(updates.illustrator) }),
       ...(updates.ageGroup != null && { age_group: updates.ageGroup }),
-      ...(updates.genre != null && { genre: updates.genre }),
-      ...(updates.description != null && { description: updates.description }),
+      ...('genre' in updates && { genre: nullify(updates.genre) }),
+      ...('description' in updates && { description: nullify(updates.description) }),
       ...(updates.sortOrder != null && { sort_order: updates.sortOrder }),
       updated_at: new Date().toISOString()
     }).eq('id', id).select().single()
