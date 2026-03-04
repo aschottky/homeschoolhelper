@@ -1,0 +1,53 @@
+.family-profile {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+/* ── Sub-tabs ── */
+.fp-tabs {
+  display: flex;
+  gap: 0;
+  border-bottom: 2px solid var(--border-light, #e8e0d8);
+  margin-bottom: 0;
+  padding: 0 1.5rem;
+  background: var(--bg-white, #fff);
+}
+
+.fp-tab {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.75rem 1.25rem;
+  border: none;
+  background: transparent;
+  color: var(--text-muted, #888);
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  transition: color 0.15s, border-color 0.15s;
+  white-space: nowrap;
+}
+
+.fp-tab:hover {
+  color: var(--forest, #2D5A4A);
+}
+
+.fp-tab.active {
+  color: var(--forest, #2D5A4A);
+  border-bottom-color: var(--forest, #2D5A4A);
+}
+
+/* ── Content area ── */
+.fp-content {
+  flex: 1;
+  overflow-y: auto;
+}
+
+/* Remove double headers since we already have tab context */
+.fp-content .settings-header,
+.fp-content .child-manager > .tracker-section > .tracker-section-header {
+  display: none;
+}

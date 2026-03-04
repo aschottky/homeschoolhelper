@@ -5,7 +5,7 @@ import { useAuth } from '../../context/AuthContext'
 import { useSubscription } from '../../context/SubscriptionContext'
 import Dashboard from './Dashboard'
 import Admin from './Admin'
-import ChildManager from './ChildManager'
+import FamilyProfile from './FamilyProfile'
 import LogHours from './LogHours'
 import HoursHistory from './HoursHistory'
 import Badges from './Badges'
@@ -19,15 +19,15 @@ import IDCards from './IDCards'
 import StateRequirements from './StateRequirements'
 import Curriculum from './Curriculum'
 import Consultation from './Consultation'
-import Settings from './Settings'
+// Settings is now rendered inside FamilyProfile
 import Upgrade from './Upgrade'
 import SchoolworkReminder from './SchoolworkReminder'
-import { LayoutDashboard, Users, Clock, History, Trophy, GraduationCap, BookOpen, Sun, Lightbulb, Heart, CreditCard, MapPin, BookMarked, MessageSquare, Settings as SettingsIcon, Crown, Sparkles, Shield, DollarSign, LogOut } from 'lucide-react'
+import { LayoutDashboard, Users, Clock, History, Trophy, GraduationCap, BookOpen, Sun, Lightbulb, Heart, CreditCard, MapPin, BookMarked, MessageSquare, Crown, Sparkles, Shield, DollarSign, LogOut } from 'lucide-react'
 import './Tracker.css'
 
 const BASE_TABS = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { id: 'children', label: 'Children', icon: Users },
+  { id: 'family-profile', label: 'Family Profile', icon: Users },
   { id: 'log', label: 'Log Hours', icon: Clock },
   { id: 'history', label: 'History', icon: History },
   { id: 'badges', label: 'Badges', icon: Trophy },
@@ -41,10 +41,9 @@ const BASE_TABS = [
   { id: 'state', label: 'State Laws', icon: MapPin },
   { id: 'curriculum', label: 'Curriculum', icon: BookMarked },
   { id: 'consultation', label: 'Consult', icon: MessageSquare },
-  { id: 'settings', label: 'Settings', icon: SettingsIcon },
 ]
 
-const VALID_TABS = new Set(['dashboard', 'children', 'log', 'history', 'badges', 'grades', 'read-alouds', 'outdoor', 'expenses', 'activities', 'volunteer', 'id-cards', 'state', 'curriculum', 'consultation', 'settings', 'admin', 'upgrade'])
+const VALID_TABS = new Set(['dashboard', 'family-profile', 'children', 'settings', 'log', 'history', 'badges', 'grades', 'read-alouds', 'outdoor', 'expenses', 'activities', 'volunteer', 'id-cards', 'state', 'curriculum', 'consultation', 'admin', 'upgrade'])
 
 function Tracker() {
   const { tab: urlTab } = useParams()
@@ -79,8 +78,13 @@ function Tracker() {
     switch (activeTab) {
       case 'dashboard':
         return <Dashboard onNavigate={setActiveTab} />
+      case 'family-profile':
+        return <FamilyProfile />
+      // Legacy redirects — old bookmarks land here then bounce
       case 'children':
-        return <ChildManager />
+      case 'settings':
+        navigate('/tracker/family-profile', { replace: true })
+        return null
       case 'log':
         return <LogHours />
       case 'history':
@@ -107,8 +111,6 @@ function Tracker() {
         return <Curriculum onNavigateToConsult={() => setActiveTab('consultation')} />
       case 'consultation':
         return <Consultation />
-      case 'settings':
-        return <Settings />
       case 'admin':
         return <Admin />
       case 'upgrade':

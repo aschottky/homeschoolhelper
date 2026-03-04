@@ -19,6 +19,20 @@
 }
 
 /* State Hours Option */
+.state-hint {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  background: var(--cream-light);
+  border: 1px dashed var(--sage-light);
+  border-radius: var(--radius-md);
+  padding: 0.6rem 0.9rem;
+  margin: 0;
+}
+
+.state-hint strong {
+  color: var(--forest);
+}
+
 .state-hours-option {
   padding: 16px 20px;
   background: var(--cream-light);

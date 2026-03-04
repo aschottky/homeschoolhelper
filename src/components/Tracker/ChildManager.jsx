@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useData } from '../../context/SupabaseDataContext'
 import { useSubscription } from '../../context/SubscriptionContext'
 import { STATES_LIST, STATE_REQUIREMENTS } from '../../data/stateRequirements'
-import { Plus, Trash2, Edit2, Check, X, Settings, ChevronDown, ChevronUp, MapPin, Sparkles, Lock, Calendar, GraduationCap, User, AlertTriangle } from 'lucide-react'
+import { Plus, Trash2, Edit2, Check, X, Settings, ChevronDown, ChevronUp, Sparkles, Lock, Calendar, GraduationCap, User, AlertTriangle } from 'lucide-react'
 import './ChildManager.css'
 
 // Calculate age from birth date
@@ -57,7 +57,6 @@ function ChildManager() {
   const { isPremium, upgradeToPremium } = useSubscription()
 
   const [newChildName, setNewChildName] = useState('')
-  const [newChildState, setNewChildState] = useState(userState || '')
   const [newChildBirthDate, setNewChildBirthDate] = useState('')
   const [newChildGrade, setNewChildGrade] = useState('')
   const [useStateHours, setUseStateHours] = useState(isPremium)
@@ -69,16 +68,12 @@ function ChildManager() {
   const [newSubject, setNewSubject] = useState({ name: '', requiredHours: '', color: '#8FB39A', schoolworkReminderFrequency: '' })
   const [editingSubject, setEditingSubject] = useState(null)
 
-  // Check if child is under mandatory tracking age (typically 6-7 years old)
+  // Check if child is under mandatory tracking age using the family state
   const isUnderMandatoryTrackingAge = () => {
-    if (!newChildBirthDate || !newChildState) return false
-    
+    if (!newChildBirthDate || !userState) return false
     const age = calculateAge(newChildBirthDate)
     if (age === null) return false
-    
-    // Most states require tracking starting at age 6 or 7 (compulsory education age)
-    // Default to 6 if state doesn't specify
-    const mandatoryAge = STATE_REQUIREMENTS[newChildState]?.mandatoryTrackingAge || 6
+    const mandatoryAge = STATE_REQUIREMENTS[userState]?.mandatoryTrackingAge || 6
     return age < mandatoryAge
   }
 
@@ -93,26 +88,22 @@ function ChildManager() {
       return
     }
 
-    // Create child with or without subjects based on trackHours
+    // Create child — always use the family-level userState
     const child = await addChild(
-      newChildName.trim(), 
-      trackHours && isPremium && useStateHours, 
-      newChildState || null,
+      newChildName.trim(),
+      trackHours && isPremium && useStateHours,
+      userState || null,
       newChildBirthDate || null,
       newChildGrade || null,
-      trackHours // Pass whether to create subjects
+      trackHours
     )
-    
+
     setNewChildName('')
     setNewChildBirthDate('')
     setNewChildGrade('')
-    setTrackHours(true) // Reset for next child
+    setTrackHours(true)
     setShowTrackingPrompt(false)
-    
-    if (newChildState && !userState) {
-      setUserState(newChildState)
-    }
-    
+
     if (trackHours) {
       setExpandedChild(child.id)
     }
@@ -143,7 +134,8 @@ function ChildManager() {
     }
   }
 
-  const selectedStateData = newChildState ? STATE_REQUIREMENTS[newChildState] : null
+  // Use the family-level state for state requirements lookup
+  const selectedStateData = userState ? STATE_REQUIREMENTS[userState] : null
   const hasRecommendedHours = selectedStateData?.recommendedHours
 
   const colorOptions = [
@@ -160,7 +152,7 @@ function ChildManager() {
 
         <form onSubmit={handleAddChild} className="add-child-form">
           <div className="form-row">
-            <div className="form-group" style={{ flex: 2 }}>
+            <div className="form-group">
               <label>Child's Name *</label>
               <input
                 type="text"
@@ -170,22 +162,6 @@ function ChildManager() {
                 onChange={(e) => setNewChildName(e.target.value)}
                 required
               />
-            </div>
-            <div className="form-group" style={{ flex: 1 }}>
-              <label>
-                <MapPin size={14} style={{ marginRight: '6px', verticalAlign: 'middle' }} />
-                State
-              </label>
-              <select
-                className="form-select"
-                value={newChildState}
-                onChange={(e) => setNewChildState(e.target.value)}
-              >
-                <option value="">Select state</option>
-                {STATES_LIST.map(state => (
-                  <option key={state.code} value={state.code}>{state.name}</option>
-                ))}
-              </select>
             </div>
           </div>
 
@@ -233,7 +209,13 @@ function ChildManager() {
             </div>
           </div>
 
-          {newChildState && hasRecommendedHours && (
+          {!userState && (
+            <p className="state-hint">
+              Set your family's state in <strong>Profile &amp; Settings</strong> to auto-fill state hour requirements.
+            </p>
+          )}
+
+          {userState && hasRecommendedHours && (
             <div className={`state-hours-option ${!isPremium ? 'locked' : ''}`}>
               {isPremium ? (
                 <label className="checkbox-label">
@@ -267,7 +249,7 @@ function ChildManager() {
             </div>
           )}
 
-          {newChildState && hasRecommendedHours && isPremium && useStateHours && (
+          {userState && hasRecommendedHours && isPremium && useStateHours && (
             <div className="preview-hours">
               <h4>Hours that will be set:</h4>
               <div className="preview-grid">
@@ -297,8 +279,8 @@ function ChildManager() {
                   </div>
                   <div className="tracking-prompt-body">
                     <p>
-                      <strong>{newChildName}</strong> is under {STATE_REQUIREMENTS[newChildState]?.name || 'your state'}'s mandatory tracking age 
-                      ({STATE_REQUIREMENTS[newChildState]?.mandatoryTrackingAge || 6} years old).
+                      <strong>{newChildName}</strong> is under {STATE_REQUIREMENTS[userState]?.name || 'your state'}'s mandatory tracking age
+                      ({STATE_REQUIREMENTS[userState]?.mandatoryTrackingAge || 6} years old).
                     </p>
                     <p>
                       Would you like to track school hours for this child? You can still create their profile to track 
@@ -349,24 +331,18 @@ function ChildManager() {
                       className="btn-tracker btn-primary"
                       onClick={async () => {
                         const child = await addChild(
-                          newChildName.trim(), 
-                          trackHours && isPremium && useStateHours, 
-                          newChildState || null,
+                          newChildName.trim(),
+                          trackHours && isPremium && useStateHours,
+                          userState || null,
                           newChildBirthDate || null,
                           newChildGrade || null,
                           trackHours
                         )
-                        
                         setNewChildName('')
                         setNewChildBirthDate('')
                         setNewChildGrade('')
                         setTrackHours(true)
                         setShowTrackingPrompt(false)
-                        
-                        if (newChildState && !userState) {
-                          setUserState(newChildState)
-                        }
-                        
                         if (trackHours) {
                           setExpandedChild(child.id)
                         }
