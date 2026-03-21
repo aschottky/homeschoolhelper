@@ -1,81 +1,403 @@
--- ─────────────────────────────────────────────────────────────────────────────
--- Seed suggested_books with curated read-aloud books
---
--- HOW TO RUN:
---   Supabase Dashboard → SQL Editor → paste this file → Run
---
--- This script ALWAYS clears the table and re-inserts all 52 books.
--- Safe to run multiple times.
--- ─────────────────────────────────────────────────────────────────────────────
+-- Re-seed suggested_books from Read-Aloud Books.xlsx
+-- 394 books across 4 age groups with genres assigned
 
--- Ensure illustrator column exists (safe on both new and existing tables)
-ALTER TABLE public.suggested_books ADD COLUMN IF NOT EXISTS illustrator text;
-
--- Clear existing rows so we start fresh
 DELETE FROM public.suggested_books;
 
--- Insert all 52 books
-INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre, description, sort_order) VALUES
+-- Ages 0-3
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('All the World', 'Scanlon, Liz Garton', 'Frazee, Marla', 'ages-0-3', 'Picture Book');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Barnyard Dance', 'Boynton, Sandra', NULL, 'ages-0-3', 'Picture Book');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Bee-bim Bop', 'Park, Linda Sue', 'Lee, Ho Baek', 'ages-0-3', 'Picture Book');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Blah Blah Black Sheep', 'Wilson, N. D.', 'Dickison, Forrest', 'ages-0-3', 'Picture Book');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Blue Hat, Green Hat', 'Boynton, Sandra', NULL, 'ages-0-3', 'Picture Book');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Boy of Mine', 'Asim, Jabari', 'Pham, LeUyen', 'ages-0-3', 'Picture Book');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Brown Bear, Brown Bear, What Do You See?', 'Martin Jr., Bill', 'Carle, Eric', 'ages-0-3', 'Fiction');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('But Not the Hippopotamus', 'Boynton, Sandra', NULL, 'ages-0-3', 'Picture Book');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Carl''s Afternoon in the Park', 'Day, Alexandra', NULL, 'ages-0-3', 'Picture Book');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Carl''s Birthday', 'Day, Alexandra', NULL, 'ages-0-3', 'Picture Book');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Carl''s Summer Vacation', 'Day, Alexandra', NULL, 'ages-0-3', 'Picture Book');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Charlie Needs a Cloak', 'dePaola, Tomie', NULL, 'ages-0-3', 'Picture Book');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Cinderella', 'Galdone, Paul', NULL, 'ages-0-3', 'Fairy Tale');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Dear Zoo', 'Campbell, Rod', NULL, 'ages-0-3', 'Picture Book');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Each Peach, Pear, Plum', 'Ahlberg, Allan and Janet', NULL, 'ages-0-3', 'Picture Book');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Elves and the Shoemaker, The', 'Galdone, Paul', NULL, 'ages-0-3', 'Fairy Tale');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Feast for Ten', 'Falwell, Cathryn', NULL, 'ages-0-3', 'Picture Book');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Five Little Monkeys Jumping on the Bed', 'Christelow, Eileen', NULL, 'ages-0-3', 'Picture Book');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Fox in Socks', 'Seuss, Dr.', NULL, 'ages-0-3', 'Picture Book');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Full Moon at the Napping House, The', 'Wood, Don and Audrey', NULL, 'ages-0-3', 'Picture Book');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Giant Jumperee, The', 'Donaldson, Julian', 'Oxenbury, Helen', 'ages-0-3', 'Picture Book');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Girl of Mine', 'Asim, Jabari', 'Pham, LeUyen', 'ages-0-3', 'Picture Book');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Go Dog, Go!', 'Eastman, P.D.', NULL, 'ages-0-3', 'Picture Book');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Going-to-Bed Book, The', 'Boynton, Sandra', NULL, 'ages-0-3', 'Picture Book');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Good Dog, Carl', 'Day, Alexandra', NULL, 'ages-0-3', 'Picture Book');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Goodnight Gorilla', 'Rathmann, Peggy', NULL, 'ages-0-3', 'Picture Book');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Goodnight Moon', 'Brown, Margaret Wise', NULL, 'ages-0-3', 'Picture Book');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Gossie', 'Dunrea, Olivier', NULL, 'ages-0-3', 'Picture Book');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Grouchy Ladybug, The', 'Carle, Eric', NULL, 'ages-0-3', 'Picture Book');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Gruffalo, The', 'Donaldson, Julian', 'Scheffler, Axel', 'ages-0-3', 'Picture Book');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Hand, Hand, Fingers, Thumb', 'Perkins, Al', NULL, 'ages-0-3', 'Picture Book');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Happy Hippo, Angry Duck', 'Boynton, Sandra', NULL, 'ages-0-3', 'Picture Book');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Harold and the Purple Crayon', 'Johnson, Crockett', NULL, 'ages-0-3', 'Picture Book');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Hello Ninja', 'Wilson, N. D.', 'Dickison, Forrest', 'ages-0-3', 'Picture Book');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Henny Penny', 'Galdone, Paul', NULL, 'ages-0-3', 'Fairy Tale');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Hop on Pop', 'Seuss, Dr.', NULL, 'ages-0-3', 'Picture Book');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('House for Hermit Crab, A', 'Carle, Eric', NULL, 'ages-0-3', 'Picture Book');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('How God Made the World', 'Lindvall, Ella', 'Puckett, H. Kent', 'ages-0-3', 'Faith');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Hush! A Thai Lullaby', 'Ho, Minfong', 'Meade, Holly', 'ages-0-3', 'Picture Book');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Hush, Little Baby', 'Frazee, Marla', NULL, 'ages-0-3', 'Picture Book');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('I''m Grumpy', 'Holm, Jennifer L. and Matthew', NULL, 'ages-0-3', 'Picture Book');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('I''m Sunny!', 'Holm, Jennifer L. and Matthew', NULL, 'ages-0-3', 'Picture Book');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('If You Give a Moose a Muffin', 'Numeroff, Laura', 'Bond, Felicia', 'ages-0-3', 'Picture Book');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Jack and the Beanstalk', 'Galdone, Paul', NULL, 'ages-0-3', 'Fairy Tale');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Jamberry', 'Degen, Bruce', NULL, 'ages-0-3', 'Picture Book');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Kitten''s First Full Moon', 'Henkes, Kevin', NULL, 'ages-0-3', 'Picture Book');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Little Mouse, the Red Ripe Strawberry, and the Big Hungry Bear, The', 'Wood, Don and Audrey', NULL, 'ages-0-3', 'Picture Book');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Little Red Hen, The', 'Galdone, Paul', NULL, 'ages-0-3', 'Fairy Tale');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Llama Llama Red Pajama', 'Dewdney, Anna', NULL, 'ages-0-3', 'Picture Book');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Mary Engelbreit''s Mother Goose', 'Engelbreit, Mary', NULL, 'ages-0-3', 'Nursery Rhymes');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Monkey and the Crocodile, The', 'Galdone, Paul', NULL, 'ages-0-3', 'Folklore');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Mr. Brown Can Moo! Can You?', 'Seuss, Dr.', NULL, 'ages-0-3', 'Picture Book');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Mr. Gumpy''s Motor Car', 'Burnhingham, John', NULL, 'ages-0-3', 'Picture Book');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Mr. Gumpy''s Outing', 'Burnhingham, John', NULL, 'ages-0-3', 'Picture Book');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('My First Mother Goose', 'dePaola, Tomie', NULL, 'ages-0-3', 'Nursery Rhymes');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('My Very First Mother Goose', 'Opie, Iona', 'Wells, Rosemary', 'ages-0-3', 'Nursery Rhymes');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Napping House, The', 'Wood, Don and Audrey', NULL, 'ages-0-3', 'Picture Book');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('One Fish Two Fish Red Fish Blue Fish', 'Seuss, Dr.', NULL, 'ages-0-3', 'Picture Book');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('One-Dog Canoe', 'Casanova, Mary', 'Hoyt, Ard', 'ages-0-3', 'Picture Book');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('One-Dog Sleigh', 'Casanova, Mary', 'Hoyt, Ard', 'ages-0-3', 'Picture Book');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Pancakes for Breakfast', 'dePaola, Tomie', NULL, 'ages-0-3', 'Picture Book');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Pancakes! Pancakes!', 'Carle, Eric', NULL, 'ages-0-3', 'Picture Book');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Peek-a-Boo', 'Ahlberg, Allan and Janet', NULL, 'ages-0-3', 'Picture Book');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Peek-a-Moo!', 'Laden, Nina', NULL, 'ages-0-3', 'Picture Book');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Peek-a-Who?', 'Laden, Nina', NULL, 'ages-0-3', 'Picture Book');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Peekaboo Morning', 'Isadora, Rachel', NULL, 'ages-0-3', 'Picture Book');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Pelle''s New Suit', 'Beskow, Elsa', NULL, 'ages-0-3', 'Picture Book');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Peter''s Chair', 'Keats, Ezra Jack', NULL, 'ages-0-3', 'Picture Book');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Quick As a Cricket', 'Wood, Don and Audrey', NULL, 'ages-0-3', 'Picture Book');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Read-Aloud Bible Stories', 'Lindvall, Ella', 'Puckett, H. Kent', 'ages-0-3', 'Faith');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Real Mother Goose, The', 'Wright, Blanche Fisher', NULL, 'ages-0-3', 'Nursery Rhymes');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Richard Scarry''s Best Mother Goose Ever', 'Scarry, Richard', NULL, 'ages-0-3', 'Nursery Rhymes');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Sheep in a Jeep', 'Shaw, Nancy', NULL, 'ages-0-3', 'Picture Book');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Snail and the Whale, The', 'Donaldson, Julia', 'Scheffler, Axel', 'ages-0-3', 'Picture Book');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Snowy Day, The', 'Keats, Ezra Jack', NULL, 'ages-0-3', 'Picture Book');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('So Much!', 'Cooke, Trish', 'Oxenbury, Helen', 'ages-0-3', 'Picture Book');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Sylvia Long''s Mother Goose', 'Long, Sylvia', NULL, 'ages-0-3', 'Nursery Rhymes');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Ten Little Fingers and Ten Little Toes', 'Fox, Mem', 'Oxenbury, Helen', 'ages-0-3', 'Picture Book');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Ten, Nine, Eight', 'Bang, Molly', NULL, 'ages-0-3', 'Picture Book');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Three Bears, The', 'Galdone, Paul', NULL, 'ages-0-3', 'Fairy Tale');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Three Billy Goats Gruff, The', 'Galdone, Paul', NULL, 'ages-0-3', 'Folklore');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Three Little Kittens, The', 'Galdone, Paul', NULL, 'ages-0-3', 'Nursery Rhymes');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Three Little Pigs, The', 'Galdone, Paul', NULL, 'ages-0-3', 'Fairy Tale');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Tomie dePaola''s Mother Goose', 'dePaola, Tomie', NULL, 'ages-0-3', 'Nursery Rhymes');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Town Mouse and the Country Mouse, The', 'Galdone, Paul', NULL, 'ages-0-3', 'Fable');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Twinkle, Twinkle, Little Star', NULL, 'Trapani, Iza', 'ages-0-3', 'Nursery Rhymes');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Very Hungry Caterpillar, The', 'Carle, Eric', NULL, 'ages-0-3', 'Picture Book');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Very Lonely Firefly, The', 'Carle, Eric', NULL, 'ages-0-3', 'Picture Book');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('We''re Going on a Bear Hunt', 'Rosen, Michael', 'Oxenbury, Helen', 'ages-0-3', 'Picture Book');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Whistle for Willie', 'Keats, Ezra Jack', NULL, 'ages-0-3', 'Picture Book');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Whose Knees Are These?', 'Asim, Jabari', 'Pham, LeUyen', 'ages-0-3', 'Picture Book');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Whose Toes Are Those?', 'Asim, Jabari', 'Pham, LeUyen', 'ages-0-3', 'Picture Book');
 
--- ── Toddlers (0–3) ──────────────────────────────────────────────────────────
-('Goodnight Moon',                               'Margaret Wise Brown',       'Clement Hurd',        'toddler',          'Bedtime',        'A classic bedtime story with soothing rhymes.',                                          10),
-('The Very Hungry Caterpillar',                  'Eric Carle',                NULL,                  'toddler',          'Learning',       'Follow a caterpillar as he eats his way to becoming a butterfly.',                       20),
-('Brown Bear, Brown Bear, What Do You See?',     'Bill Martin Jr.',           'Eric Carle',          'toddler',          'Learning',       'Colorful animals and repetitive text perfect for little ones.',                          30),
-('Pat the Bunny',                                'Dorothy Kunhardt',          NULL,                  'toddler',          'Interactive',    'A touch-and-feel classic for the youngest readers.',                                     40),
-('Guess How Much I Love You',                    'Sam McBratney',             'Anita Jeram',         'toddler',          'Family',         'A heartwarming story about love between parent and child.',                               50),
-('Dear Zoo',                                     'Rod Campbell',              NULL,                  'toddler',          'Interactive',    'Lift-the-flap fun as the zoo sends different pets.',                                     60),
+-- Ages 4-7
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Amazing Grace', 'Hoffman, Mary', 'Binch, Caroline', 'ages-4-7', 'Picture Book');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Anansi and the Magic Stick', 'Kimmel, Eric A.', 'Stevens, Janet', 'ages-4-7', 'Folklore');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Anansi and the Moss-Covered Rock', 'Kimmel, Eric A.', 'Stevens, Janet', 'ages-4-7', 'Folklore');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Anansi and the Talking Melon', 'Kimmel, Eric A.', 'Stevens, Janet', 'ages-4-7', 'Folklore');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Anna Hibiscus', 'Atinuke', 'Tobia, Lauren', 'ages-4-7', 'Fiction');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Art Lesson, The', 'dePaola, Tomie', NULL, 'ages-4-7', 'Picture Book');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('At Night', 'Bean, Jonathan', NULL, 'ages-4-7', 'Picture Book');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Bear Called Paddington, A', 'Bond, Michael', 'Fortnum, Peggy', 'ages-4-7', 'Fiction');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Bears on Hemlock Mountain, The', 'Dalgliesh, Alice', 'Sewell, Helen', 'ages-4-7', 'Adventure');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Bee Tree, The', 'Polacco, Patricia', NULL, 'ages-4-7', 'Picture Book');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Begin', 'Ulrich, Philip and Erin', NULL, 'ages-4-7', 'Faith');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Big Anthony: His Story', 'dePaola, Tomie', NULL, 'ages-4-7', 'Picture Book');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Big Snow', 'Bean, Jonathan', NULL, 'ages-4-7', 'Picture Book');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Blueberries for Sal', 'McCloskey, Robert', NULL, 'ages-4-7', 'Picture Book');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Borrowers, The', 'Norton, Mary', NULL, 'ages-4-7', 'Fantasy');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Boxes for Katje', 'Fleming, Candace', 'Dressen-McQueen, Stacey', 'ages-4-7', 'Historical Fiction');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Brave Irene', 'Steig, William', NULL, 'ages-4-7', 'Picture Book');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Building Our House', 'Bean, Jonathan', NULL, 'ages-4-7', 'Picture Book');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Burgess Animal Book for Children, The', 'Burgess, Thornton', NULL, 'ages-4-7', 'Nature');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Burgess Bird Book for Children, The', 'Burgess, Thornton', NULL, 'ages-4-7', 'Nature');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Burgess Seashore Book for Children, The', 'Burgess, Thornton', NULL, 'ages-4-7', 'Nature');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Chair for My Mother, A', 'Williams, Vera B.', NULL, 'ages-4-7', 'Picture Book');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Chicken Soup with Rice: A Book of Months', 'Sendak, Maurice', NULL, 'ages-4-7', 'Picture Book');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Circus Ship, The', 'Van Dusen, Chris', NULL, 'ages-4-7', 'Picture Book');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Clown of God, The', 'dePaola, Tomie', NULL, 'ages-4-7', 'Faith');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Curious Garden, The', 'Brown, Peter', NULL, 'ages-4-7', 'Picture Book');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Daisy Comes Home', 'Brett, Jan', NULL, 'ages-4-7', 'Picture Book');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Down to the Sea with Mr. Magee', 'Van Dusen, Chris', NULL, 'ages-4-7', 'Picture Book');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Dr. De Soto', 'Steig, William', NULL, 'ages-4-7', 'Picture Book');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Dragons of Blueland, The', 'Gannett, Ruth Stiles', 'Gannett, Ruth Christian', 'ages-4-7', 'Fantasy');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Elmer and the Dragon', 'Gannett, Ruth Stiles', 'Gannett, Ruth Christian', 'ages-4-7', 'Fantasy');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Empty Pot, The', 'Demi', NULL, 'ages-4-7', 'Folklore');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Gardener, The', 'Stewart, Sarah', 'Small, David', 'ages-4-7', 'Picture Book');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Gingerbread Christmas', 'Brett, Jan', NULL, 'ages-4-7', 'Picture Book');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Good Luck Anna Hibiscus', 'Atinuke', 'Tobia, Lauren', 'ages-4-7', 'Fiction');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Harriet, You''ll Drive Me Wild!', 'Fox, Mem', 'Frazee, Marla', 'ages-4-7', 'Picture Book');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Hat, The', 'Brett, Jan', NULL, 'ages-4-7', 'Picture Book');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Hattie & Hudson', 'Van Dusen, Chris', NULL, 'ages-4-7', 'Picture Book');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Haven', 'Ulrich, Philip and Erin', NULL, 'ages-4-7', 'Faith');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Hedgie''s Surprise', 'Brett, Jan', NULL, 'ages-4-7', 'Picture Book');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Honey...Honey...Lion!', 'Brett, Jan', NULL, 'ages-4-7', 'Picture Book');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Hooray for Anna Hibiscus', 'Atinuke', 'Tobia, Lauren', 'ages-4-7', 'Fiction');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('House Is a House for Me, A', 'Hoberman, Mary Ann', 'Fraser, Betty', 'ages-4-7', 'Picture Book');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('How to Make a Cherry Pie and See the U.S.A.', 'Priceman, Marjorie', NULL, 'ages-4-7', 'Picture Book');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('How to Make an Apple Pie and See the World', 'Priceman, Marjorie', NULL, 'ages-4-7', 'Picture Book');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('I Want My Hat Back', 'Klassen, Jon', NULL, 'ages-4-7', 'Picture Book');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('If I Built a Car', 'Van Dusen, Chris', NULL, 'ages-4-7', 'Picture Book');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Jesus Storybook Bible, The', 'Jones, Sally Lloyd', 'Jago', 'ages-4-7', 'Faith');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Julia''s House for Lost Creatures', 'Hatke, Ben', NULL, 'ages-4-7', 'Fantasy');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Keeping Quilt, The', 'Polacco, Patricia', NULL, 'ages-4-7', 'Picture Book');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('King Hugo''s Huge Ego', 'Van Dusen, Chris', NULL, 'ages-4-7', 'Picture Book');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Lady of Guadalupe, The', 'dePaola, Tomie', NULL, 'ages-4-7', 'Faith');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Last Stop on Market Street', 'De La Peña, Matt', 'Robinson, Christian', 'ages-4-7', 'Picture Book');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Leaf Can Be, A', 'Salas, Laura Purdie', 'Dabija, Violeta', 'ages-4-7', 'Nature');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Legend of Old Befana, The', 'dePaola, Tomie', NULL, 'ages-4-7', 'Folklore');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Legend of the Poinsettia, The', 'dePaola, Tomie', NULL, 'ages-4-7', 'Faith');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Library, The', 'Stewart, Sarah', 'Small, David', 'ages-4-7', 'Picture Book');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Lion & the Mouse, The', 'Pinkney, Jerry', NULL, 'ages-4-7', 'Fable');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Little Bear', 'Minarik, Else Holmelund', 'Sendak, Maurice', 'ages-4-7', 'Fiction');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Make Way for Ducklings', 'McCloskey, Robert', NULL, 'ages-4-7', 'Picture Book');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Mercy Watson to the Rescue', 'DiCamillo, Kate', 'Van Dusen, Chris', 'ages-4-7', 'Humor');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Miss Rumphius', 'Cooney, Barbara', NULL, 'ages-4-7', 'Picture Book');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Mitten, The', 'Brett, Jan', NULL, 'ages-4-7', 'Folklore');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('More About Paddington', 'Bond, Michael', 'Fortnum, Peggy', 'ages-4-7', 'Fiction');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Morning', 'Ulrich, Philip and Erin', NULL, 'ages-4-7', 'Faith');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Mouse and the Motorcycle, The', 'Cleary, Beverly', NULL, 'ages-4-7', 'Fantasy');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Muncha! Muncha! Muncha!', 'Fleming, Candace', 'Karas, G. Brian', 'ages-4-7', 'Picture Book');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('My Father''s Dragon', 'Gannett, Ruth Stiles', 'Gannett, Ruth Christian', 'ages-4-7', 'Fantasy');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Nana Upstairs & Nana Downstairs', 'dePaola, Tomie', NULL, 'ages-4-7', 'Picture Book');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Nate the Great', 'Sharmat, Marjorie', 'Simont, Marc', 'ages-4-7', 'Mystery');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Night Before Christmas, The', 'Brett, Jan', NULL, 'ages-4-7', 'Picture Book');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Nobody Likes a Goblin', 'Hatke, Ben', NULL, 'ages-4-7', 'Fantasy');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Oh No!', 'Fleming, Candace', 'Rohmann, Eric', 'ages-4-7', 'Picture Book');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Old Mother West WInd', 'Burgess, Thornton', NULL, 'ages-4-7', 'Nature');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('One Morning in Maine', 'McCloskey, Robert', NULL, 'ages-4-7', 'Picture Book');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Owl Moon', 'Yolen, Jane', 'Schoennher, John', 'ages-4-7', 'Picture Book');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Ox-Cart Man', 'Hall, Donald', 'Cooney, Barbara', 'ages-4-7', 'Historical Fiction');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Paddington Abroad', 'Bond, Michael', 'Fortnum, Peggy', 'ages-4-7', 'Fiction');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Paddington Helps Out', 'Bond, Michael', 'Fortnum, Peggy', 'ages-4-7', 'Fiction');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Paddington Marches On', 'Bond, Michael', 'Fortnum, Peggy', 'ages-4-7', 'Fiction');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Puss in Boots', 'Pinkney, Jerry', NULL, 'ages-4-7', 'Fairy Tale');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Rechenka''s Eggs', 'Polacco, Patricia', NULL, 'ages-4-7', 'Folklore');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Relatives Came, The', 'Rylant, Cynthia', 'Gammell, Stephen', 'ages-4-7', 'Picture Book');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Rock Can Be, A', 'Salas, Laura Purdie', 'Dabija, Violeta', 'ages-4-7', 'Nature');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Roxaboxen', 'McLerran, Alice', 'Cooney, Barbara', 'ages-4-7', 'Picture Book');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Sam and Dave Dig a Hole', 'Barnett, Mac', 'Klassen, Jon', 'ages-4-7', 'Picture Book');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Seven Silly Eaters, The', 'Hoberman, Mary Ann', 'Frazee, Marla', 'ages-4-7', 'Humor');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Somebody Loves You, Mr. Hatch', 'Spinelli, Eileen', 'Yalowitz, Paul', 'ages-4-7', 'Picture Book');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Strega Nona', 'dePaola, Tomie', NULL, 'ages-4-7', 'Folklore');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Strega Nona Meets Her Match', 'dePaola, Tomie', NULL, 'ages-4-7', 'Folklore');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Strega Nona Takes a Vacation', 'dePaola, Tomie', NULL, 'ages-4-7', 'Folklore');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Strega Nona''s Gift', 'dePaola, Tomie', NULL, 'ages-4-7', 'Folklore');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Strega Nona''s Harvest', 'dePaola, Tomie', NULL, 'ages-4-7', 'Folklore');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Strega Nona''s Magic Lessons', 'dePaola, Tomie', NULL, 'ages-4-7', 'Folklore');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Strega Nona: Her Story', 'dePaola, Tomie', NULL, 'ages-4-7', 'Folklore');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Tales of Olga da Polga, The', 'Bond, Michael', NULL, 'ages-4-7', 'Fiction');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('This Is Not My Hat', 'Klassen, Jon', NULL, 'ages-4-7', 'Humor');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('This Is my Home, This Is My School', 'Bean, Jonathan', NULL, 'ages-4-7', 'Picture Book');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Thornton Burgess Animal Stories', 'Burgess, Thornton', NULL, 'ages-4-7', 'Nature');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Three Billy Goats Gruff, The', 'Pinkney, Jerry', NULL, 'ages-4-7', 'Folklore');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Three Little Kittens, The', 'Pinkney, Jerry', NULL, 'ages-4-7', 'Nursery Rhymes');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Three Snow Bears, The', 'Brett, Jan', NULL, 'ages-4-7', 'Folklore');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Thundercake', 'Polacco, Patricia', NULL, 'ages-4-7', 'Picture Book');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Time of Wonder', 'McCloskey, Robert', NULL, 'ages-4-7', 'Picture Book');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Tom', 'dePaola, Tomie', NULL, 'ages-4-7', 'Picture Book');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Tony''s Bread', 'dePaola, Tomie', NULL, 'ages-4-7', 'Folklore');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Tops and Bottoms', 'Stevens, Janet', NULL, 'ages-4-7', 'Folklore');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Tortoise and the Hare, The', 'Pinkney, Jerry', NULL, 'ages-4-7', 'Fable');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Tumtum and Nutmeg', 'Bearn, Emily', NULL, 'ages-4-7', 'Fantasy');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Turnip, The', 'Brett, Jan', NULL, 'ages-4-7', 'Folklore');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Water Can Be...', 'Salas, Laura Purdie', 'Dabija, Violeta', 'ages-4-7', 'Nature');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('We Found a Hat', 'Klassen, Jon', NULL, 'ages-4-7', 'Humor');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Widewater', 'Ulrich, Philip and Erin', NULL, 'ages-4-7', 'Faith');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Wild Christmas Reindeer', 'Brett, Jan', NULL, 'ages-4-7', 'Picture Book');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Winnie-the-Pooh', 'Milne, A. A.', 'Shepherd, Ernest H.', 'ages-4-7', 'Classic');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Wonderful Wizard of Oz, The', 'Baum, L. Frank', NULL, 'ages-4-7', 'Fantasy');
 
--- ── Preschool (3–5) ─────────────────────────────────────────────────────────
-('Where the Wild Things Are',                    'Maurice Sendak',            NULL,                  'preschool',        'Fantasy',        'Max sails to where the wild things are in this imaginative tale.',                       10),
-('Chicka Chicka Boom Boom',                      'Bill Martin Jr.',           'Lois Ehlert',         'preschool',        'Learning',       'A rhythmic alphabet adventure up the coconut tree.',                                     20),
-('The Gruffalo',                                 'Julia Donaldson',           'Axel Scheffler',      'preschool',        'Fantasy',        'A clever mouse outsmarts predators with an imaginary creature.',                         30),
-('Corduroy',                                     'Don Freeman',               NULL,                  'preschool',        'Friendship',     'A teddy bear searches for his missing button.',                                          40),
-('Curious George',                               'H.A. Rey',                  NULL,                  'preschool',        'Adventure',      'A curious monkey gets into all kinds of mischief.',                                      50),
-('If You Give a Mouse a Cookie',                 'Laura Numeroff',            'Felicia Bond',        'preschool',        'Humor',          'A circular tale of cause and effect.',                                                   60),
-('The Rainbow Fish',                             'Marcus Pfister',            NULL,                  'preschool',        'Friendship',     'A beautiful fish learns the joy of sharing.',                                            70),
-('Knuffle Bunny',                                'Mo Willems',                NULL,                  'preschool',        'Family',         'A toddler loses her beloved stuffed bunny.',                                             80),
+-- Ages 8-12
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('100 Cupboards', 'Wilson, N. D.', NULL, 'ages-8-12', 'Fantasy');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Action Bible, The', 'Mauss, Doug (edited)', 'Cariello, Sergio', 'ages-8-12', 'Faith');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Adventures of Huckleberry Finn, The', 'Twain, Mark', NULL, 'ages-8-12', 'Classic');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Angel Knew Papa and the Dog, The', 'McKelvey, Douglas Kaine', NULL, 'ages-8-12', 'Faith');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Ballet Shoes', 'Streatfeild, Noel', NULL, 'ages-8-12', 'Fiction');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Bark of the Bog Owl, The', 'Rogers, Jonathan', NULL, 'ages-8-12', 'Fantasy');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Because of Winn-Dixie', 'DiCamillo, Kate', NULL, 'ages-8-12', 'Fiction');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Blue Birds', 'Rose, Caroline Starr', NULL, 'ages-8-12', 'Historical Fiction');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('By the Great Horn Spoon', 'Fleischman, Sid', NULL, 'ages-8-12', 'Adventure');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('By the Shores of Silver Lake', 'Wilder, Laura Ingalls', NULL, 'ages-8-12', 'Historical Fiction');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Caddie Woodlawn', 'Brink, Carol Ryrie', NULL, 'ages-8-12', 'Historical Fiction');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Charlie and the Chocolate Factory', 'Dahl, Roald', NULL, 'ages-8-12', 'Fantasy');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Charlotte''s Web', 'White, E. B.', 'Williams, Garth', 'ages-8-12', 'Classic');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Cilla Lee-Jenkins: Future Author Extraordinaire', 'Tan, Susan', 'Wulfekotte, Dana', 'ages-8-12', 'Humor');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Dreamer, The', 'Ryan, Pam Muñoz', NULL, 'ages-8-12', 'Historical Fiction');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Edge of Extinction: The Ark Plan', 'Martin, Laura', NULL, 'ages-8-12', 'Adventure');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Egermeier''s Bible Story Book', 'Egermeier, Elise', 'Uptton, Clive', 'ages-8-12', 'Faith');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Ember Falls', 'Smith, S. D.', 'Franzen, Zach', 'ages-8-12', 'Fantasy');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Ember Rising', 'Smith, S. D.', 'Franzen, Zach', 'ages-8-12', 'Fantasy');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Emmy and the Incredible Shrinking Rat', 'Jonell, Lynne', 'Bean, Jonathan', 'ages-8-12', 'Fantasy');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Esperanza Rising', 'Ryan, Pam Muñoz', NULL, 'ages-8-12', 'Historical Fiction');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Fablehaven', 'Mull, Brandon', NULL, 'ages-8-12', 'Fantasy');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Family Under the Bridge, The', 'Carlson, Natalie Savage', 'Williams, Garth', 'ages-8-12', 'Historical Fiction');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Farmer Boy', 'Wilder, Laura Ingalls', NULL, 'ages-8-12', 'Historical Fiction');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Finding Winnie: The True Story of the World''s Most Famous Bear', 'Mattick, Lindsay', 'Blackall, Sophie', 'ages-8-12', 'Historical Fiction');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Five Children and It', 'Nesbit, Edith', NULL, 'ages-8-12', 'Fantasy');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Frindle', 'Clements, Andrew', NULL, 'ages-8-12', 'Fiction');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Gone-Away Lake', 'Enright, Elizabeth', NULL, 'ages-8-12', 'Adventure');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Green Ember, The', 'Smith, S. D.', 'Franzen, Zach', 'ages-8-12', 'Fantasy');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Half Magic', 'Eager, Edward', 'Bodecker, N. M.', 'ages-8-12', 'Fantasy');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Happy Little Family', 'Caudill, Rebecca', NULL, 'ages-8-12', 'Historical Fiction');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Heidi', 'Spyri, Johanna', NULL, 'ages-8-12', 'Classic');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Henry Huggins', 'Cleary, Beverly', NULL, 'ages-8-12', 'Fiction');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Henry and the Chalk Dragon', 'Trafton, Jennifer', NULL, 'ages-8-12', 'Fantasy');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Hidden Gallery, The', 'Wood, Maryrose', NULL, 'ages-8-12', 'Mystery');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Horse and His Boy, The', 'Lewis, C. S.', NULL, 'ages-8-12', 'Fantasy');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Interrupted Tale, The', 'Wood, Maryrose', NULL, 'ages-8-12', 'Mystery');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Jasper and the Riddle of Riley''s Mine', 'Rose, Caroline Starr', NULL, 'ages-8-12', 'Historical Fiction');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Johnny Tremain', 'Forbes, Esther', NULL, 'ages-8-12', 'Historical Fiction');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Justin Morgan Had a Horse', 'Henry, Marguerite', NULL, 'ages-8-12', 'Historical Fiction');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Knight''s Castle', 'Eager, Edward', NULL, 'ages-8-12', 'Fantasy');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Lion, the Witch and the Wardrobe, The', 'Lewis, C. S.', NULL, 'ages-8-12', 'Fantasy');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Little House in the Big Woods', 'Wilder, Laura Ingalls', NULL, 'ages-8-12', 'Historical Fiction');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Little House on the Prairie', 'Wilder, Laura Ingalls', NULL, 'ages-8-12', 'Historical Fiction');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Little Town on the Prairie', 'Wilder, Laura Ingalls', NULL, 'ages-8-12', 'Historical Fiction');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Locomotive', 'Floca, Brian', NULL, 'ages-8-12', 'Historical Fiction');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Long Winter, The', 'Wilder, Laura Ingalls', NULL, 'ages-8-12', 'Historical Fiction');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Long-Lost Home, The', 'Wood, Maryrose', NULL, 'ages-8-12', 'Mystery');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Magic by the Lake', 'Enright, Elizabeth', NULL, 'ages-8-12', 'Fantasy');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Magic or Not?', 'Eager, Edward', NULL, 'ages-8-12', 'Fantasy');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Magician''s Nephew, The', 'Lewis, C. S.', NULL, 'ages-8-12', 'Fantasy');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Mary Poppins', 'Travers, P. L.', NULL, 'ages-8-12', 'Fantasy');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Matilda', 'Dahl, Roald', NULL, 'ages-8-12', 'Humor');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Moffats, The', 'Estes, Eleanor', NULL, 'ages-8-12', 'Historical Fiction');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Moonshot: The Flight of Apollo 11', 'Floca, Brian', NULL, 'ages-8-12', 'Nonfiction');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Mrs. Frisby and the Rats of NIMH', 'O''Brien, Robert C.', NULL, 'ages-8-12', 'Fantasy');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('My Side of the Mountain', 'George, Jean Craighead', NULL, 'ages-8-12', 'Adventure');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Mysterious Benedict Society, The', 'Stewart, Trenton Lee', NULL, 'ages-8-12', 'Mystery');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Mysterious Howling, The', 'Wood, Maryrose', NULL, 'ages-8-12', 'Mystery');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Number the Stars', 'Lowry, Lois', NULL, 'ages-8-12', 'Historical Fiction');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('On the Banks of Plum Creek', 'WIlder, Laura Ingalls', NULL, 'ages-8-12', 'Historical Fiction');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('On to Oregon!', 'Morrow, Honore', NULL, 'ages-8-12', 'Historical Fiction');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Penderwicks, The', 'Birdsall, Jeanne', NULL, 'ages-8-12', 'Fiction');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Peter Nimble and His Fantastic Eyes', 'Auxier, Jonathan', NULL, 'ages-8-12', 'Fantasy');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Poem for Peter, A: The Story of Ezra Jack Keats and the Creation of The Snowy Day', 'Pinkney, Andrea Davis', 'Johnson, Steve', 'ages-8-12', 'Biography');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Poppy', 'Avi', NULL, 'ages-8-12', 'Adventure');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Prairie Thief, The', 'Wiley, Melissa', NULL, 'ages-8-12', 'Historical Fiction');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Prince Caspian', 'Lewis, C. S.', NULL, 'ages-8-12', 'Fantasy');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Railway Children, The', 'Nesbit, Edith', NULL, 'ages-8-12', 'Fiction');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Ramona the Pest', 'Cleary, Beverly', NULL, 'ages-8-12', 'Humor');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Read-Aloud Book of Bible Stories', 'Steedman, Amy', NULL, 'ages-8-12', 'Faith');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Redwall', 'Jacques, Brian', NULL, 'ages-8-12', 'Fantasy');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Return to Gone-Away', 'Enright, Elizabeth', NULL, 'ages-8-12', 'Adventure');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Right Word, The: Roget and His Thesaurus', 'Bryant, Jen', 'Sweet, Melissa', 'ages-8-12', 'Biography');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Rise and Fall of Mount Majestic, The', 'Trafton, Jennifer', NULL, 'ages-8-12', 'Fantasy');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Saturdays, The', 'Enright, Elizabeth', NULL, 'ages-8-12', 'Fiction');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Search for Delicious, The', 'Babbitt, Natalie', NULL, 'ages-8-12', 'Fantasy');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Secret Garden, The', 'Burnett, Frances Hodgson', NULL, 'ages-8-12', 'Classic');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Secret School, The', 'Avi', NULL, 'ages-8-12', 'Historical Fiction');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Secret of the Swamp King, The', 'Rogers, Jonathan', NULL, 'ages-8-12', 'Fantasy');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Seven-Day Magic', 'Eager, Edward', NULL, 'ages-8-12', 'Fantasy');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Silver Chair, The', 'Lewis, C. S.', NULL, 'ages-8-12', 'Fantasy');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Some Writer!: The Story of E. B. White', 'Sweet, Melissa', NULL, 'ages-8-12', 'Biography');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Starry River of the SKy', 'Lin, Grace', NULL, 'ages-8-12', 'Fantasy');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Stella by Starlight', 'Draper, Sharon', NULL, 'ages-8-12', 'Historical Fiction');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Stuart LIttle', 'White, E. B.', 'Williams, Garth', 'ages-8-12', 'Classic');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Surviving the Applewhites', 'Tolan, Stephanie S.', NULL, 'ages-8-12', 'Humor');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Swallows and Amazons', 'Ransome, Arthur', NULL, 'ages-8-12', 'Adventure');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Swiss Family Robinson', 'Wyss, Johann D.', NULL, 'ages-8-12', 'Adventure');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Tale of Desperaux, The', 'DiCamillo, Kate', NULL, 'ages-8-12', 'Fantasy');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('These Happy Golden Years', 'Wilder, Laura Ingalls', NULL, 'ages-8-12', 'Historical Fiction');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Thirteen Clocks, The', 'Thurber, James', NULL, 'ages-8-12', 'Fantasy');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Time Garden, The', 'Eager, Edward', NULL, 'ages-8-12', 'Fantasy');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Trumpet of the Swan', 'White, E. B.', NULL, 'ages-8-12', 'Classic');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Tuck Everlasting', 'Babbitt, Natalie', NULL, 'ages-8-12', 'Fantasy');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Understood Betsy', 'Fisher, Dorothy Canfield', NULL, 'ages-8-12', 'Historical Fiction');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Unmapped Sea, The', 'Wood, Maryrose', NULL, 'ages-8-12', 'Mystery');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Unseen Guest, The', 'Wood, Maryrose', NULL, 'ages-8-12', 'Mystery');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Vanderbeekers of 141st Street, The', 'Glaser, Karina Yan', NULL, 'ages-8-12', 'Fiction');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Voyage of the Dawn Treader, The', 'Lewis, C. S.', NULL, 'ages-8-12', 'Fantasy');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Way of the Wilderking, The', 'Rogers, Jonathan', NULL, 'ages-8-12', 'Fantasy');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Well-Wishers, The', 'Eager, Edward', NULL, 'ages-8-12', 'Fantasy');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('When the Sea Turned to Silver', 'Lin, Grace', NULL, 'ages-8-12', 'Fantasy');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Where the Mountain Meets the Moon', 'Lin, Grace', NULL, 'ages-8-12', 'Fantasy');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Wind in the Willows, The', 'Grahame, Kenneth', NULL, 'ages-8-12', 'Classic');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Wolves of Willoughby Chase, The', 'Aiken, Joan', NULL, 'ages-8-12', 'Historical Fiction');
 
--- ── Early Elementary (5–7) ──────────────────────────────────────────────────
-('Frog and Toad Are Friends',                    'Arnold Lobel',              NULL,                  'early-elementary', 'Friendship',     'Five stories about two best friends.',                                                   10),
-('Amelia Bedelia',                               'Peggy Parish',              'Fritz Siebel',        'early-elementary', 'Humor',          'A literal-minded housekeeper creates hilarious chaos.',                                  20),
-('Magic Tree House: Dinosaurs Before Dark',      'Mary Pope Osborne',         'Sal Murdocca',        'early-elementary', 'Adventure',      'Jack and Annie travel through time.',                                                    30),
-('Junie B. Jones and the Stupid Smelly Bus',     'Barbara Park',              'Denise Brunkus',      'early-elementary', 'Humor',          'A spunky kindergartner navigates school.',                                               40),
-('Mercy Watson to the Rescue',                   'Kate DiCamillo',            'Chris Van Dusen',     'early-elementary', 'Humor',          'A toast-loving pig saves the day.',                                                      50),
-('Elephant & Piggie: There Is a Bird on Your Head!', 'Mo Willems',           NULL,                  'early-elementary', 'Humor',          'Simple, hilarious stories of friendship.',                                               60),
-('Owl at Home',                                  'Arnold Lobel',              NULL,                  'early-elementary', 'Fantasy',        'Five gentle stories about a kind owl.',                                                  70),
-('Dragons Love Tacos',                           'Adam Rubin',                'Daniel Salmieri',     'early-elementary', 'Humor',          'Dragons really, really love tacos (but not salsa!).',                                   80),
-
--- ── Elementary (7–9) ────────────────────────────────────────────────────────
-('Charlotte''s Web',                             'E.B. White',                'Garth Williams',      'elementary',       'Classic',        'A spider saves her pig friend through the power of words.',                              10),
-('The BFG',                                      'Roald Dahl',                'Quentin Blake',       'elementary',       'Fantasy',        'A big friendly giant and a little girl capture dreams.',                                 20),
-('Stuart Little',                                'E.B. White',                'Garth Williams',      'elementary',       'Adventure',      'A mouse born to a human family goes on adventures.',                                    30),
-('The Boxcar Children',                          'Gertrude Chandler Warner',  NULL,                  'elementary',       'Mystery',        'Four orphans make a home in an abandoned boxcar.',                                       40),
-('Ramona Quimby, Age 8',                         'Beverly Cleary',            'Alan Tiegreen',       'elementary',       'Realistic',      'Third-grader Ramona faces everyday challenges.',                                         50),
-('James and the Giant Peach',                    'Roald Dahl',                'Quentin Blake',       'elementary',       'Fantasy',        'A boy escapes in a magical giant peach.',                                                60),
-('Mr. Popper''s Penguins',                       'Richard Atwater',           'Robert Lawson',       'elementary',       'Humor',          'A house painter receives a penguin from Antarctica.',                                    70),
-('Fantastic Mr. Fox',                            'Roald Dahl',                'Quentin Blake',       'elementary',       'Adventure',      'A clever fox outwits three mean farmers.',                                               80),
-('The Cricket in Times Square',                  'George Selden',             'Garth Williams',      'elementary',       'Fantasy',        'A musical cricket finds friendship in New York.',                                        90),
-
--- ── Upper Elementary (9–11) ─────────────────────────────────────────────────
-('Harry Potter and the Sorcerer''s Stone',       'J.K. Rowling',              'Mary GrandPré',       'upper-elementary', 'Fantasy',        'A boy discovers he is a wizard.',                                                        10),
-('The Lion, the Witch and the Wardrobe',         'C.S. Lewis',                'Pauline Baynes',      'upper-elementary', 'Fantasy',        'Four children enter a magical land through a wardrobe.',                                 20),
-('Hatchet',                                      'Gary Paulsen',              NULL,                  'upper-elementary', 'Survival',       'A boy survives alone in the Canadian wilderness.',                                       30),
-('Holes',                                        'Louis Sachar',              NULL,                  'upper-elementary', 'Adventure',      'A boy is sent to a correctional camp to dig holes.',                                     40),
-('Percy Jackson: The Lightning Thief',           'Rick Riordan',              NULL,                  'upper-elementary', 'Fantasy',        'A boy discovers he is the son of a Greek god.',                                          50),
-('A Wrinkle in Time',                            'Madeleine L''Engle',        NULL,                  'upper-elementary', 'Science Fiction','Meg travels through space and time to rescue her father.',                               60),
-('Tuck Everlasting',                             'Natalie Babbitt',           NULL,                  'upper-elementary', 'Fantasy',        'A girl discovers a family that lives forever.',                                          70),
-('Island of the Blue Dolphins',                  'Scott O''Dell',             NULL,                  'upper-elementary', 'Survival',       'A girl survives alone on an island for years.',                                          80),
-('The Phantom Tollbooth',                        'Norton Juster',             'Jules Feiffer',       'upper-elementary', 'Fantasy',        'A bored boy journeys through the Lands Beyond.',                                         90),
-('The Secret Garden',                            'Frances Hodgson Burnett',   NULL,                  'upper-elementary', 'Classic',        'An orphan discovers a hidden garden and finds healing.',                                100),
-
--- ── Middle School (11–14) ────────────────────────────────────────────────────
-('The Hobbit',                                   'J.R.R. Tolkien',            NULL,                  'middle-school',    'Fantasy',        'A hobbit embarks on an unexpected adventure.',                                           10),
-('The Outsiders',                                'S.E. Hinton',               NULL,                  'middle-school',    'Realistic',      'A classic story of teenage rivalry and loyalty.',                                        20),
-('The Giver',                                    'Lois Lowry',                NULL,                  'middle-school',    'Dystopian',      'A boy discovers the dark truth about his utopian society.',                              30),
-('Roll of Thunder, Hear My Cry',                 'Mildred D. Taylor',         NULL,                  'middle-school',    'Historical',     'A Black family fights for their land in 1930s Mississippi.',                             40),
-('The Diary of Anne Frank',                      'Anne Frank',                NULL,                  'middle-school',    'Memoir',         'A Jewish girl documents hiding during the Holocaust.',                                   50),
-('Number the Stars',                             'Lois Lowry',                NULL,                  'middle-school',    'Historical',     'A Danish girl helps her Jewish friend escape the Nazis.',                                60),
-('The Hunger Games',                             'Suzanne Collins',           NULL,                  'middle-school',    'Dystopian',      'A girl volunteers to fight to the death in a televised competition.',                    70),
-('Wonder',                                       'R.J. Palacio',              NULL,                  'middle-school',    'Realistic',      'A boy with facial differences starts public school.',                                    80),
-('Treasure Island',                              'Robert Louis Stevenson',    NULL,                  'middle-school',    'Adventure',      'A boy joins pirates searching for buried treasure.',                                     90),
-('The Call of the Wild',                         'Jack London',               NULL,                  'middle-school',    'Adventure',      'A dog discovers his wild nature in the Yukon.',                                         100);
+-- Ages 13+
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Adventures of Tom Sawyer, The', 'Twain, Mark', NULL, 'ages-13-plus', 'Classic');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('American Plague, An: The True and Terrifying Story of the Yellow Fever Epidemic of 1793', 'Murphy, Jim', NULL, 'ages-13-plus', 'Nonfiction');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Anne of Green Gables', 'Montgomery, Lucy Maud', NULL, 'ages-13-plus', 'Classic');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Banner in the Sky', 'Ullman, James Ramsey', NULL, 'ages-13-plus', 'Adventure');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Boundless, The', 'Oppel, Kenneth', NULL, 'ages-13-plus', 'Historical Fiction');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Boys in the Boat, The', 'Brown, Daniel James', NULL, 'ages-13-plus', 'Nonfiction');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Bridge to Terabithia', 'Paterson, Katherine', NULL, 'ages-13-plus', 'Fiction');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Brown Girl Dreaming', 'Woodson, Jacqueline', NULL, 'ages-13-plus', 'Biography');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Bud, Not Buddy', 'Curtis, Christopher Paul', NULL, 'ages-13-plus', 'Historical Fiction');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Butterfly, The', 'Polacco, Patricia', NULL, 'ages-13-plus', 'Historical Fiction');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Castle', 'Macaulay, David', NULL, 'ages-13-plus', 'Nonfiction');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Cathedral', 'Macaulay, David', NULL, 'ages-13-plus', 'Nonfiction');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Charlatan''s Boy, The', 'Rogers, Jonathan', NULL, 'ages-13-plus', 'Fantasy');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Christmas Carol, A', 'Dickens, Charles', NULL, 'ages-13-plus', 'Classic');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('City', 'Macaulay, David', NULL, 'ages-13-plus', 'Nonfiction');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Crossover, The', 'Alexander, Kwame', NULL, 'ages-13-plus', 'Fiction');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Echo', 'Ryan, Pam Muñoz', NULL, 'ages-13-plus', 'Historical Fiction');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Enna Burning', 'Hale, Shannon', NULL, 'ages-13-plus', 'Fantasy');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Fall of Marigolds, A', 'Meissner, Susan', NULL, 'ages-13-plus', 'Historical Fiction');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Fellowship of the Ring, The', 'Tolkien, J. R. R.', NULL, 'ages-13-plus', 'Fantasy');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Fever', 'Anderson, Laurie Halse', NULL, 'ages-13-plus', 'Historical Fiction');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Forest Born', 'Hale, Shannon', NULL, 'ages-13-plus', 'Fantasy');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Gathering Blue', 'Lowry, Lois', NULL, 'ages-13-plus', 'Science Fiction');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Giver, The', 'Lowry, Lois', NULL, 'ages-13-plus', 'Science Fiction');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('God''s Smuggler', 'Andrew, Brother', NULL, 'ages-13-plus', 'Biography');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Goose Girl, The', 'Hale, Shannon', NULL, 'ages-13-plus', 'Fantasy');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Hattie Big Sky', 'Larson, Kirby', NULL, 'ages-13-plus', 'Historical Fiction');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Hattie Ever After', 'Larson, Kirby', NULL, 'ages-13-plus', 'Historical Fiction');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Hiding Place, The', 'Boom, Corrie Ten', NULL, 'ages-13-plus', 'Biography');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Hobbit, The', 'Tolkien, J. R. R.', NULL, 'ages-13-plus', 'Fantasy');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Homeless Bird', 'Whelan, Gloria', NULL, 'ages-13-plus', 'Fiction');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('How to Win Friends and Influence People', 'Carnegie, Dale', NULL, 'ages-13-plus', 'Nonfiction');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Hunger Games, The', 'Collins, Suzanne', NULL, 'ages-13-plus', 'Science Fiction');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Inside Out and Back Again', 'Lai, Thanhha', NULL, 'ages-13-plus', 'Historical Fiction');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Let the Circle Be Unbroken', 'Taylor, Mildred', NULL, 'ages-13-plus', 'Historical Fiction');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Listening for Lions', 'Whelan, Gloria', NULL, 'ages-13-plus', 'Historical Fiction');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Little Men', 'Alcott, Louisa May', NULL, 'ages-13-plus', 'Classic');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Little Women', 'Alcott, Louisa May', NULL, 'ages-13-plus', 'Classic');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Long Walk to Water, A', 'Park, Linda Sue', NULL, 'ages-13-plus', 'Historical Fiction');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Meet the Austins', 'L''Engle, Madeleine', NULL, 'ages-13-plus', 'Fiction');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Messenger', 'Lowry, Lois', NULL, 'ages-13-plus', 'Science Fiction');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Monster in the Hollows, The', 'Peterson, Andrew', NULL, 'ages-13-plus', 'Fantasy');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Moon Over Manifest', 'Vanderpool, Clare', NULL, 'ages-13-plus', 'Historical Fiction');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Navigating Early', 'Vanderpool, Clare', NULL, 'ages-13-plus', 'Adventure');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('North! Or Be Eaten', 'Peterson, Andrew', NULL, 'ages-13-plus', 'Fantasy');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Okay for Now', 'Schmidt, Gary D.', NULL, 'ages-13-plus', 'Historical Fiction');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('On the Edge of the Dark Sea of Darkness', 'Peterson, Andrew', NULL, 'ages-13-plus', 'Fantasy');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Out of the Dust', 'Hesse, Karen', NULL, 'ages-13-plus', 'Historical Fiction');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Perilous Gard, The', 'Pope, Elizabeth Marie', NULL, 'ages-13-plus', 'Historical Fiction');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Piecing Me Together', 'Watson, Renée', NULL, 'ages-13-plus', 'Fiction');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Pink and Say', 'Polacco, Patricia', NULL, 'ages-13-plus', 'Historical Fiction');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Pride and Prejudice', 'Austin, Jane', NULL, 'ages-13-plus', 'Classic');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Princess Academy', 'Hale, Shannon', NULL, 'ages-13-plus', 'Fantasy');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Pyramid', 'Macaulay, David', NULL, 'ages-13-plus', 'Nonfiction');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Red Scarf Girl', 'Jiang, Ji-li', NULL, 'ages-13-plus', 'Biography');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Return of the King, The', 'Tolkien, J. R. R.', NULL, 'ages-13-plus', 'Fantasy');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('River Secrets', 'Hale, Shannon', NULL, 'ages-13-plus', 'Fantasy');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Screwtape Letters, The', 'Lewis, C. S.', NULL, 'ages-13-plus', 'Classic');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Sherwood Ring, The', 'Pope, Elizabeth Marie', NULL, 'ages-13-plus', 'Historical Fiction');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Show Way', 'Woodson, Jacqueline', NULL, 'ages-13-plus', 'Historical Fiction');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Single Shard, A', 'Park, Linda Sue', NULL, 'ages-13-plus', 'Historical Fiction');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Sit-In', 'Pinkney, Andrea', 'Pinkney, Brian', 'ages-13-plus', 'Historical Fiction');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Son', 'Lowry, Lois', NULL, 'ages-13-plus', 'Science Fiction');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('To Kill a Mockingbird', 'Lee, Harper', NULL, 'ages-13-plus', 'Classic');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Treasure Island', 'Stevenson, Robert Louis', NULL, 'ages-13-plus', 'Adventure');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('True Confessions of Charlotte Doyle, The', 'Avi', NULL, 'ages-13-plus', 'Historical Fiction');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Two Towers, The', 'Tolkien, J. R. R.', NULL, 'ages-13-plus', 'Fantasy');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Unbroken (The Young Adult Adaptation): An Olympian''s Journey from Airman to Castaway to Captive', 'Hillenbrand, Laura', NULL, 'ages-13-plus', 'Biography');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Warden and the Wolf King, The', 'Peterson, Andrew', NULL, 'ages-13-plus', 'Fantasy');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Watsons Go to Birmingham, The--1963', 'Curtis, Christopher Paul', NULL, 'ages-13-plus', 'Historical Fiction');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Way Things Work Now, The', 'Macaulay, David', NULL, 'ages-13-plus', 'Nonfiction');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Wednesday Wars, The', 'Schmidt, Gary D.', NULL, 'ages-13-plus', 'Historical Fiction');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Where the Red Fern Grows', 'Rawls, Wilson', NULL, 'ages-13-plus', 'Classic');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Wingfeather Tales', 'Peterson, Andrew', NULL, 'ages-13-plus', 'Fantasy');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Wonder', 'Palacio, R. J.', NULL, 'ages-13-plus', 'Fiction');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('Wrinkle in Time, A', 'L''Engle, Madeleine', NULL, 'ages-13-plus', 'Fantasy');
+INSERT INTO public.suggested_books (title, author, illustrator, age_group, genre) VALUES ('You Learn by Living: Eleven Keys to a More Fulfilling Life', 'Roosevelt, Eleanor', NULL, 'ages-13-plus', 'Nonfiction');

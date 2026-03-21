@@ -22,21 +22,16 @@ function getAgeGroupForChild(child) {
     const today = new Date()
     let age = today.getFullYear() - birth.getFullYear()
     if (today.getMonth() < birth.getMonth() || (today.getMonth() === birth.getMonth() && today.getDate() < birth.getDate())) age--
-    if (age <= 3) return 'toddler'
-    if (age <= 5) return 'preschool'
-    if (age <= 7) return 'early-elementary'
-    if (age <= 9) return 'elementary'
-    if (age <= 11) return 'upper-elementary'
-    if (age <= 14) return 'middle-school'
-    return 'middle-school'
+    if (age <= 3)  return 'ages-0-3'
+    if (age <= 7)  return 'ages-4-7'
+    if (age <= 12) return 'ages-8-12'
+    return 'ages-13-plus'
   }
   if (child.gradeLevel) {
     const g = String(child.gradeLevel).toLowerCase()
-    if (g.includes('early learner')) return 'preschool'
-    if (g.includes('1st') || g.includes('2nd')) return 'early-elementary'
-    if (g.includes('3rd') || g.includes('4th')) return 'elementary'
-    if (g.includes('5th') || g.includes('6th')) return 'upper-elementary'
-    if (g.includes('7th') || g.includes('8th') || g.includes('9th') || g.includes('10th') || g.includes('11th') || g.includes('12th')) return 'middle-school'
+    if (g.includes('early learner') || g.includes('pre-k') || g.includes('kindergarten') || g.includes('1st') || g.includes('2nd')) return 'ages-4-7'
+    if (g.includes('3rd') || g.includes('4th') || g.includes('5th') || g.includes('6th')) return 'ages-8-12'
+    if (g.includes('7th') || g.includes('8th') || g.includes('9th') || g.includes('10th') || g.includes('11th') || g.includes('12th')) return 'ages-13-plus'
   }
   return null
 }
@@ -52,7 +47,7 @@ function ReadAlouds() {
   const [selectedChild, setSelectedChild] = useState('')
   const [readingList, setReadingList] = useState({})
   const [showAddBook, setShowAddBook] = useState(false)
-  const [newBook, setNewBook] = useState({ title: '', author: '', ageGroup: 'elementary', genre: 'Other' })
+  const [newBook, setNewBook] = useState({ title: '', author: '', ageGroup: 'ages-8-12', genre: 'Other' })
   const [editingCustomBook, setEditingCustomBook] = useState(null)
   const [savingCustom, setSavingCustom] = useState(false)
 
@@ -96,7 +91,7 @@ function ReadAlouds() {
     return readAloudLogs
       .filter(l => l.childId === selectedChild && String(l.bookId || '').startsWith('custom-'))
       .map(l => {
-        let ageGroup = 'elementary'
+        let ageGroup = 'ages-8-12'
         let genre = 'Other'
         if (l.notes) {
           try {
@@ -133,7 +128,15 @@ function ReadAlouds() {
     return books
   }
 
-  const filteredBooks = getFilteredBooks()
+  const filteredBooks = getFilteredBooks().sort((a, b) => a.title.localeCompare(b.title))
+
+  const addAllToList = async () => {
+    if (!selectedChild) return
+    const untracked = filteredBooks.filter(b => !getBookStatus(selectedChild, b.id))
+    for (const book of untracked) {
+      await setBookStatus(selectedChild, book.id, 'want', book)
+    }
+  }
 
   const getBookStatus = (childId, bookId) => {
     if (useDbForStatus && childId) return getReadAloudStatus(childId, bookId) || null
@@ -175,10 +178,10 @@ function ReadAlouds() {
         await addCustomReadAloudBook(childId, {
           title: newBook.title.trim(),
           author: newBook.author.trim(),
-          ageGroup: newBook.ageGroup || 'elementary',
+          ageGroup: newBook.ageGroup || 'ages-8-12',
           genre: newBook.genre || 'Other'
         })
-        setNewBook({ title: '', author: '', ageGroup: 'elementary', genre: 'Other' })
+        setNewBook({ title: '', author: '', ageGroup: 'ages-8-12', genre: 'Other' })
         setShowAddBook(false)
       } catch (e) {
         console.error(e)
@@ -190,7 +193,7 @@ function ReadAlouds() {
       id: `custom-${Date.now()}`,
       title: newBook.title.trim(),
       author: newBook.author.trim() || 'Unknown Author',
-      ageGroup: newBook.ageGroup || 'elementary',
+      ageGroup: newBook.ageGroup || 'ages-8-12',
       genre: newBook.genre || 'Other',
       description: 'Custom book added by user',
       isCustom: true
@@ -203,7 +206,7 @@ function ReadAlouds() {
         books: { ...prev[childId]?.books, [customBook.id]: { status: 'want', updatedAt: new Date().toISOString() } }
       }
     }))
-    setNewBook({ title: '', author: '', ageGroup: 'elementary', genre: 'Other' })
+    setNewBook({ title: '', author: '', ageGroup: 'ages-8-12', genre: 'Other' })
     setShowAddBook(false)
   }
 
@@ -458,7 +461,7 @@ function ReadAlouds() {
                   <label>Age Group</label>
                   <select
                     className="form-select"
-                    value={editingCustomBook.ageGroup ?? 'elementary'}
+                    value={editingCustomBook.ageGroup ?? 'ages-8-12'}
                     onChange={e => setEditingCustomBook(prev => ({ ...prev, ageGroup: e.target.value }))}
                   >
                     {AGE_GROUPS.map(ag => (
@@ -530,36 +533,31 @@ function ReadAlouds() {
         </select>
       </div>
 
-      {/* Age Group Cards (when showing all) */}
+      {/* Age Group overview cards (no filter active) */}
       {selectedAgeGroup === 'all' && !searchQuery && selectedGenre === 'all' ? (
         <div className="age-groups-grid">
           {AGE_GROUPS.map(ageGroup => {
-            const books = getBooksByAgeGroup(ageGroup.id)
+            const books = suggestedBookList.filter(b => b.ageGroup === ageGroup.id).sort((a, b) => a.title.localeCompare(b.title))
             return (
               <div key={ageGroup.id} className="age-group-card">
                 <div className="age-group-header">
                   <h3>{ageGroup.name}</h3>
-                  <span className="age-range">Ages {ageGroup.ages}</span>
+                  <span className="age-range">{ageGroup.ages}</span>
                 </div>
                 <p className="age-group-desc">{ageGroup.description}</p>
                 <div className="book-preview-list">
-                  {books.slice(0, 4).map(book => {
+                  {books.slice(0, 5).map(book => {
                     const status = selectedChild ? getBookStatus(selectedChild, book.id) : null
                     return (
                       <div key={book.id} className={`book-preview ${status ? `status-${status}` : ''}`}>
-                        <Book size={14} />
+                        <Book size={12} />
                         <span>{book.title}</span>
-                        {status && (
-                          <span className="status-indicator" style={{ background: getStatusInfo(status)?.color }} />
-                        )}
+                        {status && <span className="status-indicator" style={{ background: getStatusInfo(status)?.color }} />}
                       </div>
                     )
                   })}
                 </div>
-                <button 
-                  className="view-all-btn"
-                  onClick={() => setSelectedAgeGroup(ageGroup.id)}
-                >
+                <button className="view-all-btn" onClick={() => setSelectedAgeGroup(ageGroup.id)}>
                   View all {books.length} books →
                 </button>
               </div>
@@ -567,15 +565,23 @@ function ReadAlouds() {
           })}
         </div>
       ) : (
-        /* Book List */
+        /* Book Table */
         <div className="books-list">
           <div className="list-header">
-            <span>{filteredBooks.length} books</span>
-            {selectedAgeGroup !== 'all' && (
-              <button className="clear-filter" onClick={() => setSelectedAgeGroup('all')}>
-                Clear filter
-              </button>
-            )}
+            <span>{filteredBooks.length} book{filteredBooks.length !== 1 ? 's' : ''}</span>
+            <div className="list-header-actions">
+              {isPremium && selectedChild && filteredBooks.some(b => !getBookStatus(selectedChild, b.id)) && (
+                <button className="btn-tracker btn-secondary btn-sm" onClick={addAllToList}>
+                  <Plus size={14} />
+                  Add All to List
+                </button>
+              )}
+              {(selectedAgeGroup !== 'all' || selectedGenre !== 'all' || searchQuery) && (
+                <button className="clear-filter" onClick={() => { setSelectedAgeGroup('all'); setSelectedGenre('all'); setSearchQuery('') }}>
+                  Clear filters
+                </button>
+              )}
+            </div>
           </div>
 
           {filteredBooks.length === 0 ? (
@@ -585,107 +591,85 @@ function ReadAlouds() {
               <p>Try adjusting your filters or search term.</p>
             </div>
           ) : (
-            <div className="books-grid">
-              {filteredBooks.map(book => {
-                const status = selectedChild ? getBookStatus(selectedChild, book.id) : null
-                const ageGroup = AGE_GROUPS.find(ag => ag.id === book.ageGroup)
+            <table className="books-table">
+              <thead>
+                <tr>
+                  <th>Title</th>
+                  <th>Author / Illustrator</th>
+                  <th>Age Group</th>
+                  <th>Genre</th>
+                  {isPremium && selectedChild && <th>Status</th>}
+                </tr>
+              </thead>
+              <tbody>
+                {filteredBooks.map(book => {
+                  const status = selectedChild ? getBookStatus(selectedChild, book.id) : null
+                  const statusInfo = status ? getStatusInfo(status) : null
+                  const ageGroup = AGE_GROUPS.find(ag => ag.id === book.ageGroup)
 
-                return (
-                  <div key={book.id} className={`book-card ${status ? `has-status status-${status}` : ''}`}>
-                    {book.isCustom && (
-                      <span className="custom-badge">Custom</span>
-                    )}
-                    <div className="book-icon">
-                      <Book size={28} />
-                    </div>
-                    <div className="book-content">
-                      <h4>{book.title}</h4>
-                      <p className="book-author">by {book.author}</p>
-                      {book.illustrator && (
-                        <p className="book-illustrator">illus. {book.illustrator}</p>
-                      )}
-                      <p className="book-desc">{book.description}</p>
-                      <div className="book-meta">
-                        <span className="book-age">{ageGroup?.name}</span>
+                  return (
+                    <tr key={book.id} className={`book-row ${status ? `has-status status-${status}` : ''}`}>
+                      <td className="book-title-cell">
+                        {book.isCustom && <span className="custom-badge">Custom</span>}
+                        <span className="book-title-text">{book.title}</span>
+                        {book.description && <span className="book-desc-tooltip" title={book.description} />}
+                      </td>
+                      <td className="book-author-cell">
+                        <span>{book.author}</span>
+                        {book.illustrator && <span className="book-illustrator">illus. {book.illustrator}</span>}
+                      </td>
+                      <td className="book-age-cell">
+                        <span className="book-age-badge">{ageGroup?.name}</span>
+                      </td>
+                      <td className="book-genre-cell">
                         {book.genre && book.genre !== 'Other' && (
-                          <span className="book-genre">{book.genre}</span>
+                          <span className="book-genre-badge">{book.genre}</span>
                         )}
-                      </div>
-                    </div>
-
-                    {isPremium && selectedChild && (
-                      <div className="book-actions">
-                        {status ? (
-                          <div className="status-actions">
-                            <span 
-                              className="current-status"
-                              style={{ color: getStatusInfo(status)?.color }}
-                            >
-                              {getStatusInfo(status)?.label}
-                            </span>
-                            <div className="status-buttons">
-                              {Object.values(READING_STATUS).map(s => (
+                      </td>
+                      {isPremium && selectedChild && (
+                        <td className="book-status-cell">
+                          {status ? (
+                            <div className="status-actions">
+                              <div className="status-buttons">
+                                {Object.values(READING_STATUS).map(s => (
+                                  <button
+                                    key={s.id}
+                                    className={`status-btn ${status === s.id ? 'active' : ''}`}
+                                    style={{ '--status-color': s.color }}
+                                    onClick={() => setBookStatus(selectedChild, book.id, s.id, book)}
+                                    title={s.label}
+                                  >
+                                    <s.icon size={13} />
+                                  </button>
+                                ))}
                                 <button
-                                  key={s.id}
-                                  className={`status-btn ${status === s.id ? 'active' : ''}`}
-                                  style={{ '--status-color': s.color }}
-                                  onClick={() => setBookStatus(selectedChild, book.id, s.id, book)}
-                                  title={s.label}
+                                  className="status-btn remove"
+                                  onClick={() => removeBookStatus(selectedChild, book.id)}
+                                  title="Remove from list"
                                 >
-                                  <s.icon size={14} />
+                                  <X size={13} />
                                 </button>
-                              ))}
-                              <button
-                                className="status-btn remove"
-                                onClick={() => removeBookStatus(selectedChild, book.id)}
-                                title="Remove from list"
-                              >
-                                <X size={14} />
-                              </button>
+                              </div>
+                              {book.isCustom && useDbForStatus && book.logId && (
+                                <div className="custom-book-buttons">
+                                  <button type="button" className="edit-custom-btn" onClick={() => setEditingCustomBook({ logId: book.logId, title: book.title, author: book.author, ageGroup: book.ageGroup, genre: book.genre })} title="Edit"><Pencil size={13} /></button>
+                                  <button type="button" className="delete-custom-btn" onClick={() => { if (confirm('Remove this book?')) deleteCustomBook(selectedChild, book.id, book.logId) }} title="Delete"><Trash2 size={13} /></button>
+                                </div>
+                              )}
                             </div>
-                          </div>
-                        ) : (
-                          <button
-                            className="add-to-list-btn"
-                            onClick={() => setBookStatus(selectedChild, book.id, 'want', book)}
-                          >
-                            <Plus size={16} />
-                            Add to List
-                          </button>
-                        )}
-
-                        {book.isCustom && (
-                          <div className="custom-book-buttons">
-                            {useDbForStatus && book.logId && (
-                              <button
-                                type="button"
-                                className="edit-custom-btn"
-                                onClick={() => setEditingCustomBook({ logId: book.logId, title: book.title, author: book.author, ageGroup: book.ageGroup, genre: book.genre })}
-                                title="Edit book"
-                              >
-                                <Pencil size={14} />
-                              </button>
-                            )}
-                            <button
-                              type="button"
-                              className="delete-custom-btn"
-                              onClick={() => {
-                                if (confirm('Remove this book from your list?')) {
-                                  deleteCustomBook(selectedChild, book.id, book.logId)
-                                }
-                              }}
-                              title="Remove from list"
-                            >
-                              <Trash2 size={14} />
+                          ) : (
+                            <button className="add-to-list-btn" onClick={() => setBookStatus(selectedChild, book.id, 'want', book)}>
+                              <Plus size={14} />
+                              Add
                             </button>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                )
-              })}
-            </div>
+                          )}
+                        </td>
+                      )}
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
           )}
         </div>
       )}

@@ -370,7 +370,7 @@ function Admin() {
   const [resList, setResList] = useState([])
   const [editingBook, setEditingBook] = useState(null)
   const [editingResource, setEditingResource] = useState(null)
-  const [newBook, setNewBook] = useState({ title: '', author: '', illustrator: '', ageGroup: 'elementary', genre: '', description: '' })
+  const [newBook, setNewBook] = useState({ title: '', author: '', illustrator: '', ageGroup: 'ages-8-12', genre: '', description: '' })
   const [newResource, setNewResource] = useState({ category: '', countLabel: '', items: '', color: 'sage', link: '' })
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState(null)
@@ -387,10 +387,12 @@ function Admin() {
 
   // Derived filter options from live book list
   const bookGenres = [...new Set(books.map(b => b.genre).filter(Boolean))].sort()
-  const filteredBooks = books.filter(b =>
-    (filterAge === 'all' || b.ageGroup === filterAge) &&
-    (filterGenre === 'all' || b.genre === filterGenre)
-  )
+  const filteredBooks = books
+    .filter(b =>
+      (filterAge === 'all' || b.ageGroup === filterAge) &&
+      (filterGenre === 'all' || b.genre === filterGenre)
+    )
+    .sort((a, b) => a.title.localeCompare(b.title))
 
   const showMsg = (text, isError = false) => {
     setMessage({ text, isError })
@@ -410,7 +412,7 @@ function Admin() {
         genre: newBook.genre || null,
         description: newBook.description.trim() || null
       })
-      setNewBook({ title: '', author: '', illustrator: '', ageGroup: 'elementary', genre: '', description: '' })
+      setNewBook({ title: '', author: '', illustrator: '', ageGroup: 'ages-8-12', genre: '', description: '' })
       showMsg('Book added.')
     } catch (err) {
       showMsg(err.message || 'Failed to add book', true)
@@ -482,7 +484,7 @@ function Admin() {
       showMsg('Enter at least one line (Title / Author or Title by Author).', true)
       return
     }
-    const defaultAgeGroup = newBook.ageGroup || 'elementary'
+    const defaultAgeGroup = newBook.ageGroup || 'ages-8-12'
     const defaultGenre = newBook.genre || 'Other'
     setSaving(true)
     let added = 0
