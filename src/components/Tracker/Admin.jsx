@@ -392,7 +392,7 @@ function Admin() {
       (filterAge === 'all' || b.ageGroup === filterAge) &&
       (filterGenre === 'all' || b.genre === filterGenre)
     )
-    .sort((a, b) => a.title.localeCompare(b.title))
+    .sort((a, b) => a.title.replace(/^(The|An|A) /i, '').localeCompare(b.title.replace(/^(The|An|A) /i, '')))
 
   const showMsg = (text, isError = false) => {
     setMessage({ text, isError })

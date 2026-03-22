@@ -131,7 +131,8 @@ function ReadAlouds() {
     return books
   }
 
-  const filteredBooks = getFilteredBooks().sort((a, b) => a.title.localeCompare(b.title))
+  const sortTitle = (t) => t.replace(/^(The|An|A) /i, '')
+  const filteredBooks = getFilteredBooks().sort((a, b) => sortTitle(a.title).localeCompare(sortTitle(b.title)))
 
   const addAllToList = async () => {
     if (!selectedChild) return
@@ -552,7 +553,7 @@ function ReadAlouds() {
       {selectedAgeGroup === 'all' && !searchQuery && selectedGenre === 'all' && !showMyList ? (
         <div className="age-groups-grid">
           {AGE_GROUPS.map(ageGroup => {
-            const books = suggestedBookList.filter(b => b.ageGroup === ageGroup.id).sort((a, b) => a.title.localeCompare(b.title))
+            const books = suggestedBookList.filter(b => b.ageGroup === ageGroup.id).sort((a, b) => sortTitle(a.title).localeCompare(sortTitle(b.title)))
             return (
               <div key={ageGroup.id} className="age-group-card">
                 <div className="age-group-header">
