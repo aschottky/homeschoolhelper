@@ -17,6 +17,7 @@ create table if not exists public.profiles (
   state text,
   zip text,
   phone text,
+  guardians jsonb default '[]'::jsonb,
   subscription_tier text default 'free' check (subscription_tier in ('free', 'premium')),
   stripe_customer_id text,
   created_at timestamp with time zone default timezone('utc'::text, now()) not null,
@@ -45,6 +46,9 @@ begin
   return new;
 end;
 $$ language plpgsql security definer;
+
+-- Add guardians column if upgrading from older schema
+alter table public.profiles add column if not exists guardians jsonb default '[]'::jsonb;
 
 -- Trigger to auto-create profile
 drop trigger if exists on_auth_user_created on auth.users;

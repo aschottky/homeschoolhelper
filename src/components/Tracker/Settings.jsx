@@ -3,10 +3,12 @@ import { useData } from '../../context/SupabaseDataContext'
 import { useSubscription } from '../../context/SubscriptionContext'
 import AdBanner from '../Ads/AdBanner'
 import { 
-  Settings as SettingsIcon, School, User, MapPin, Phone, Mail, 
-  Save, CheckCircle, Building2
+  Settings as SettingsIcon, School, Users, MapPin, Phone, Mail, 
+  Save, CheckCircle, Building2, Plus, Trash2, Edit2, X, Check
 } from 'lucide-react'
 import './Settings.css'
+
+const GUARDIAN_ROLES = ['Parent', 'Guardian', 'Stepparent', 'Grandparent', 'Foster Parent', 'Other']
 
 function Settings() {
   const { homeschoolProfile, updateHomeschoolProfile, userState, setUserState } = useData()
@@ -14,6 +16,10 @@ function Settings() {
   
   const [formData, setFormData] = useState(homeschoolProfile)
   const [saved, setSaved] = useState(false)
+  const [editingGuardianId, setEditingGuardianId] = useState(null)
+  const [editGuardianData, setEditGuardianData] = useState({})
+  const [showAddGuardian, setShowAddGuardian] = useState(false)
+  const [newGuardian, setNewGuardian] = useState({ name: '', phone: '', email: '', role: 'Parent' })
 
   useEffect(() => {
     setFormData(homeschoolProfile)
@@ -32,6 +38,27 @@ function Settings() {
     }
     setSaved(true)
     setTimeout(() => setSaved(false), 3000)
+  }
+
+  const guardians = formData.guardians || []
+
+  const handleAddGuardian = () => {
+    if (!newGuardian.name.trim()) return
+    const updated = [...guardians, { ...newGuardian, id: crypto.randomUUID() }]
+    handleChange('guardians', updated)
+    setNewGuardian({ name: '', phone: '', email: '', role: 'Parent' })
+    setShowAddGuardian(false)
+  }
+
+  const handleUpdateGuardian = (id) => {
+    const updated = guardians.map(g => g.id === id ? { ...g, ...editGuardianData } : g)
+    handleChange('guardians', updated)
+    setEditingGuardianId(null)
+    setEditGuardianData({})
+  }
+
+  const handleDeleteGuardian = (id) => {
+    handleChange('guardians', guardians.filter(g => g.id !== id))
   }
 
   const US_STATES = [
@@ -100,49 +127,171 @@ function Settings() {
         {/* Parent/Guardian Information */}
         <section className="settings-section">
           <div className="section-header">
-            <User size={20} />
-            <h2>Parent/Guardian Information</h2>
-          </div>
-          
-          <div className="form-group">
-            <label>Parent/Guardian Name</label>
-            <input
-              type="text"
-              className="form-input"
-              value={formData.parentName}
-              onChange={(e) => handleChange('parentName', e.target.value)}
-              placeholder="Full name"
-            />
+            <Users size={20} />
+            <h2>Parents / Guardians</h2>
           </div>
 
-          <div className="form-row">
-            <div className="form-group">
-              <label>
-                <Phone size={14} />
-                Phone Number
-              </label>
-              <input
-                type="tel"
-                className="form-input"
-                value={formData.phone}
-                onChange={(e) => handleChange('phone', e.target.value)}
-                placeholder="(555) 123-4567"
-              />
-            </div>
-            <div className="form-group">
-              <label>
-                <Mail size={14} />
-                Email Address
-              </label>
-              <input
-                type="email"
-                className="form-input"
-                value={formData.email}
-                onChange={(e) => handleChange('email', e.target.value)}
-                placeholder="email@example.com"
-              />
-            </div>
+          {guardians.length === 0 && (
+            <p className="guardians-empty">No parents or guardians added yet.</p>
+          )}
+
+          <div className="guardians-list">
+            {guardians.map((g, idx) => (
+              <div key={g.id} className="guardian-card">
+                {editingGuardianId === g.id ? (
+                  <div className="guardian-edit-form">
+                    <div className="form-row">
+                      <div className="form-group">
+                        <label>Name *</label>
+                        <input
+                          type="text"
+                          className="form-input"
+                          value={editGuardianData.name ?? g.name}
+                          onChange={e => setEditGuardianData(d => ({ ...d, name: e.target.value }))}
+                          autoFocus
+                        />
+                      </div>
+                      <div className="form-group" style={{ maxWidth: '160px' }}>
+                        <label>Role</label>
+                        <select
+                          className="form-select"
+                          value={editGuardianData.role ?? g.role}
+                          onChange={e => setEditGuardianData(d => ({ ...d, role: e.target.value }))}
+                        >
+                          {GUARDIAN_ROLES.map(r => <option key={r} value={r}>{r}</option>)}
+                        </select>
+                      </div>
+                    </div>
+                    <div className="form-row">
+                      <div className="form-group">
+                        <label><Phone size={13} /> Phone</label>
+                        <input
+                          type="tel"
+                          className="form-input"
+                          value={editGuardianData.phone ?? g.phone}
+                          onChange={e => setEditGuardianData(d => ({ ...d, phone: e.target.value }))}
+                          placeholder="(555) 123-4567"
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label><Mail size={13} /> Email</label>
+                        <input
+                          type="email"
+                          className="form-input"
+                          value={editGuardianData.email ?? g.email}
+                          onChange={e => setEditGuardianData(d => ({ ...d, email: e.target.value }))}
+                          placeholder="email@example.com"
+                        />
+                      </div>
+                    </div>
+                    <div className="guardian-edit-actions">
+                      <button type="button" className="btn-tracker btn-primary btn-sm" onClick={() => handleUpdateGuardian(g.id)}>
+                        <Check size={15} /> Save
+                      </button>
+                      <button type="button" className="btn-tracker btn-secondary btn-sm" onClick={() => { setEditingGuardianId(null); setEditGuardianData({}) }}>
+                        <X size={15} /> Cancel
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="guardian-view">
+                    <div className="guardian-avatar">{g.name.charAt(0).toUpperCase()}</div>
+                    <div className="guardian-info">
+                      <div className="guardian-name-row">
+                        <strong>{g.name}</strong>
+                        <span className="guardian-role-badge">{g.role || 'Parent'}</span>
+                        {idx === 0 && <span className="guardian-primary-badge">Primary</span>}
+                      </div>
+                      <div className="guardian-contacts">
+                        {g.phone && <span><Phone size={12} /> {g.phone}</span>}
+                        {g.email && <span><Mail size={12} /> {g.email}</span>}
+                      </div>
+                    </div>
+                    <div className="guardian-actions">
+                      <button
+                        type="button"
+                        className="btn-tracker btn-secondary btn-icon-only"
+                        title="Edit"
+                        onClick={() => { setEditingGuardianId(g.id); setEditGuardianData({ name: g.name, phone: g.phone, email: g.email, role: g.role }) }}
+                      >
+                        <Edit2 size={15} />
+                      </button>
+                      <button
+                        type="button"
+                        className="btn-tracker btn-danger btn-icon-only"
+                        title="Remove"
+                        onClick={() => handleDeleteGuardian(g.id)}
+                      >
+                        <Trash2 size={15} />
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))}
           </div>
+
+          {showAddGuardian ? (
+            <div className="guardian-card guardian-add-form">
+              <div className="form-row">
+                <div className="form-group">
+                  <label>Name *</label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    value={newGuardian.name}
+                    onChange={e => setNewGuardian(g => ({ ...g, name: e.target.value }))}
+                    placeholder="Full name"
+                    autoFocus
+                  />
+                </div>
+                <div className="form-group" style={{ maxWidth: '160px' }}>
+                  <label>Role</label>
+                  <select
+                    className="form-select"
+                    value={newGuardian.role}
+                    onChange={e => setNewGuardian(g => ({ ...g, role: e.target.value }))}
+                  >
+                    {GUARDIAN_ROLES.map(r => <option key={r} value={r}>{r}</option>)}
+                  </select>
+                </div>
+              </div>
+              <div className="form-row">
+                <div className="form-group">
+                  <label><Phone size={13} /> Phone</label>
+                  <input
+                    type="tel"
+                    className="form-input"
+                    value={newGuardian.phone}
+                    onChange={e => setNewGuardian(g => ({ ...g, phone: e.target.value }))}
+                    placeholder="(555) 123-4567"
+                  />
+                </div>
+                <div className="form-group">
+                  <label><Mail size={13} /> Email</label>
+                  <input
+                    type="email"
+                    className="form-input"
+                    value={newGuardian.email}
+                    onChange={e => setNewGuardian(g => ({ ...g, email: e.target.value }))}
+                    placeholder="email@example.com"
+                  />
+                </div>
+              </div>
+              <div className="guardian-edit-actions">
+                <button type="button" className="btn-tracker btn-primary btn-sm" onClick={handleAddGuardian} disabled={!newGuardian.name.trim()}>
+                  <Plus size={15} /> Add Guardian
+                </button>
+                <button type="button" className="btn-tracker btn-secondary btn-sm" onClick={() => { setShowAddGuardian(false); setNewGuardian({ name: '', phone: '', email: '', role: 'Parent' }) }}>
+                  <X size={15} /> Cancel
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button type="button" className="btn-tracker btn-secondary guardian-add-btn" onClick={() => setShowAddGuardian(true)}>
+              <Plus size={16} /> Add Parent / Guardian
+            </button>
+          )}
         </section>
 
         {/* Address */}
@@ -225,7 +374,13 @@ function Settings() {
           <div className="preview-card">
             <div className="preview-header">
               <h4>{formData.homeschoolName}</h4>
-              {formData.parentName && <p className="preview-parent">{formData.parentName}, Administrator</p>}
+              {guardians.length > 0 && (
+                <p className="preview-parent">
+                  {guardians.map((g, i) => (
+                    <span key={g.id}>{i > 0 ? ' • ' : ''}{g.name}{g.role ? `, ${g.role}` : ''}</span>
+                  ))}
+                </p>
+              )}
             </div>
             {(formData.address || formData.city) && (
               <p className="preview-address">
@@ -235,11 +390,11 @@ function Settings() {
                 )}
               </p>
             )}
-            {(formData.phone || formData.email) && (
+            {guardians[0] && (guardians[0].phone || guardians[0].email) && (
               <p className="preview-contact">
-                {formData.phone && <span>{formData.phone}</span>}
-                {formData.phone && formData.email && <span> • </span>}
-                {formData.email && <span>{formData.email}</span>}
+                {guardians[0].phone && <span>{guardians[0].phone}</span>}
+                {guardians[0].phone && guardians[0].email && <span> • </span>}
+                {guardians[0].email && <span>{guardians[0].email}</span>}
               </p>
             )}
           </div>

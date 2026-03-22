@@ -48,7 +48,8 @@ export function SupabaseDataProvider({ children: childrenProp }) {
     state: '',
     zip: '',
     phone: '',
-    email: ''
+    email: '',
+    guardians: []
   })
   const [isLoaded, setIsLoaded] = useState(false)
   const [loading, setLoading] = useState(true)
@@ -187,6 +188,19 @@ export function SupabaseDataProvider({ children: childrenProp }) {
 
       // Load profile data
       if (profile) {
+        // Parse guardians — migrate legacy single-parent fields if needed
+        let guardians = []
+        if (profile.guardians && Array.isArray(profile.guardians) && profile.guardians.length > 0) {
+          guardians = profile.guardians
+        } else if (profile.parent_name) {
+          guardians = [{
+            id: crypto.randomUUID(),
+            name: profile.parent_name || '',
+            phone: profile.phone || '',
+            email: profile.email || '',
+            role: 'Parent'
+          }]
+        }
         setHomeschoolProfile({
           homeschoolName: profile.homeschool_name || '',
           parentName: profile.parent_name || '',
@@ -195,7 +209,8 @@ export function SupabaseDataProvider({ children: childrenProp }) {
           state: profile.state || '',
           zip: profile.zip || '',
           phone: profile.phone || '',
-          email: profile.email || ''
+          email: profile.email || '',
+          guardians
         })
         setUserState(profile.state || '')
       }
@@ -567,18 +582,21 @@ export function SupabaseDataProvider({ children: childrenProp }) {
     
     if (isConfigured && user) {
       try {
+        const mergedGuardians = updates.guardians ?? homeschoolProfile.guardians ?? []
+        const primaryGuardian = mergedGuardians[0]
         await supabase
           .from('profiles')
           .upsert({
             id: user.id,
             homeschool_name: updates.homeschoolName ?? homeschoolProfile.homeschoolName,
-            parent_name: updates.parentName ?? homeschoolProfile.parentName,
+            parent_name: primaryGuardian?.name ?? updates.parentName ?? homeschoolProfile.parentName,
             address: updates.address ?? homeschoolProfile.address,
             city: updates.city ?? homeschoolProfile.city,
             state: updates.state ?? homeschoolProfile.state,
             zip: updates.zip ?? homeschoolProfile.zip,
-            phone: updates.phone ?? homeschoolProfile.phone,
-            email: updates.email ?? homeschoolProfile.email,
+            phone: primaryGuardian?.phone ?? updates.phone ?? homeschoolProfile.phone,
+            email: primaryGuardian?.email ?? updates.email ?? homeschoolProfile.email,
+            guardians: mergedGuardians,
             updated_at: new Date().toISOString()
           })
       } catch (error) {
