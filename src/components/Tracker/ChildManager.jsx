@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useData } from '../../context/SupabaseDataContext'
 import { useSubscription } from '../../context/SubscriptionContext'
 import { STATES_LIST, STATE_REQUIREMENTS } from '../../data/stateRequirements'
-import { Plus, Trash2, Edit2, Check, X, Settings, ChevronDown, ChevronUp, Sparkles, Lock, Calendar, GraduationCap, User, AlertTriangle } from 'lucide-react'
+import { Plus, Trash2, Edit2, Check, X, Settings, ChevronDown, ChevronUp, Sparkles, Lock, Calendar, GraduationCap, User, AlertTriangle, MapPin } from 'lucide-react'
 import './ChildManager.css'
 
 // Calculate age from birth date
@@ -145,218 +145,6 @@ function ChildManager() {
 
   return (
     <div className="child-manager">
-      <div className="tracker-section">
-        <div className="tracker-section-header">
-          <h2>Manage Children</h2>
-        </div>
-
-        <form onSubmit={handleAddChild} className="add-child-form">
-          <div className="form-row">
-            <div className="form-group">
-              <label>Child's Name *</label>
-              <input
-                type="text"
-                className="form-input"
-                placeholder="Enter child's name"
-                value={newChildName}
-                onChange={(e) => setNewChildName(e.target.value)}
-                required
-              />
-            </div>
-          </div>
-
-          <div className="form-row">
-            <div className="form-group" style={{ flex: 1 }}>
-              <label>
-                <Calendar size={14} style={{ marginRight: '6px', verticalAlign: 'middle' }} />
-                Birth Date
-              </label>
-              <input
-                type="date"
-                className="form-input"
-                value={newChildBirthDate}
-                onChange={(e) => setNewChildBirthDate(e.target.value)}
-                max={new Date().toISOString().split('T')[0]}
-              />
-            </div>
-            <div className="form-group" style={{ flex: 1 }}>
-              <label>
-                <GraduationCap size={14} style={{ marginRight: '6px', verticalAlign: 'middle' }} />
-                Grade Level
-              </label>
-              <select
-                className="form-select"
-                value={newChildGrade}
-                onChange={(e) => setNewChildGrade(e.target.value)}
-              >
-                <option value="">Select grade</option>
-                <option value="Early Learner">Early Learner</option>
-                <option value="Pre-K">Pre-K</option>
-                <option value="Kindergarten">Kindergarten</option>
-                <option value="1st Grade">1st Grade</option>
-                <option value="2nd Grade">2nd Grade</option>
-                <option value="3rd Grade">3rd Grade</option>
-                <option value="4th Grade">4th Grade</option>
-                <option value="5th Grade">5th Grade</option>
-                <option value="6th Grade">6th Grade</option>
-                <option value="7th Grade">7th Grade</option>
-                <option value="8th Grade">8th Grade</option>
-                <option value="9th Grade">9th Grade</option>
-                <option value="10th Grade">10th Grade</option>
-                <option value="11th Grade">11th Grade</option>
-                <option value="12th Grade">12th Grade</option>
-              </select>
-            </div>
-          </div>
-
-          {!userState && (
-            <p className="state-hint">
-              Set your family's state in <strong>Profile &amp; Settings</strong> to auto-fill state hour requirements.
-            </p>
-          )}
-
-          {userState && hasRecommendedHours && (
-            <div className={`state-hours-option ${!isPremium ? 'locked' : ''}`}>
-              {isPremium ? (
-                <label className="checkbox-label">
-                  <input
-                    type="checkbox"
-                    checked={useStateHours}
-                    onChange={(e) => setUseStateHours(e.target.checked)}
-                  />
-                  <span className="checkbox-custom" />
-                  <span>
-                    <strong>Auto-fill {selectedStateData.name}'s recommended hours</strong>
-                    <small>Subjects will be pre-configured with state-specific hour requirements</small>
-                  </span>
-                  <Sparkles size={16} className="premium-icon" />
-                </label>
-              ) : (
-                <div className="premium-upsell">
-                  <div className="upsell-content">
-                    <Lock size={18} />
-                    <div>
-                      <strong>Premium Feature</strong>
-                      <p>Upgrade to automatically configure subjects with {selectedStateData.name}'s recommended hours</p>
-                    </div>
-                  </div>
-                  <button type="button" className="btn-tracker btn-primary btn-sm" onClick={upgradeToPremium}>
-                    <Sparkles size={14} />
-                    Upgrade
-                  </button>
-                </div>
-              )}
-            </div>
-          )}
-
-          {userState && hasRecommendedHours && isPremium && useStateHours && (
-            <div className="preview-hours">
-              <h4>Hours that will be set:</h4>
-              <div className="preview-grid">
-                {Object.entries(selectedStateData.recommendedHours).map(([subject, hours]) => (
-                  <div key={subject} className="preview-item">
-                    <span>{subject}</span>
-                    <span>{hours} hrs</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-              <button type="submit" className="btn-tracker btn-primary" disabled={!newChildName.trim()}>
-                <Plus size={20} />
-                Add Child
-              </button>
-            </form>
-
-            {/* Tracking Prompt Modal */}
-            {showTrackingPrompt && (
-              <div className="tracking-prompt-modal">
-                <div className="tracking-prompt-content">
-                  <div className="tracking-prompt-header">
-                    <AlertTriangle size={24} className="prompt-icon" />
-                    <h3>Track School Hours?</h3>
-                  </div>
-                  <div className="tracking-prompt-body">
-                    <p>
-                      <strong>{newChildName}</strong> is under {STATE_REQUIREMENTS[userState]?.name || 'your state'}'s mandatory tracking age
-                      ({STATE_REQUIREMENTS[userState]?.mandatoryTrackingAge || 6} years old).
-                    </p>
-                    <p>
-                      Would you like to track school hours for this child? You can still create their profile to track 
-                      outdoor hours and read-aloud books even if you choose not to track school hours.
-                    </p>
-                    <div className="tracking-options">
-                      <label className="tracking-option">
-                        <input
-                          type="radio"
-                          name="trackHours"
-                          checked={trackHours}
-                          onChange={() => setTrackHours(true)}
-                        />
-                        <span className="radio-custom" />
-                        <div>
-                          <strong>Yes, track school hours</strong>
-                          <small>Subjects and required hours will be set up</small>
-                        </div>
-                      </label>
-                      <label className="tracking-option">
-                        <input
-                          type="radio"
-                          name="trackHours"
-                          checked={!trackHours}
-                          onChange={() => setTrackHours(false)}
-                        />
-                        <span className="radio-custom" />
-                        <div>
-                          <strong>No, skip hour tracking</strong>
-                          <small>Profile will be created for outdoor hours and read-alouds only</small>
-                        </div>
-                      </label>
-                    </div>
-                  </div>
-                  <div className="tracking-prompt-actions">
-                    <button
-                      type="button"
-                      className="btn-tracker btn-secondary"
-                      onClick={() => {
-                        setShowTrackingPrompt(false)
-                        setTrackHours(true)
-                      }}
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type="button"
-                      className="btn-tracker btn-primary"
-                      onClick={async () => {
-                        const child = await addChild(
-                          newChildName.trim(),
-                          trackHours && isPremium && useStateHours,
-                          userState || null,
-                          newChildBirthDate || null,
-                          newChildGrade || null,
-                          trackHours
-                        )
-                        setNewChildName('')
-                        setNewChildBirthDate('')
-                        setNewChildGrade('')
-                        setTrackHours(true)
-                        setShowTrackingPrompt(false)
-                        if (trackHours) {
-                          setExpandedChild(child.id)
-                        }
-                      }}
-                    >
-                      <Check size={18} />
-                      Continue
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-
       {children.length === 0 ? (
         <div className="tracker-section">
           <div className="empty-state">
@@ -364,7 +152,7 @@ function ChildManager() {
               <Plus size={40} />
             </div>
             <h3>No children added yet</h3>
-            <p>Add your first child above to start tracking their homeschool hours.</p>
+            <p>Add your first child below to start tracking their homeschool hours.</p>
           </div>
         </div>
       ) : (
@@ -669,6 +457,218 @@ function ChildManager() {
           ))}
         </div>
       )}
+
+      <div className="tracker-section">
+        <div className="tracker-section-header">
+          <h2>Add a Child</h2>
+        </div>
+
+        <form onSubmit={handleAddChild} className="add-child-form">
+          <div className="form-row">
+            <div className="form-group">
+              <label>Child's Name *</label>
+              <input
+                type="text"
+                className="form-input"
+                placeholder="Enter child's name"
+                value={newChildName}
+                onChange={(e) => setNewChildName(e.target.value)}
+                required
+              />
+            </div>
+          </div>
+
+          <div className="form-row">
+            <div className="form-group" style={{ flex: 1 }}>
+              <label>
+                <Calendar size={14} style={{ marginRight: '6px', verticalAlign: 'middle' }} />
+                Birth Date
+              </label>
+              <input
+                type="date"
+                className="form-input"
+                value={newChildBirthDate}
+                onChange={(e) => setNewChildBirthDate(e.target.value)}
+                max={new Date().toISOString().split('T')[0]}
+              />
+            </div>
+            <div className="form-group" style={{ flex: 1 }}>
+              <label>
+                <GraduationCap size={14} style={{ marginRight: '6px', verticalAlign: 'middle' }} />
+                Grade Level
+              </label>
+              <select
+                className="form-select"
+                value={newChildGrade}
+                onChange={(e) => setNewChildGrade(e.target.value)}
+              >
+                <option value="">Select grade</option>
+                <option value="Early Learner">Early Learner</option>
+                <option value="Pre-K">Pre-K</option>
+                <option value="Kindergarten">Kindergarten</option>
+                <option value="1st Grade">1st Grade</option>
+                <option value="2nd Grade">2nd Grade</option>
+                <option value="3rd Grade">3rd Grade</option>
+                <option value="4th Grade">4th Grade</option>
+                <option value="5th Grade">5th Grade</option>
+                <option value="6th Grade">6th Grade</option>
+                <option value="7th Grade">7th Grade</option>
+                <option value="8th Grade">8th Grade</option>
+                <option value="9th Grade">9th Grade</option>
+                <option value="10th Grade">10th Grade</option>
+                <option value="11th Grade">11th Grade</option>
+                <option value="12th Grade">12th Grade</option>
+              </select>
+            </div>
+          </div>
+
+          {!userState && (
+            <p className="state-hint">
+              Set your family's state in <strong>Profile &amp; Settings</strong> to auto-fill state hour requirements.
+            </p>
+          )}
+
+          {userState && hasRecommendedHours && (
+            <div className={`state-hours-option ${!isPremium ? 'locked' : ''}`}>
+              {isPremium ? (
+                <label className="checkbox-label">
+                  <input
+                    type="checkbox"
+                    checked={useStateHours}
+                    onChange={(e) => setUseStateHours(e.target.checked)}
+                  />
+                  <span className="checkbox-custom" />
+                  <span>
+                    <strong>Auto-fill {selectedStateData.name}'s recommended hours</strong>
+                    <small>Subjects will be pre-configured with state-specific hour requirements</small>
+                  </span>
+                  <Sparkles size={16} className="premium-icon" />
+                </label>
+              ) : (
+                <div className="premium-upsell">
+                  <div className="upsell-content">
+                    <Lock size={18} />
+                    <div>
+                      <strong>Premium Feature</strong>
+                      <p>Upgrade to automatically configure subjects with {selectedStateData.name}'s recommended hours</p>
+                    </div>
+                  </div>
+                  <button type="button" className="btn-tracker btn-primary btn-sm" onClick={upgradeToPremium}>
+                    <Sparkles size={14} />
+                    Upgrade
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
+          {userState && hasRecommendedHours && isPremium && useStateHours && (
+            <div className="preview-hours">
+              <h4>Hours that will be set:</h4>
+              <div className="preview-grid">
+                {Object.entries(selectedStateData.recommendedHours).map(([subject, hours]) => (
+                  <div key={subject} className="preview-item">
+                    <span>{subject}</span>
+                    <span>{hours} hrs</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+              <button type="submit" className="btn-tracker btn-primary" disabled={!newChildName.trim()}>
+                <Plus size={20} />
+                Add Child
+              </button>
+            </form>
+
+            {/* Tracking Prompt Modal */}
+            {showTrackingPrompt && (
+              <div className="tracking-prompt-modal">
+                <div className="tracking-prompt-content">
+                  <div className="tracking-prompt-header">
+                    <AlertTriangle size={24} className="prompt-icon" />
+                    <h3>Track School Hours?</h3>
+                  </div>
+                  <div className="tracking-prompt-body">
+                    <p>
+                      <strong>{newChildName}</strong> is under {STATE_REQUIREMENTS[userState]?.name || 'your state'}'s mandatory tracking age
+                      ({STATE_REQUIREMENTS[userState]?.mandatoryTrackingAge || 6} years old).
+                    </p>
+                    <p>
+                      Would you like to track school hours for this child? You can still create their profile to track 
+                      outdoor hours and read-aloud books even if you choose not to track school hours.
+                    </p>
+                    <div className="tracking-options">
+                      <label className="tracking-option">
+                        <input
+                          type="radio"
+                          name="trackHours"
+                          checked={trackHours}
+                          onChange={() => setTrackHours(true)}
+                        />
+                        <span className="radio-custom" />
+                        <div>
+                          <strong>Yes, track school hours</strong>
+                          <small>Subjects and required hours will be set up</small>
+                        </div>
+                      </label>
+                      <label className="tracking-option">
+                        <input
+                          type="radio"
+                          name="trackHours"
+                          checked={!trackHours}
+                          onChange={() => setTrackHours(false)}
+                        />
+                        <span className="radio-custom" />
+                        <div>
+                          <strong>No, skip hour tracking</strong>
+                          <small>Profile will be created for outdoor hours and read-alouds only</small>
+                        </div>
+                      </label>
+                    </div>
+                  </div>
+                  <div className="tracking-prompt-actions">
+                    <button
+                      type="button"
+                      className="btn-tracker btn-secondary"
+                      onClick={() => {
+                        setShowTrackingPrompt(false)
+                        setTrackHours(true)
+                      }}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      className="btn-tracker btn-primary"
+                      onClick={async () => {
+                        const child = await addChild(
+                          newChildName.trim(),
+                          trackHours && isPremium && useStateHours,
+                          userState || null,
+                          newChildBirthDate || null,
+                          newChildGrade || null,
+                          trackHours
+                        )
+                        setNewChildName('')
+                        setNewChildBirthDate('')
+                        setNewChildGrade('')
+                        setTrackHours(true)
+                        setShowTrackingPrompt(false)
+                        if (trackHours) {
+                          setExpandedChild(child.id)
+                        }
+                      }}
+                    >
+                      <Check size={18} />
+                      Continue
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
     </div>
   )
 }
