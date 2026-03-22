@@ -1,3 +1,266 @@
+/* ══════════════════════════════════════
+   Study Timer
+══════════════════════════════════════ */
+.timer-section {
+  max-width: 700px;
+}
+
+.timer-section .tracker-section-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.timer-intro {
+  color: var(--text-muted);
+  margin-bottom: 20px;
+  font-size: 0.9375rem;
+}
+
+/* Setup form */
+.timer-setup .form-row {
+  margin-bottom: 20px;
+}
+
+.timer-start-btn {
+  width: 100%;
+  justify-content: center;
+  font-size: 1.1rem;
+  padding: 16px;
+}
+
+/* Running state */
+.timer-running {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  padding: 12px 0;
+}
+
+.timer-display {
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 4rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: var(--forest-dark);
+  background: var(--cream-light);
+  padding: 20px 36px;
+  border-radius: var(--radius-lg);
+  border: 3px solid var(--sage-light);
+  min-width: 280px;
+  text-align: center;
+  transition: border-color 0.3s;
+}
+
+.timer-display.ticking {
+  border-color: var(--forest);
+  animation: timer-pulse 2s ease-in-out infinite;
+}
+
+.timer-display.paused {
+  border-color: var(--text-muted);
+  opacity: 0.75;
+}
+
+@keyframes timer-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(45, 90, 74, 0); }
+  50% { box-shadow: 0 0 0 6px rgba(45, 90, 74, 0.12); }
+}
+
+.timer-context {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.timer-child-badge {
+  color: white;
+  font-weight: 700;
+  font-size: 0.875rem;
+  padding: 5px 14px;
+  border-radius: 999px;
+}
+
+.timer-subject-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border: 2px solid;
+  border-radius: 999px;
+  padding: 4px 14px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--forest-dark);
+  background: white;
+}
+
+.subject-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.timer-controls {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+}
+
+.timer-btn {
+  min-width: 120px;
+  justify-content: center;
+}
+
+.timer-btn-sm {
+  font-size: 0.8125rem;
+  padding: 8px 16px;
+  border: 1px solid var(--error, #dc3545);
+  background: transparent;
+  color: var(--error, #dc3545);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.timer-btn-sm:hover {
+  background: var(--error, #dc3545);
+  color: white;
+}
+
+.btn-success {
+  background: #16a34a;
+  color: white;
+  border: none;
+}
+
+.btn-success:hover {
+  background: #15803d;
+}
+
+.timer-paused-hint {
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+  font-style: italic;
+  text-align: center;
+}
+
+/* ── Modals ── */
+.timer-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.timer-modal {
+  background: white;
+  border-radius: var(--radius-xl);
+  padding: 36px 32px;
+  max-width: 440px;
+  width: 100%;
+  text-align: center;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+  animation: modal-pop 0.2s ease-out;
+}
+
+@keyframes modal-pop {
+  from { transform: scale(0.92); opacity: 0; }
+  to   { transform: scale(1);    opacity: 1; }
+}
+
+.timer-modal h3 {
+  font-size: 1.5rem;
+  color: var(--forest-dark);
+  margin-bottom: 12px;
+}
+
+.timer-modal p {
+  color: var(--text-muted);
+  margin-bottom: 24px;
+  line-height: 1.6;
+}
+
+.timer-modal-icon {
+  font-size: 3rem;
+  margin-bottom: 12px;
+}
+
+.timer-modal-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* Reminder modal */
+.reminder-modal .timer-modal-actions {
+  flex-direction: row;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+/* Approval modal */
+.approval-icon {
+  color: var(--forest);
+  margin-bottom: 12px;
+  display: flex;
+  justify-content: center;
+}
+
+.approval-summary {
+  background: var(--cream-light);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  margin-bottom: 16px;
+}
+
+.approval-time {
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: var(--forest-dark);
+  letter-spacing: 0.05em;
+}
+
+.approval-summary p {
+  margin-bottom: 0;
+  color: var(--text-dark);
+  font-size: 1rem;
+}
+
+.approval-instructions {
+  font-size: 0.9375rem;
+  background: #fef9c3;
+  border: 1px solid #fde047;
+  border-radius: var(--radius-md);
+  padding: 12px 16px;
+  margin-bottom: 16px !important;
+  color: #713f12 !important;
+}
+
+.approval-btn {
+  font-size: 1.1rem;
+  padding: 16px;
+  justify-content: center;
+  background: var(--forest);
+}
+
+.approval-btn:hover {
+  background: var(--forest-dark);
+}
+
+/* ══════════════════════════════════════
+   Manual Log Form
+══════════════════════════════════════ */
 .log-form {
   max-width: 700px;
 }
