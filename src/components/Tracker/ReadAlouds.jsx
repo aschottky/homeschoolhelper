@@ -47,6 +47,7 @@ function ReadAlouds() {
   const [selectedChild, setSelectedChild] = useState('')
   const [readingList, setReadingList] = useState({})
   const [showAddBook, setShowAddBook] = useState(false)
+  const [showMyList, setShowMyList] = useState(false)
   const [newBook, setNewBook] = useState({ title: '', author: '', ageGroup: 'ages-8-12', genre: 'Other' })
   const [editingCustomBook, setEditingCustomBook] = useState(null)
   const [savingCustom, setSavingCustom] = useState(false)
@@ -59,6 +60,7 @@ function ReadAlouds() {
     const child = children.find(c => c.id === selectedChild)
     const ageGroup = getAgeGroupForChild(child)
     if (ageGroup) setSelectedAgeGroup(ageGroup)
+    setShowMyList(false)
   }, [selectedChild, isPremium, children])
 
   // Suggested books: from DB if any, else static list (same shape: id, title, author, illustrator, ageGroup, genre, description)
@@ -119,6 +121,7 @@ function ReadAlouds() {
       if (useDbForStatus) books = [...books, ...customBooksForChild]
       else if (readingList[selectedChild]?.customBooks) books = [...books, ...readingList[selectedChild].customBooks]
     }
+    if (showMyList && selectedChild) books = books.filter(b => !!getBookStatus(selectedChild, b.id))
     if (selectedAgeGroup !== 'all') books = books.filter(b => b.ageGroup === selectedAgeGroup)
     if (selectedGenre !== 'all') books = books.filter(b => b.genre === selectedGenre)
     if (searchQuery) {
@@ -531,10 +534,22 @@ function ReadAlouds() {
             <option key={g} value={g}>{g}</option>
           ))}
         </select>
+        {isPremium && selectedChild && (
+          <button
+            className={`my-list-toggle ${showMyList ? 'active' : ''}`}
+            onClick={() => setShowMyList(v => !v)}
+            title={showMyList ? 'Show all books' : `Show ${children.find(c => c.id === selectedChild)?.name}'s book list`}
+          >
+            <BookMarked size={15} />
+            {showMyList
+              ? 'All Books'
+              : `${children.find(c => c.id === selectedChild)?.name}'s List`}
+          </button>
+        )}
       </div>
 
       {/* Age Group overview cards (no filter active) */}
-      {selectedAgeGroup === 'all' && !searchQuery && selectedGenre === 'all' ? (
+      {selectedAgeGroup === 'all' && !searchQuery && selectedGenre === 'all' && !showMyList ? (
         <div className="age-groups-grid">
           {AGE_GROUPS.map(ageGroup => {
             const books = suggestedBookList.filter(b => b.ageGroup === ageGroup.id).sort((a, b) => a.title.localeCompare(b.title))
@@ -576,8 +591,8 @@ function ReadAlouds() {
                   Add All to List
                 </button>
               )}
-              {(selectedAgeGroup !== 'all' || selectedGenre !== 'all' || searchQuery) && (
-                <button className="clear-filter" onClick={() => { setSelectedAgeGroup('all'); setSelectedGenre('all'); setSearchQuery('') }}>
+              {(selectedAgeGroup !== 'all' || selectedGenre !== 'all' || searchQuery || showMyList) && (
+                <button className="clear-filter" onClick={() => { setSelectedAgeGroup('all'); setSelectedGenre('all'); setSearchQuery(''); setShowMyList(false) }}>
                   Clear filters
                 </button>
               )}

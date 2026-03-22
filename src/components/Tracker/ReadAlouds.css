@@ -167,6 +167,33 @@
   max-width: 180px;
 }
 
+.my-list-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border: 2px solid var(--sage-light);
+  border-radius: var(--radius-md);
+  background: white;
+  color: var(--forest);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.my-list-toggle:hover {
+  border-color: var(--forest);
+  background: var(--cream-light);
+}
+
+.my-list-toggle.active {
+  background: var(--forest);
+  border-color: var(--forest);
+  color: white;
+}
+
 /* Age Groups Grid */
 .age-groups-grid {
   display: grid;
