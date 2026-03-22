@@ -117,13 +117,17 @@ function ReadAlouds() {
       })
   }, [selectedChild, useDbForStatus, readAloudLogs])
 
+  const getBookStatus = (childId, bookId) => {
+    if (useDbForStatus && childId) return getReadAloudStatus(childId, bookId) || null
+    return readingList[childId]?.books?.[bookId]?.status || null
+  }
+
   const getFilteredBooks = () => {
     let books = [...suggestedBookList]
     if (isPremium && selectedChild) {
       if (useDbForStatus) books = [...books, ...customBooksForChild]
       else if (readingList[selectedChild]?.customBooks) books = [...books, ...readingList[selectedChild].customBooks]
     }
-    if (showMyList && selectedChild) books = books.filter(b => !!getBookStatus(selectedChild, b.id))
     if (selectedAgeGroup !== 'all') books = books.filter(b => b.ageGroup === selectedAgeGroup)
     if (selectedGenre !== 'all') books = books.filter(b => b.genre === selectedGenre)
     if (searchQuery) {
@@ -156,11 +160,6 @@ function ReadAlouds() {
     for (const book of untracked) {
       await setBookStatus(selectedChild, book.id, 'want', book)
     }
-  }
-
-  const getBookStatus = (childId, bookId) => {
-    if (useDbForStatus && childId) return getReadAloudStatus(childId, bookId) || null
-    return readingList[childId]?.books?.[bookId]?.status || null
   }
 
   const setBookStatus = async (childId, bookId, status, book = null) => {
