@@ -132,6 +132,21 @@
   font-size: 1.5rem;
 }
 
+.header-badge-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-left: auto;
+  max-width: 420px;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+.header-badge-strip .mini-badge {
+  width: 26px;
+  height: 26px;
+}
+
 .child-badges-header .child-info h3 {
   font-size: 1.25rem;
   color: var(--forest-dark);

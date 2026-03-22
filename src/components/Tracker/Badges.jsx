@@ -162,6 +162,23 @@ function Badges() {
     return total + subjectBadgeCount + child.specialBadges.length
   }, 0)
 
+  // Build a flat list of up to 20 recent badges for display in the header
+  const getRecentBadges = ({ subjectBadges, specialBadges }) => {
+    const flat = []
+    // Special badges first (highest achievements)
+    specialBadges.forEach(b => flat.push({ ...b, label: b.name }))
+    // Highest badge per subject (most advanced first)
+    ;[...subjectBadges]
+      .sort((a, b) => b.badges.length - a.badges.length)
+      .forEach(({ subject, badges }) => {
+        // Add all earned badges for the subject, highest first
+        ;[...badges].reverse().forEach(b =>
+          flat.push({ ...b, label: `${b.name} – ${subject.name}` })
+        )
+      })
+    return flat.slice(0, 20)
+  }
+
   if (children.length === 0) {
     return (
       <div className="badges-page">
@@ -213,7 +230,10 @@ function Badges() {
 
       {/* Badges by Child */}
       <div className="children-badges">
-        {allBadges.map(({ child, subjectBadges, specialBadges }) => (
+        {allBadges.map(({ child, subjectBadges, specialBadges }) => {
+          const recentBadges = getRecentBadges({ subjectBadges, specialBadges })
+          const badgeCount = subjectBadges.reduce((t, sb) => t + sb.badges.length, 0) + specialBadges.length
+          return (
           <div key={child.id} className="child-badges-card">
             <div className="child-badges-header">
               <div className="child-avatar">
@@ -221,10 +241,22 @@ function Badges() {
               </div>
               <div className="child-info">
                 <h3>{child.name}</h3>
-                <p>
-                  {subjectBadges.reduce((t, sb) => t + sb.badges.length, 0) + specialBadges.length} badges earned
-                </p>
+                <p>{badgeCount} badge{badgeCount !== 1 ? 's' : ''} earned</p>
               </div>
+              {recentBadges.length > 0 && (
+                <div className="header-badge-strip">
+                  {recentBadges.map((badge, i) => (
+                    <div
+                      key={`${badge.id}-${i}`}
+                      className="mini-badge"
+                      style={{ background: badge.color }}
+                      title={badge.label}
+                    >
+                      <badge.icon size={13} />
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Special Badges */}
@@ -315,7 +347,8 @@ function Badges() {
               </div>
             </div>
           </div>
-        ))}
+          )
+        })}
       </div>
     </div>
   )
