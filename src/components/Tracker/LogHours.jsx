@@ -190,6 +190,8 @@ function LogHours() {
     }
   }
 
+  const childrenWithSubjects = children.filter(child => child.subjects && child.subjects.length > 0)
+
   if (childrenWithSubjects.length === 0) {
     return (
       <div className="log-hours">
@@ -210,8 +212,6 @@ function LogHours() {
       </div>
     )
   }
-
-  const childrenWithSubjects = children.filter(child => child.subjects && child.subjects.length > 0)
 
   return (
     <div className="log-hours">
