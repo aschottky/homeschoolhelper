@@ -236,7 +236,7 @@ function Badges() {
           return (
           <div key={child.id} className="child-badges-card">
             <div className="child-badges-header">
-              <div className="child-avatar">
+              <div className="child-avatar" style={{ background: child.color || undefined }}>
                 {child.name.charAt(0).toUpperCase()}
               </div>
               <div className="child-info">

@@ -50,6 +50,9 @@ $$ language plpgsql security definer;
 -- Add guardians column if upgrading from older schema
 alter table public.profiles add column if not exists guardians jsonb default '[]'::jsonb;
 
+-- Add color column to children if upgrading from older schema
+alter table public.children add column if not exists color text default '#8FB39A';
+
 -- Trigger to auto-create profile
 drop trigger if exists on_auth_user_created on auth.users;
 create trigger on_auth_user_created
@@ -66,6 +69,7 @@ create table if not exists public.children (
   state_code text,
   birth_date date,
   grade_level text,
+  color text default '#8FB39A',
   created_at timestamp with time zone default timezone('utc'::text, now()) not null,
   updated_at timestamp with time zone default timezone('utc'::text, now()) not null
 );

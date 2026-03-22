@@ -118,7 +118,7 @@ function Dashboard({ onNavigate }) {
             <div key={child.id}>
               <div className="child-card">
                 <div className="child-header">
-                  <div className="child-avatar">
+                  <div className="child-avatar" style={{ background: child.color || 'linear-gradient(135deg, var(--forest) 0%, var(--sage) 100%)' }}>
                     {child.name.charAt(0).toUpperCase()}
                   </div>
                   <div className="child-info">

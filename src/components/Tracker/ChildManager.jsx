@@ -59,11 +59,12 @@ function ChildManager() {
   const [newChildName, setNewChildName] = useState('')
   const [newChildBirthDate, setNewChildBirthDate] = useState('')
   const [newChildGrade, setNewChildGrade] = useState('')
+  const [newChildColor, setNewChildColor] = useState('#5A8F7B')
   const [useStateHours, setUseStateHours] = useState(isPremium)
   const [trackHours, setTrackHours] = useState(true) // Default to tracking hours
   const [showTrackingPrompt, setShowTrackingPrompt] = useState(false)
   const [editingChild, setEditingChild] = useState(null)
-  const [editChildData, setEditChildData] = useState({ name: '', birthDate: '', gradeLevel: '' })
+  const [editChildData, setEditChildData] = useState({ name: '', birthDate: '', gradeLevel: '', color: '' })
   const [expandedChild, setExpandedChild] = useState(null)
   const [newSubject, setNewSubject] = useState({ name: '', requiredHours: '', color: '#8FB39A', schoolworkReminderFrequency: '' })
   const [editingSubject, setEditingSubject] = useState(null)
@@ -95,12 +96,14 @@ function ChildManager() {
       userState || null,
       newChildBirthDate || null,
       newChildGrade || null,
-      trackHours
+      trackHours,
+      newChildColor
     )
 
     setNewChildName('')
     setNewChildBirthDate('')
     setNewChildGrade('')
+    setNewChildColor('#5A8F7B')
     setTrackHours(true)
     setShowTrackingPrompt(false)
 
@@ -114,10 +117,11 @@ function ChildManager() {
       updateChild(childId, {
         name: editChildData.name.trim(),
         birthDate: editChildData.birthDate || null,
-        gradeLevel: editChildData.gradeLevel || null
+        gradeLevel: editChildData.gradeLevel || null,
+        color: editChildData.color || '#8FB39A'
       })
       setEditingChild(null)
-      setEditChildData({ name: '', birthDate: '', gradeLevel: '' })
+      setEditChildData({ name: '', birthDate: '', gradeLevel: '', color: '' })
     }
   }
 
@@ -141,6 +145,12 @@ function ChildManager() {
   const colorOptions = [
     '#2D5A4A', '#E8A87C', '#8FB39A', '#D4896A', '#5A8F7B', '#C4A484',
     '#6B8E7B', '#B58863', '#4A7C6B', '#D9A678'
+  ]
+
+  const childColorOptions = [
+    '#2D5A4A', '#5A8F7B', '#8FB39A', '#6B8E7B', '#4A7C6B',
+    '#E8A87C', '#D4896A', '#C4A484', '#B58863', '#D9A678',
+    '#5A7BA6', '#7B8FA6', '#8B7BA6', '#C47B87', '#A65A5A'
   ]
 
   return (
@@ -202,6 +212,18 @@ function ChildManager() {
                         <option value="12th Grade">12th Grade</option>
                       </select>
                     </div>
+                    <div className="child-color-picker-row">
+                      <span className="color-picker-label">Profile color:</span>
+                      {childColorOptions.map(c => (
+                        <button
+                          key={c}
+                          type="button"
+                          className={`color-option ${(editChildData.color || '#8FB39A') === c ? 'active' : ''}`}
+                          style={{ background: c }}
+                          onClick={() => setEditChildData({ ...editChildData, color: c })}
+                        />
+                      ))}
+                    </div>
                     <div className="edit-actions">
                       <button 
                         className="btn-tracker btn-primary btn-sm"
@@ -214,7 +236,7 @@ function ChildManager() {
                         className="btn-tracker btn-secondary btn-sm"
                         onClick={() => {
                           setEditingChild(null)
-                          setEditChildData({ name: '', birthDate: '', gradeLevel: '' })
+                          setEditChildData({ name: '', birthDate: '', gradeLevel: '', color: '' })
                         }}
                       >
                         <X size={16} />
@@ -225,7 +247,7 @@ function ChildManager() {
                 ) : (
                   <>
                     <div className="child-name-row">
-                      <div className="child-avatar-sm">
+                      <div className="child-avatar-sm" style={{ background: child.color || '#8FB39A' }}>
                         {child.name.charAt(0).toUpperCase()}
                       </div>
                       <div className="child-name-info">
@@ -261,7 +283,8 @@ function ChildManager() {
                           setEditChildData({ 
                             name: child.name,
                             birthDate: child.birthDate || '',
-                            gradeLevel: child.gradeLevel || ''
+                            gradeLevel: child.gradeLevel || '',
+                            color: child.color || '#8FB39A'
                           })
                         }}
                         title="Edit child info"
@@ -522,6 +545,19 @@ function ChildManager() {
             </div>
           </div>
 
+          <div className="child-color-picker-row">
+            <span className="color-picker-label">Profile color:</span>
+            {childColorOptions.map(c => (
+              <button
+                key={c}
+                type="button"
+                className={`color-option ${newChildColor === c ? 'active' : ''}`}
+                style={{ background: c }}
+                onClick={() => setNewChildColor(c)}
+              />
+            ))}
+          </div>
+
           {!userState && (
             <p className="state-hint">
               Set your family's state in <strong>Profile &amp; Settings</strong> to auto-fill state hour requirements.
@@ -649,11 +685,13 @@ function ChildManager() {
                           userState || null,
                           newChildBirthDate || null,
                           newChildGrade || null,
-                          trackHours
+                          trackHours,
+                          newChildColor
                         )
                         setNewChildName('')
                         setNewChildBirthDate('')
                         setNewChildGrade('')
+                        setNewChildColor('#5A8F7B')
                         setTrackHours(true)
                         setShowTrackingPrompt(false)
                         if (trackHours) {

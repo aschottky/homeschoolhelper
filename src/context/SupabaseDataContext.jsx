@@ -144,6 +144,7 @@ export function SupabaseDataProvider({ children: childrenProp }) {
       const transformedChildren = childrenData?.map(child => ({
         id: child.id,
         name: child.name,
+        color: child.color || '#8FB39A',
         stateCode: child.state_code,
         birthDate: child.birth_date || null,
         gradeLevel: child.grade_level || null,
@@ -284,7 +285,7 @@ export function SupabaseDataProvider({ children: childrenProp }) {
   }, [schoolworkSamples, isLoaded, isConfigured, user])
 
   // Add a new child
-  const addChild = async (name, useStateRequirements = false, stateCode = null, birthDate = null, gradeLevel = null, trackHours = true) => {
+  const addChild = async (name, useStateRequirements = false, stateCode = null, birthDate = null, gradeLevel = null, trackHours = true, color = '#8FB39A') => {
     const effectiveState = stateCode || userState
     // Only create subjects if tracking hours is enabled
     const subjects = trackHours 
@@ -301,6 +302,7 @@ export function SupabaseDataProvider({ children: childrenProp }) {
           .insert({
             user_id: user.id,
             name,
+            color: color || '#8FB39A',
             state_code: useStateRequirements ? effectiveState : null,
             birth_date: birthDate || null,
             grade_level: gradeLevel || null
@@ -330,6 +332,7 @@ export function SupabaseDataProvider({ children: childrenProp }) {
         const newChild = {
           id: childData.id,
           name: childData.name,
+          color: childData.color || color || '#8FB39A',
           stateCode: childData.state_code,
           birthDate: childData.birth_date || null,
           gradeLevel: childData.grade_level || null,
@@ -373,6 +376,7 @@ export function SupabaseDataProvider({ children: childrenProp }) {
         if (updates.name !== undefined) updateData.name = updates.name
         if (updates.birthDate !== undefined) updateData.birth_date = updates.birthDate || null
         if (updates.gradeLevel !== undefined) updateData.grade_level = updates.gradeLevel || null
+        if (updates.color !== undefined) updateData.color = updates.color
         
         await supabase
           .from('children')
