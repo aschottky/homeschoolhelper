@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useData } from '../../context/SupabaseDataContext'
 import { useAuth } from '../../context/AuthContext'
-import { BookOpen, FolderOpen, Users, Plus, Pencil, Trash2, X, Save, ListPlus, ListMinus, ChevronDown, ChevronUp, Crown, RefreshCw, ExternalLink, ShieldCheck, ShieldOff, ArrowUpCircle, ArrowDownCircle, Loader } from 'lucide-react'
+import { BookOpen, FolderOpen, Users, Plus, Pencil, Trash2, X, Save, ListPlus, ListMinus, ChevronDown, ChevronUp, Crown, RefreshCw, ExternalLink, ShieldCheck, ShieldOff, ArrowUpCircle, ArrowDownCircle, Loader, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react'
 import { AGE_GROUPS } from '../../data/readAloudBooks'
 import './Admin.css'
 
@@ -379,6 +379,8 @@ function Admin() {
   const [bulkAddText, setBulkAddText] = useState('')
   const [filterAge, setFilterAge] = useState('all')
   const [filterGenre, setFilterGenre] = useState('all')
+  const [bookSortField, setBookSortField] = useState('title')
+  const [bookSortDir, setBookSortDir] = useState('asc')
 
   useEffect(() => {
     setBooks(suggestedBooks)
@@ -387,12 +389,26 @@ function Admin() {
 
   // Derived filter options from live book list
   const bookGenres = [...new Set(books.map(b => b.genre).filter(Boolean))].sort()
+  const bookSortAuthorKey = (author) => {
+    if (!author) return 'zzz'
+    const words = author.trim().split(/\s+/)
+    return words[words.length - 1].toLowerCase()
+  }
+  const handleBookSortClick = (field) => {
+    if (bookSortField === field) setBookSortDir(d => d === 'asc' ? 'desc' : 'asc')
+    else { setBookSortField(field); setBookSortDir('asc') }
+  }
   const filteredBooks = books
     .filter(b =>
       (filterAge === 'all' || b.ageGroup === filterAge) &&
       (filterGenre === 'all' || b.genre === filterGenre)
     )
-    .sort((a, b) => a.title.replace(/^(The|An|A) /i, '').localeCompare(b.title.replace(/^(The|An|A) /i, '')))
+    .sort((a, b) => {
+      const cmp = bookSortField === 'author'
+        ? bookSortAuthorKey(a.author).localeCompare(bookSortAuthorKey(b.author))
+        : a.title.replace(/^(The|An|A) /i, '').localeCompare(b.title.replace(/^(The|An|A) /i, ''))
+      return bookSortDir === 'asc' ? cmp : -cmp
+    })
 
   const showMsg = (text, isError = false) => {
     setMessage({ text, isError })
@@ -695,6 +711,14 @@ function Admin() {
                   {filteredBooks.length}{filteredBooks.length !== books.length && ` of ${books.length}`}
                 </span>
               </h3>
+              <div className="admin-sort-btns">
+                <button className={`sort-th-btn ${bookSortField === 'title' ? 'active' : ''}`} onClick={() => handleBookSortClick('title')}>
+                  Title {bookSortField === 'title' ? (bookSortDir === 'asc' ? <ArrowUp size={11} /> : <ArrowDown size={11} />) : <ArrowUpDown size={11} />}
+                </button>
+                <button className={`sort-th-btn ${bookSortField === 'author' ? 'active' : ''}`} onClick={() => handleBookSortClick('author')}>
+                  Author {bookSortField === 'author' ? (bookSortDir === 'asc' ? <ArrowUp size={11} /> : <ArrowDown size={11} />) : <ArrowUpDown size={11} />}
+                </button>
+              </div>
               {books.length > 0 && (
                 <div className="admin-bulk-actions">
                   <label className="admin-checkbox-label">

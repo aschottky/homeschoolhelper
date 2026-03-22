@@ -4,7 +4,7 @@ import { useAuth } from '../../context/AuthContext'
 import { useSubscription } from '../../context/SubscriptionContext'
 import { AGE_GROUPS, SUGGESTED_BOOKS } from '../../data/readAloudBooks'
 import AdBanner from '../Ads/AdBanner'
-import { Book, BookOpen, Check, Plus, Trash2, Pencil, Filter, Sparkles, Lock, BookMarked, X } from 'lucide-react'
+import { Book, BookOpen, Check, Plus, Trash2, Pencil, Filter, Sparkles, Lock, BookMarked, X, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react'
 import './ReadAlouds.css'
 
 const READING_STATUS = {
@@ -48,6 +48,8 @@ function ReadAlouds() {
   const [readingList, setReadingList] = useState({})
   const [showAddBook, setShowAddBook] = useState(false)
   const [showMyList, setShowMyList] = useState(false)
+  const [sortField, setSortField] = useState('title')   // 'title' | 'author'
+  const [sortDir, setSortDir] = useState('asc')
   const [newBook, setNewBook] = useState({ title: '', author: '', ageGroup: 'ages-8-12', genre: 'Other' })
   const [editingCustomBook, setEditingCustomBook] = useState(null)
   const [savingCustom, setSavingCustom] = useState(false)
@@ -132,7 +134,21 @@ function ReadAlouds() {
   }
 
   const sortTitle = (t) => t.replace(/^(The|An|A) /i, '')
-  const filteredBooks = getFilteredBooks().sort((a, b) => sortTitle(a.title).localeCompare(sortTitle(b.title)))
+  const sortAuthorKey = (author) => {
+    if (!author) return 'zzz'
+    const words = author.trim().split(/\s+/)
+    return words[words.length - 1].toLowerCase()
+  }
+  const handleSortClick = (field) => {
+    if (sortField === field) setSortDir(d => d === 'asc' ? 'desc' : 'asc')
+    else { setSortField(field); setSortDir('asc') }
+  }
+  const filteredBooks = getFilteredBooks().sort((a, b) => {
+    const cmp = sortField === 'author'
+      ? sortAuthorKey(a.author).localeCompare(sortAuthorKey(b.author))
+      : sortTitle(a.title).localeCompare(sortTitle(b.title))
+    return sortDir === 'asc' ? cmp : -cmp
+  })
 
   const addAllToList = async () => {
     if (!selectedChild) return
@@ -610,8 +626,18 @@ function ReadAlouds() {
             <table className="books-table">
               <thead>
                 <tr>
-                  <th>Title</th>
-                  <th>Author / Illustrator</th>
+                  <th>
+                    <button className={`sort-th-btn ${sortField === 'title' ? 'active' : ''}`} onClick={() => handleSortClick('title')}>
+                      Title
+                      {sortField === 'title' ? (sortDir === 'asc' ? <ArrowUp size={12} /> : <ArrowDown size={12} />) : <ArrowUpDown size={12} />}
+                    </button>
+                  </th>
+                  <th>
+                    <button className={`sort-th-btn ${sortField === 'author' ? 'active' : ''}`} onClick={() => handleSortClick('author')}>
+                      Author / Illustrator
+                      {sortField === 'author' ? (sortDir === 'asc' ? <ArrowUp size={12} /> : <ArrowDown size={12} />) : <ArrowUpDown size={12} />}
+                    </button>
+                  </th>
                   <th>Age Group</th>
                   <th>Genre</th>
                   {isPremium && selectedChild && <th>Status</th>}

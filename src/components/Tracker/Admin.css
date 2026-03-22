@@ -196,6 +196,40 @@
   margin: 0;
 }
 
+.admin-sort-btns {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.admin-sort-btns .sort-th-btn {
+  padding: 4px 8px;
+  border: 1px solid var(--border-light, #e8e0d8);
+  border-radius: var(--radius-sm);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+  background: white;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.15s;
+}
+
+.admin-sort-btns .sort-th-btn:hover {
+  border-color: var(--forest);
+  color: var(--forest);
+}
+
+.admin-sort-btns .sort-th-btn.active {
+  background: var(--forest);
+  border-color: var(--forest);
+  color: white;
+}
+
 .admin-bulk-actions {
   display: flex;
   align-items: center;
