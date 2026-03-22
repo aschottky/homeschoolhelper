@@ -128,6 +128,7 @@ function ReadAlouds() {
       if (useDbForStatus) books = [...books, ...customBooksForChild]
       else if (readingList[selectedChild]?.customBooks) books = [...books, ...readingList[selectedChild].customBooks]
     }
+    if (showMyList && selectedChild) books = books.filter(b => !!getBookStatus(selectedChild, b.id))
     if (selectedAgeGroup !== 'all') books = books.filter(b => b.ageGroup === selectedAgeGroup)
     if (selectedGenre !== 'all') books = books.filter(b => b.genre === selectedGenre)
     if (searchQuery) {
