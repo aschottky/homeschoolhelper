@@ -34,7 +34,7 @@ export const TIER_BENEFITS = {
       'FREE 15-minute curriculum consult',
       '20% off future consultations',
       'Priority support',
-      'Export reports (coming soon)'
+      'Export reports & transcripts'
     ],
     consultBenefit: 'Free 15-minute consultation included',
     consultDiscount: 20,

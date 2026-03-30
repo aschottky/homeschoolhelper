@@ -19,10 +19,11 @@ import IDCards from './IDCards'
 import StateRequirements from './StateRequirements'
 import Curriculum from './Curriculum'
 import Consultation from './Consultation'
+import Reports from './Reports'
 // Settings is now rendered inside FamilyProfile
 import Upgrade from './Upgrade'
 import SchoolworkReminder from './SchoolworkReminder'
-import { LayoutDashboard, Users, Clock, History, Trophy, GraduationCap, BookOpen, Sun, Lightbulb, Heart, CreditCard, MapPin, BookMarked, MessageSquare, Crown, Sparkles, Shield, DollarSign, LogOut } from 'lucide-react'
+import { LayoutDashboard, Users, Clock, History, Trophy, GraduationCap, BookOpen, Sun, Lightbulb, Heart, CreditCard, MapPin, BookMarked, MessageSquare, Crown, Sparkles, Shield, DollarSign, LogOut, FileText } from 'lucide-react'
 import './Tracker.css'
 
 const BASE_TABS = [
@@ -30,6 +31,7 @@ const BASE_TABS = [
   { id: 'family-profile', label: 'Family Profile', icon: Users },
   { id: 'log', label: 'Log Hours', icon: Clock },
   { id: 'history', label: 'History', icon: History },
+  { id: 'reports', label: 'Reports', icon: FileText },
   { id: 'badges', label: 'Badges', icon: Trophy },
   { id: 'grades', label: 'Grades', icon: GraduationCap },
   { id: 'read-alouds', label: 'Read-Alouds', icon: BookOpen },
@@ -43,7 +45,7 @@ const BASE_TABS = [
   { id: 'consultation', label: 'Consult', icon: MessageSquare },
 ]
 
-const VALID_TABS = new Set(['dashboard', 'family-profile', 'children', 'settings', 'log', 'history', 'badges', 'grades', 'read-alouds', 'outdoor', 'expenses', 'activities', 'volunteer', 'id-cards', 'state', 'curriculum', 'consultation', 'admin', 'upgrade'])
+const VALID_TABS = new Set(['dashboard', 'family-profile', 'children', 'settings', 'log', 'history', 'reports', 'badges', 'grades', 'read-alouds', 'outdoor', 'expenses', 'activities', 'volunteer', 'id-cards', 'state', 'curriculum', 'consultation', 'admin', 'upgrade'])
 
 function Tracker() {
   const { tab: urlTab } = useParams()
@@ -89,6 +91,8 @@ function Tracker() {
         return <LogHours />
       case 'history':
         return <HoursHistory />
+      case 'reports':
+        return <Reports />
       case 'badges':
         return <Badges />
       case 'grades':
