@@ -6,6 +6,7 @@ import { SubscriptionProvider } from './context/SubscriptionContext'
 import Navbar from './components/Navbar'
 import Hero from './components/Hero'
 import Features from './components/Features'
+import EmailCapture from './components/EmailCapture'
 import Resources from './components/Resources'
 import CallToAction from './components/CallToAction'
 import Footer from './components/Footer'
@@ -84,6 +85,7 @@ function AppContent() {
               <main>
                 <Hero />
                 <Features />
+                <EmailCapture />
                 <Resources />
                 <CallToAction />
               </main>

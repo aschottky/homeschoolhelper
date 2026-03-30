@@ -382,6 +382,22 @@ left join public.hour_logs hl on hl.subject_id = s.id
 group by c.id, c.name, s.id, s.name, s.required_hours;
 
 -- =============================================
+-- EMAIL SUBSCRIBERS (landing page newsletter)
+-- =============================================
+create table if not exists public.email_subscribers (
+  id uuid default uuid_generate_v4() primary key,
+  email text unique not null,
+  source text default 'landing_page',
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+alter table public.email_subscribers enable row level security;
+
+create policy "Allow anonymous inserts"
+  on public.email_subscribers for insert
+  with check (true);
+
+-- =============================================
 -- STORAGE BUCKET FOR PHOTOS (Optional)
 -- =============================================
 -- Run this in SQL Editor to create a storage bucket for ID card photos
