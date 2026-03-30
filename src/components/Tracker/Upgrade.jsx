@@ -1,3 +1,6 @@
+// TODO: Create annual price in Stripe Dashboard
+// and add STRIPE_ANNUAL_PRICE_ID to env vars (Supabase Edge Function secrets and/or GCP checkout function).
+
 import { useState, useEffect } from 'react'
 import { useSubscription, TIERS, TIER_BENEFITS } from '../../context/SubscriptionContext'
 import { useAuth } from '../../context/AuthContext'
@@ -5,9 +8,13 @@ import { redirectToCheckout } from '../../lib/stripe'
 import { Check, X, Sparkles, Crown, Gift, Loader } from 'lucide-react'
 import './Upgrade.css'
 
+const premiumBenefits = TIER_BENEFITS[TIERS.PREMIUM]
+
 function Upgrade() {
   const { tier, isPremium, upgradeToPremium, downgradeToFree, refreshSubscription } = useSubscription()
   const { user, isConfigured } = useAuth()
+  /** @type {'monthly' | 'annual'} */
+  const [billingPeriod, setBillingPeriod] = useState('annual')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const [checkoutSuccess, setCheckoutSuccess] = useState(false)
@@ -67,7 +74,7 @@ function Upgrade() {
     setError(null)
 
     try {
-      await redirectToCheckout()
+      await redirectToCheckout(billingPeriod)
       // User will be redirected to Stripe, so this won't execute
     } catch (err) {
       console.error('Checkout error:', err)
@@ -94,6 +101,29 @@ function Upgrade() {
           </div>
         )}
       </div>
+
+      {tier !== TIERS.PREMIUM && (
+        <div className="billing-cycle-section">
+          <p className="billing-cycle-label">Billing cycle</p>
+          <div className="billing-toggle" role="group" aria-label="Billing cycle">
+            <button
+              type="button"
+              className={`billing-toggle-btn ${billingPeriod === 'annual' ? 'active' : ''}`}
+              onClick={() => setBillingPeriod('annual')}
+            >
+              Annual
+              <span className="billing-toggle-hint">{premiumBenefits.annualSavings}</span>
+            </button>
+            <button
+              type="button"
+              className={`billing-toggle-btn ${billingPeriod === 'monthly' ? 'active' : ''}`}
+              onClick={() => setBillingPeriod('monthly')}
+            >
+              Monthly
+            </button>
+          </div>
+        </div>
+      )}
 
       <div className="plans-grid">
         {/* Free Plan */}
@@ -141,10 +171,31 @@ function Upgrade() {
           </div>
           <div className="plan-header">
             <h2>Premium</h2>
-            <div className="plan-price">
-              <span className="price">$9.99</span>
-              <span className="period">/month</span>
-            </div>
+            {tier === TIERS.PREMIUM ? (
+              <div className="plan-price plan-price-member">
+                <span className="period">Active subscription</span>
+              </div>
+            ) : billingPeriod === 'annual' ? (
+              <div className="plan-price plan-price-annual">
+                <span className="savings-badge">{premiumBenefits.annualSavings}</span>
+                <div className="plan-price-main">
+                  <span className="price">$79.99</span>
+                  <span className="period">/year</span>
+                </div>
+                <div className="price-compare">
+                  <span className="price-crossed">$119.88</span>
+                  <span className="price-compare-label">at monthly rate</span>
+                </div>
+              </div>
+            ) : (
+              <div className="plan-price plan-price-monthly-wrap">
+                <div className="plan-price-main">
+                  <span className="price">$9.99</span>
+                  <span className="period">/month</span>
+                </div>
+                <p className="billing-nudge">Switch to annual and save $40</p>
+              </div>
+            )}
           </div>
           <p className="plan-description">
             The complete homeschool experience with exclusive benefits
@@ -152,19 +203,19 @@ function Upgrade() {
           <ul className="plan-features">
             <li><Check size={18} className="check" /> Everything in Free</li>
             <li className="highlight">
-              <Sparkles size={18} className="sparkle" /> 
+              <Sparkles size={18} className="sparkle" />
               <strong>Ad-free experience</strong>
             </li>
             <li className="highlight">
-              <Gift size={18} className="gift" /> 
+              <Gift size={18} className="gift" />
               <strong>FREE 15-min consultation</strong>
             </li>
             <li className="highlight">
-              <Check size={18} className="check" /> 
+              <Check size={18} className="check" />
               <strong>20% off consultations</strong>
             </li>
             <li><Check size={18} className="check" /> Priority support</li>
-            <li><Check size={18} className="check" /> Export reports (coming soon)</li>
+            <li><Check size={18} className="check" /> Export reports &amp; transcripts</li>
             <li><Check size={18} className="check" /> Early access to new features</li>
           </ul>
           {tier === TIERS.PREMIUM ? (

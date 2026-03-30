@@ -61,6 +61,76 @@
   cursor: not-allowed;
 }
 
+/* Billing cycle toggle (above plan cards) */
+.billing-cycle-section {
+  max-width: 900px;
+  margin: 0 auto 28px;
+  text-align: center;
+}
+
+.billing-cycle-label {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--forest-dark);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin: 0 0 12px;
+}
+
+.billing-toggle {
+  display: inline-flex;
+  padding: 4px;
+  background: var(--cream-light);
+  border-radius: var(--radius-lg);
+  border: 2px solid var(--sage-light);
+  gap: 4px;
+}
+
+.billing-toggle-btn {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-width: 160px;
+  padding: 12px 20px;
+  border: none;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+
+.billing-toggle-btn:hover {
+  color: var(--forest-dark);
+  background: rgba(255, 255, 255, 0.7);
+}
+
+.billing-toggle-btn.active {
+  background: var(--forest);
+  color: white;
+  box-shadow: var(--shadow-sm);
+}
+
+.billing-toggle-btn .billing-toggle-hint {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  line-height: 1.2;
+  max-width: 140px;
+}
+
+.billing-toggle-btn:not(.active) .billing-toggle-hint {
+  color: var(--sage);
+}
+
+.billing-toggle-btn.active .billing-toggle-hint {
+  color: rgba(255, 255, 255, 0.9);
+}
+
 .plans-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -154,6 +224,65 @@
 .plan-price .period {
   color: var(--text-muted);
   font-size: 1rem;
+}
+
+.plan-price-main {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+}
+
+.plan-price-annual {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.plan-price-monthly-wrap {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.plan-price-member {
+  margin-top: 4px;
+}
+
+.savings-badge {
+  display: inline-block;
+  padding: 5px 12px;
+  background: #16a34a;
+  color: white;
+  font-size: 0.75rem;
+  font-weight: 700;
+  border-radius: var(--radius-lg);
+  letter-spacing: 0.02em;
+}
+
+.price-compare {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.price-crossed {
+  font-size: 1.125rem;
+  color: var(--text-muted);
+  text-decoration: line-through;
+  font-weight: 500;
+}
+
+.price-compare-label {
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+}
+
+.billing-nudge {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: var(--sage);
+  font-weight: 500;
 }
 
 .plan-description {
@@ -354,6 +483,17 @@
 }
 
 @media (max-width: 768px) {
+  .billing-toggle {
+    flex-direction: column;
+    width: 100%;
+    max-width: 320px;
+    margin: 0 auto;
+  }
+
+  .billing-toggle-btn {
+    min-width: 100%;
+  }
+
   .plans-grid {
     grid-template-columns: 1fr;
     gap: 24px;

@@ -36,16 +36,17 @@ serve(async (req) => {
 
   try {
     const stripeSecretKey = Deno.env.get('STRIPE_SECRET_KEY')
-    const stripePriceId = Deno.env.get('STRIPE_PRICE_ID')
+    const stripePriceMonthly = Deno.env.get('STRIPE_PRICE_ID')
+    const stripePriceAnnual = Deno.env.get('STRIPE_ANNUAL_PRICE_ID')
 
-    if (!stripeSecretKey || !stripePriceId) {
+    if (!stripeSecretKey || !stripePriceMonthly) {
       throw new Error('Missing Stripe configuration')
     }
 
     let authHeader = req.headers.get('Authorization')
-    let body: { access_token?: string } = {}
+    let body: { access_token?: string; billing_period?: string } = {}
     try {
-      body = (await req.json()) as { access_token?: string }
+      body = (await req.json()) as { access_token?: string; billing_period?: string }
     } catch {
       /* body may be empty */
     }
@@ -123,6 +124,17 @@ serve(async (req) => {
         .from('profiles')
         .update({ stripe_customer_id: customerId })
         .eq('id', user.id)
+    }
+
+    const billingPeriod = body.billing_period === 'annual' ? 'annual' : 'monthly'
+    const stripePriceId =
+      billingPeriod === 'annual'
+        ? stripePriceAnnual || ''
+        : stripePriceMonthly
+    if (billingPeriod === 'annual' && !stripePriceId) {
+      throw new Error(
+        'Annual billing is not configured. Set STRIPE_ANNUAL_PRICE_ID in Edge Function secrets.',
+      )
     }
 
     const siteUrl = Deno.env.get('SITE_URL') || 'https://homeschoolhelper.app'

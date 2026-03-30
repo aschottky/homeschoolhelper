@@ -252,7 +252,18 @@ export async function createCheckoutSession(req, res) {
 
   // ── Create Stripe Checkout Session ─────────────────────────────────────────
   try {
-    const stripePriceId = getEnv('STRIPE_PRICE_ID')
+    const billingPeriod = body.billing_period === 'annual' ? 'annual' : 'monthly'
+    let stripePriceId
+    if (billingPeriod === 'annual') {
+      stripePriceId = process.env.STRIPE_ANNUAL_PRICE_ID
+      if (!stripePriceId) {
+        throw new Error(
+          'Annual billing is not configured. Set STRIPE_ANNUAL_PRICE_ID in the Cloud Function environment.',
+        )
+      }
+    } else {
+      stripePriceId = getEnv('STRIPE_PRICE_ID')
+    }
     const siteUrl = process.env.SITE_URL || 'https://homeschoolhelper.app'
     if (!stripeSecretKey) throw new Error('Missing Stripe configuration')
 

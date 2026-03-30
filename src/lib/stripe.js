@@ -18,7 +18,10 @@ export const getStripe = () => {
   return stripePromise
 }
 
-export const createCheckoutSession = async () => {
+/**
+ * @param {'monthly' | 'annual'} billingPeriod — selects Stripe price on the server (STRIPE_PRICE_ID vs STRIPE_ANNUAL_PRICE_ID)
+ */
+export const createCheckoutSession = async (billingPeriod = 'monthly') => {
   if (!isSupabaseConfigured()) {
     throw new Error('Supabase not configured')
   }
@@ -79,10 +82,14 @@ export const createCheckoutSession = async () => {
   if (!useGcpCheckout) {
     headers.apikey = import.meta.env.VITE_SUPABASE_ANON_KEY || ''
   }
+  const period = billingPeriod === 'annual' ? 'annual' : 'monthly'
   const res = await fetch(url, {
     method: 'POST',
     headers,
-    body: JSON.stringify({ access_token: token }),
+    body: JSON.stringify({
+      access_token: token,
+      billing_period: period,
+    }),
   })
 
   const data = await res.json().catch(() => ({}))
@@ -106,9 +113,9 @@ export const createCheckoutSession = async () => {
   return data
 }
 
-export const redirectToCheckout = async () => {
+export const redirectToCheckout = async (billingPeriod = 'monthly') => {
   try {
-    const sessionData = await createCheckoutSession()
+    const sessionData = await createCheckoutSession(billingPeriod)
 
     if (sessionData.url) {
       window.location.href = sessionData.url

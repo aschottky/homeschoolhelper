@@ -28,6 +28,9 @@ export const TIER_BENEFITS = {
   [TIERS.PREMIUM]: {
     name: 'Premium',
     price: '$9.99/month',
+    monthlyPrice: '$9.99/month',
+    annualPrice: '$79.99/year',
+    annualSavings: 'Save $40/year (2 months free!)',
     features: [
       'Everything in Free',
       'Ad-free experience',
