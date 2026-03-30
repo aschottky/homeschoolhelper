@@ -398,6 +398,53 @@ create policy "Allow anonymous inserts"
   with check (true);
 
 -- =============================================
+-- REFERRALS (profiles.referral_code, referral_rewards)
+-- =============================================
+
+alter table public.profiles add column if not exists referral_code text;
+alter table public.profiles add column if not exists referred_by uuid references public.profiles(id);
+
+create unique index if not exists profiles_referral_code_key on public.profiles (referral_code) where referral_code is not null;
+
+create table if not exists public.referral_rewards (
+  id uuid default uuid_generate_v4() primary key,
+  referrer_id uuid references public.profiles(id),
+  referred_id uuid references public.profiles(id),
+  reward_type text default 'free_month',
+  status text default 'pending',
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+create unique index if not exists referral_rewards_referred_id_unique on public.referral_rewards (referred_id);
+create index if not exists referral_rewards_referrer_id_idx on public.referral_rewards (referrer_id);
+
+alter table public.referral_rewards enable row level security;
+
+create policy "Referral rewards: referrer or referred can read"
+  on public.referral_rewards for select
+  using (auth.uid() = referrer_id or auth.uid() = referred_id);
+
+create policy "Referral rewards: referred user can insert own row"
+  on public.referral_rewards for insert
+  with check (auth.uid() = referred_id);
+
+-- Resolve referral code without exposing other profile rows (RLS-safe).
+create or replace function public.get_profile_id_by_referral_code(p_code text)
+returns uuid
+language sql
+security definer
+set search_path = public
+stable
+as $$
+  select id from public.profiles
+  where referral_code is not null
+    and upper(trim(referral_code)) = upper(trim(p_code))
+  limit 1;
+$$;
+
+grant execute on function public.get_profile_id_by_referral_code(text) to authenticated;
+
+-- =============================================
 -- STORAGE BUCKET FOR PHOTOS (Optional)
 -- =============================================
 -- Run this in SQL Editor to create a storage bucket for ID card photos

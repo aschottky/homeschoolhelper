@@ -22,12 +22,14 @@ import Consultation from './Consultation'
 import Reports from './Reports'
 // Settings is now rendered inside FamilyProfile
 import Upgrade from './Upgrade'
+import Referrals from './Referrals'
 import SchoolworkReminder from './SchoolworkReminder'
-import { LayoutDashboard, Users, Clock, History, Trophy, GraduationCap, BookOpen, Sun, Lightbulb, Heart, CreditCard, MapPin, BookMarked, MessageSquare, Crown, Sparkles, Shield, DollarSign, LogOut, FileText } from 'lucide-react'
+import { LayoutDashboard, Users, Clock, History, Trophy, GraduationCap, BookOpen, Sun, Lightbulb, Heart, CreditCard, MapPin, BookMarked, MessageSquare, Crown, Sparkles, Shield, DollarSign, LogOut, FileText, Gift } from 'lucide-react'
 import './Tracker.css'
 
 const BASE_TABS = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { id: 'referrals', label: 'Refer a Friend', icon: Gift },
   { id: 'family-profile', label: 'Family Profile', icon: Users },
   { id: 'log', label: 'Log Hours', icon: Clock },
   { id: 'history', label: 'History', icon: History },
@@ -45,7 +47,7 @@ const BASE_TABS = [
   { id: 'consultation', label: 'Consult', icon: MessageSquare },
 ]
 
-const VALID_TABS = new Set(['dashboard', 'family-profile', 'children', 'settings', 'log', 'history', 'reports', 'badges', 'grades', 'read-alouds', 'outdoor', 'expenses', 'activities', 'volunteer', 'id-cards', 'state', 'curriculum', 'consultation', 'admin', 'upgrade'])
+const VALID_TABS = new Set(['dashboard', 'referrals', 'family-profile', 'children', 'settings', 'log', 'history', 'reports', 'badges', 'grades', 'read-alouds', 'outdoor', 'expenses', 'activities', 'volunteer', 'id-cards', 'state', 'curriculum', 'consultation', 'admin', 'upgrade'])
 
 function Tracker() {
   const { tab: urlTab } = useParams()
@@ -80,6 +82,8 @@ function Tracker() {
     switch (activeTab) {
       case 'dashboard':
         return <Dashboard onNavigate={setActiveTab} />
+      case 'referrals':
+        return <Referrals />
       case 'family-profile':
         return <FamilyProfile />
       // Legacy redirects — old bookmarks land here then bounce

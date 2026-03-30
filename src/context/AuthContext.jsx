@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect } from 'react'
 import { supabase, isSupabaseConfigured } from '../lib/supabase'
+import { applyPendingReferral } from '../lib/referralClient'
 
 const AuthContext = createContext()
 
@@ -92,6 +93,19 @@ export function AuthProvider({ children }) {
       setLoading(false)
     }
   }
+
+  useEffect(() => {
+    if (!isConfigured || !user?.id || loading) return
+    let cancelled = false
+    ;(async () => {
+      await applyPendingReferral(user.id, async () => {
+        if (!cancelled) await fetchProfile(user.id)
+      })
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [isConfigured, user?.id, loading])
 
   // Sign up with email and password
   const signUp = async (email, password, metadata = {}) => {

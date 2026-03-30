@@ -15,6 +15,7 @@ import About from './components/About'
 import LegalHelp from './components/LegalHelp'
 import FeaturesPage from './components/FeaturesPage'
 import Auth from './components/Auth/Auth'
+import ReferralCapture from './components/ReferralCapture'
 import './App.css'
 
 function ScrollToTop() {
@@ -76,6 +77,7 @@ function AppContent() {
 
   return (
     <>
+      <ReferralCapture />
       <ScrollToTop />
       <Routes>
         <Route path="/" element={
