@@ -19,13 +19,13 @@ function Hero() {
           </h1>
           
           <p className="hero-subtitle animate-fade-in">
-            Track your homeschool hours with ease. Manage multiple children, 
-            customize subjects, and monitor progress toward your educational goals.
+            Track your homeschool hours across all your devices. Manage multiple children,
+            customize subjects, and generate compliance-ready reports.
           </p>
           
           <div className="hero-actions animate-fade-in">
-            <Link to="/tracker/dashboard" className="btn btn-primary">
-              Open Hours Tracker
+            <Link to="/auth" className="btn btn-primary">
+              Get Started Free
               <ArrowRight className="btn-icon" />
             </Link>
             <a href="#features" className="btn btn-secondary">

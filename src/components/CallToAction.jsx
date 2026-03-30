@@ -4,9 +4,9 @@ import './CallToAction.css'
 
 const benefits = [
   'Track multiple children',
-  'Customize subjects & hours',
-  'Data stored locally',
-  'Completely free'
+  'Cloud sync across devices',
+  'Compliance-ready reports',
+  'Free to start, upgrade anytime'
 ]
 
 function CallToAction() {
@@ -16,10 +16,10 @@ function CallToAction() {
       <div className="container">
         <div className="cta-content">
           <div className="cta-text">
-            <h2>Ready to track your homeschool hours?</h2>
+            <h2>Start your homeschool tracking today</h2>
             <p>
-              Start organizing your homeschool journey today. Add your children, 
-              customize their subjects, set hour requirements, and track progress 
+              Start organizing your homeschool journey today. Add your children,
+              customize their subjects, set hour requirements, and track progress
               all in one place.
             </p>
             <ul className="cta-benefits">
@@ -35,7 +35,10 @@ function CallToAction() {
           <div className="cta-form-wrapper">
             <div className="cta-card">
               <h3>Start Tracking Now</h3>
-              <p>No signup required. Your data is stored securely in your browser.</p>
+              <p>
+                Sign up in 30 seconds. Free plan includes unlimited children
+                and full hours tracking.
+              </p>
               
               <div className="cta-features">
                 <div className="cta-feature">
@@ -56,13 +59,10 @@ function CallToAction() {
                 </div>
               </div>
 
-              <Link to="/tracker/dashboard" className="cta-submit">
-                Open Hours Tracker
+              <Link to="/auth" className="cta-submit">
+                Create Free Account
                 <ArrowRight className="btn-icon" />
               </Link>
-              <p className="form-disclaimer">
-                All data is stored locally in your browser. Nothing is sent to any server.
-              </p>
             </div>
           </div>
         </div>

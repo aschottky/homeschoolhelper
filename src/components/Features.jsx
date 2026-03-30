@@ -18,7 +18,7 @@ const features = [
   {
     icon: Shield,
     title: 'Privacy First',
-    description: 'Your data stays yours. Track hours and records without social features, forums, or sharing—just your family\'s homeschool records.',
+    description: 'Your data stays yours. Sign in with a secure account and sync across devices—no social feeds or public sharing, just your family\'s homeschool records.',
     color: 'sage'
   },
   {
