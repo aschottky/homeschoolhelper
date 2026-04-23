@@ -1,6 +1,11 @@
 /* ══════════════════════════════════════
    Study Timer
 ══════════════════════════════════════ */
+.log-hours {
+  min-width: 0;
+  max-width: 100%;
+}
+
 .timer-section {
   max-width: 700px;
 }
@@ -40,16 +45,19 @@
 
 .timer-display {
   font-family: 'Courier New', Courier, monospace;
-  font-size: 4rem;
+  font-size: clamp(2rem, 8vw, 4rem);
   font-weight: 700;
   letter-spacing: 0.05em;
   color: var(--forest-dark);
   background: var(--cream-light);
-  padding: 20px 36px;
+  padding: 20px clamp(12px, 4vw, 36px);
   border-radius: var(--radius-lg);
   border: 3px solid var(--sage-light);
-  min-width: 280px;
+  min-width: 0;
+  max-width: 100%;
+  width: min(100%, 360px);
   text-align: center;
+  box-sizing: border-box;
   transition: border-color 0.3s;
 }
 
@@ -85,9 +93,10 @@
 }
 
 .timer-subject-badge {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 6px;
+  max-width: 100%;
   border: 2px solid;
   border-radius: 999px;
   padding: 4px 14px;
@@ -95,6 +104,8 @@
   font-weight: 600;
   color: var(--forest-dark);
   background: white;
+  overflow-wrap: anywhere;
+  box-sizing: border-box;
 }
 
 .subject-dot {
@@ -268,8 +279,10 @@
 /* Children Selector */
 .children-selector-header {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
   align-items: center;
+  gap: 10px 12px;
   margin-bottom: 12px;
 }
 
@@ -305,24 +318,30 @@
 
 .children-checkbox-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 200px), 1fr));
   gap: 12px;
   padding: 16px;
   background: var(--cream-light);
   border-radius: var(--radius-md);
   border: 2px solid var(--sage-light);
+  min-width: 0;
+  box-sizing: border-box;
 }
 
 .child-checkbox-label {
   display: flex;
   align-items: center;
-  gap: 10px;
+  flex-wrap: wrap;
+  gap: 8px 10px;
   padding: 10px 12px;
   background: white;
   border-radius: var(--radius-sm);
   cursor: pointer;
   transition: all 0.2s ease;
   user-select: none;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .child-checkbox-label:hover {
@@ -362,9 +381,11 @@
 }
 
 .child-name {
-  flex: 1;
+  flex: 1 1 8rem;
+  min-width: 0;
   font-weight: 500;
   color: var(--text-dark);
+  overflow-wrap: anywhere;
 }
 
 .child-grade {
@@ -380,6 +401,9 @@
   font-size: 0.8125rem;
   color: var(--text-muted);
   font-style: italic;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  line-height: 1.45;
 }
 
 .btn-lg {
@@ -389,6 +413,7 @@
 
 .success-message {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 10px;
   padding: 16px 20px;
@@ -397,6 +422,10 @@
   border-radius: var(--radius-md);
   margin-bottom: 24px;
   font-weight: 600;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow-wrap: anywhere;
 }
 
 /* Subject Preview */
@@ -591,5 +620,13 @@
 
   .quick-log-subjects {
     grid-template-columns: 1fr;
+  }
+}
+
+/* Narrow viewports: avoid horizontal page scroll from fixed min grid columns or wide timer */
+@media (max-width: 480px) {
+  .select-actions {
+    flex: 1 1 100%;
+    justify-content: flex-start;
   }
 }

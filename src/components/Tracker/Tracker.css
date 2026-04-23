@@ -142,12 +142,18 @@
   padding: 16px;
   background: rgba(255, 255, 255, 0.05);
   border-radius: var(--radius-md);
+  min-width: 0;
+  overflow: hidden; /* keep tip copy inside the rounded box */
 }
 
 .sidebar-help p {
   color: rgba(255, 255, 255, 0.7);
   font-size: 0.8125rem;
   line-height: 1.5;
+  margin: 0;
+  overflow-wrap: anywhere;
+  word-wrap: break-word;
+  hyphens: auto;
 }
 
 .sidebar-signout {
@@ -179,6 +185,9 @@
   margin-left: 280px;
   padding: 32px 40px;
   min-height: 100vh;
+  min-width: 0; /* allow flex child to shrink so content wraps instead of overflowing */
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 /* Shared tracker components styles */
@@ -188,6 +197,9 @@
   padding: 32px;
   box-shadow: var(--shadow-sm);
   margin-bottom: 24px;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .tracker-section-header {
@@ -240,12 +252,19 @@
 /* Form styles */
 .form-row {
   display: flex;
+  flex-wrap: wrap;
   gap: 16px;
   margin-bottom: 16px;
 }
 
+.form-row .form-group {
+  flex: 1 1 180px;
+  min-width: 0; /* required so Hours / Minutes / Date can shrink in narrow main column */
+}
+
 .form-group {
   flex: 1;
+  min-width: 0;
 }
 
 .form-group label {
@@ -260,6 +279,9 @@
 .form-select,
 .form-textarea {
   width: 100%;
+  min-width: 0; /* allow shrinking in flex rows; avoids overflow on iOS date inputs */
+  max-width: 100%;
+  box-sizing: border-box;
   padding: 14px 16px;
   border: 2px solid var(--sage-light);
   border-radius: var(--radius-md);
