@@ -1,46 +1,39 @@
-/*
-  AdSlot wrapper — controls spacing, theming, and responsive behaviour.
-  EthicalAds injects its own ad div inside the [data-ea-publisher] element;
-  we only control the outer wrapper and CSS custom properties.
-*/
-
-/* ── Brand colour overrides ── */
-:root {
-  --ea-color-link-bold: var(--forest);          /* CTA / headline colour */
-  --ea-color-link-bold-dark: var(--sage);
-  --ea-bgcolor: rgba(45, 90, 74, 0.04);         /* very light sage tint */
-  --ea-font-family: var(--font-body, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif);
-  --ea-font-size: 13px;
-}
-
-/* ── Wrapper ── */
+/* ── AdSlot wrapper ── */
 .ad-slot-wrapper {
   width: 100%;
+  margin: 0 0 28px;
   display: flex;
-  justify-content: center;
-  margin: 0 0 24px;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
 }
 
-/* ── EA placement itself ── */
-.ad-slot-wrapper .ea-placement {
-  max-width: 100%;
+/* Subtle "Advertisement" disclosure label */
+.ad-slot-label {
+  font-size: 0.6875rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted, #9ca3af);
+  align-self: flex-start;
+  padding-left: 2px;
+}
+
+/* AdSense ins element */
+.ad-slot-wrapper .adsbygoogle {
+  width: 100%;
+  min-height: 90px;  /* reserve space so layout doesn't jump when ad loads */
   border-radius: var(--radius-md, 8px);
   overflow: hidden;
+  background: transparent;
 }
 
-/* Horizontal: full-width banner */
-.ad-slot-wrapper .ea-placement.horizontal {
-  width: 100%;
-}
-
-/* "Powered by" label sits above */
-.ad-slot-wrapper::before {
-  display: none; /* handled by EthicalAds "Ad by EthicalAds" text */
-}
-
-/* ── Responsive ── */
+/* Responsive */
 @media (max-width: 600px) {
   .ad-slot-wrapper {
     margin-bottom: 16px;
+  }
+
+  .ad-slot-wrapper .adsbygoogle {
+    min-height: 50px;
   }
 }

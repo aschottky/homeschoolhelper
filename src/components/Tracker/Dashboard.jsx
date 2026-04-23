@@ -51,7 +51,7 @@ function Dashboard({ onNavigate }) {
         <p>Track your homeschool progress at a glance</p>
       </div>
 
-      <AdSlot id="dashboard-top" keywords="homeschool|education|family|curriculum" />
+      <AdSlot slotId={import.meta.env.VITE_ADSENSE_SLOT_DASHBOARD} />
 
       <div className="stats-grid">
         <div className="stat-card">

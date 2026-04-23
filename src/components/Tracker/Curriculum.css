@@ -165,11 +165,37 @@
   font-weight: 600;
   font-size: 0.875rem;
   transition: all 0.3s ease;
+  text-decoration: none;
 }
 
 .card-link:hover {
   color: var(--terracotta);
   gap: 8px;
+}
+
+/* Amazon affiliate link — distinct orange accent */
+.card-amzn-link {
+  color: #e07b39;
+  border: 1.5px solid rgba(224, 123, 57, 0.35);
+  border-radius: var(--radius-sm);
+  padding: 5px 10px;
+  font-size: 0.8125rem;
+  gap: 5px;
+  white-space: nowrap;
+}
+
+.card-amzn-link:hover {
+  background: rgba(224, 123, 57, 0.08);
+  color: #c0622a;
+  gap: 6px;
+}
+
+/* Affiliate disclosure */
+.affiliate-disclosure {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin: -16px 0 20px;
+  line-height: 1.5;
 }
 
 .no-results {

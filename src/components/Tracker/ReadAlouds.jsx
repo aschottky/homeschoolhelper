@@ -290,7 +290,7 @@ function ReadAlouds() {
         </div>
       </div>
 
-      <AdSlot id="read-alouds-top" keywords="homeschool|books|reading|children|education" />
+      <AdSlot slotId={import.meta.env.VITE_ADSENSE_SLOT_READALOUDS} />
 
       {/* Premium Child Selector & Stats */}
       <div className={`tracking-section ${!isPremium ? 'locked' : ''}`}>

@@ -1,58 +1,82 @@
 /**
- * AdSlot — renders an EthicalAds placement for free users only.
+ * AdSlot — Google AdSense placement for free users only.
  *
- * Requirements:
- *   1. VITE_EA_PUBLISHER must be set to your EthicalAds publisher id.
- *   2. The ethicalads.min.js script must be loaded (it is, in index.html).
- *   3. This component returns null for Premium subscribers.
+ * Setup (one-time, you do this):
+ *   1. Apply at https://adsense.google.com — approval takes 1-2 weeks.
+ *   2. After approval, add to Cloudflare Pages → Settings → Environment Variables:
+ *        VITE_ADSENSE_CLIENT = ca-pub-XXXXXXXXXXXXXXXX
+ *   3. For each placement, create an ad unit in AdSense dashboard → Ad units → Display ads.
+ *      Copy the data-ad-slot value and add it as an env var:
+ *        VITE_ADSENSE_SLOT_DASHBOARD = 1234567890
+ *        VITE_ADSENSE_SLOT_CURRICULUM = 0987654321
+ *        VITE_ADSENSE_SLOT_READALOUDS = 1122334455
+ *        (or just use one slot ID for all placements to keep it simple)
+ *
+ * COPPA / Privacy:
+ *   - requestNonPersonalizedAds=1 is set globally to serve non-personalized ads.
+ *   - This is the safest approach for a site with mixed adult/child audiences.
+ *   - Review https://support.google.com/adsense/answer/9049919 for your specific situation.
  *
  * Usage:
- *   <AdSlot id="dashboard-top" keywords="homeschool|education" />
- *   <AdSlot id="curriculum-list" type="text" />
+ *   <AdSlot slotId={import.meta.env.VITE_ADSENSE_SLOT_DASHBOARD} />
+ *   <AdSlot slotId={import.meta.env.VITE_ADSENSE_SLOT_CURRICULUM} format="horizontal" />
  */
 
 import { useEffect, useRef } from 'react'
 import { useSubscription } from '../../context/SubscriptionContext'
 import './AdSlot.css'
 
-const PUBLISHER = import.meta.env.VITE_EA_PUBLISHER
+const CLIENT = import.meta.env.VITE_ADSENSE_CLIENT
+
+// Inject the AdSense script once per page load
+let scriptInjected = false
+function injectAdSenseScript(client) {
+  if (scriptInjected || typeof document === 'undefined') return
+  scriptInjected = true
+
+  // requestNonPersonalizedAds=1 → COPPA-safe, no user tracking
+  const script = document.createElement('script')
+  script.async = true
+  script.src = `https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${client}&npa=1`
+  script.crossOrigin = 'anonymous'
+  document.head.appendChild(script)
+}
 
 export default function AdSlot({
-  id,
-  type = 'image',        // 'image' | 'text'
-  horizontal = false,    // true → horizontal image variant
-  keywords = 'homeschool|education|family|learning',
+  slotId,
+  format = 'auto',   // 'auto' | 'horizontal' | 'vertical' | 'rectangle'
   className = '',
 }) {
   const { isPremium } = useSubscription()
   const ref = useRef(null)
-  const loaded = useRef(false)
+  const pushed = useRef(false)
 
   useEffect(() => {
-    if (isPremium || !PUBLISHER || !ref.current) return
+    if (isPremium || !CLIENT || !slotId || !ref.current || pushed.current) return
 
-    // On SPA route changes the DOM node already exists; tell EthicalAds to reload it.
-    if (typeof window.ethicalads !== 'undefined') {
-      try {
-        window.ethicalads.reload()
-      } catch (_) {}
+    injectAdSenseScript(CLIENT)
+
+    try {
+      ;(window.adsbygoogle = window.adsbygoogle || []).push({})
+      pushed.current = true
+    } catch (e) {
+      console.warn('AdSense push failed', e)
     }
-    loaded.current = true
-  }, [isPremium])
+  }, [isPremium, slotId])
 
-  // Don't render at all for Premium users or when no publisher is configured
-  if (isPremium || !PUBLISHER) return null
+  if (isPremium || !CLIENT || !slotId) return null
 
   return (
     <div className={`ad-slot-wrapper ${className}`}>
-      <div
+      <span className="ad-slot-label">Advertisement</span>
+      <ins
         ref={ref}
-        id={id}
-        data-ea-publisher={PUBLISHER}
-        data-ea-type={type}
-        data-ea-style={horizontal ? 'fixedheader' : undefined}
-        data-ea-keywords={keywords}
-        className={`ea-placement flat ${horizontal ? 'horizontal' : ''}`}
+        className="adsbygoogle"
+        style={{ display: 'block' }}
+        data-ad-client={CLIENT}
+        data-ad-slot={slotId}
+        data-ad-format={format}
+        data-full-width-responsive="true"
       />
     </div>
   )

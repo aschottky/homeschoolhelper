@@ -1,34 +1,54 @@
 /**
- * EthicalAds configuration
- * ------------------------
- * Provider: https://www.ethicalads.io/
- * No cookies, no fingerprinting, contextual targeting only.
+ * Ads & affiliate configuration
+ * ==============================
  *
- * Setup:
- *   1. Apply at ethicalads.io/publishers/ (they approve manually; ~50k+ pageviews preferred)
- *   2. After approval, add your publisher id to Cloudflare Pages env vars:
- *        VITE_EA_PUBLISHER = your-publisher-id
- *   3. Replace the placeholder line in public/ads.txt with the one from your dashboard.
+ * 1. GOOGLE ADSENSE (display ads — free users only)
+ * -------------------------------------------------
+ * Apply: https://adsense.google.com  (approval 1-2 weeks)
  *
- * Architecture:
- *   - ethicalads.min.js is loaded once in index.html (async, no render-blocking).
- *   - <AdSlot> (src/components/Ads/AdSlot.jsx) renders the data-ea-publisher div.
- *   - AdSlot returns null for Premium users and when VITE_EA_PUBLISHER is not set.
- *   - On SPA route changes, AdSlot calls window.ethicalads.reload() in a useEffect.
+ * Cloudflare Pages → Settings → Environment Variables:
+ *   VITE_ADSENSE_CLIENT   = ca-pub-XXXXXXXXXXXXXXXX   ← your publisher ID
+ *   VITE_ADSENSE_SLOT_DASHBOARD  = 1234567890         ← Dashboard ad unit
+ *   VITE_ADSENSE_SLOT_CURRICULUM = 0987654321         ← Curriculum ad unit
+ *   VITE_ADSENSE_SLOT_READALOUDS = 1122334455         ← Read-Alouds ad unit
  *
- * Current placements (free users only):
- *   - dashboard-top   — Dashboard, below header, above stats
- *   - curriculum-top  — Curriculum page, below header, above filters
- *   - read-alouds-top — Read-Alouds page, below header
+ * How to create ad units:
+ *   AdSense dashboard → Ads → By ad unit → Display ads → give it a name → copy slot ID
  *
- * CSS customisation:
- *   - Brand colours are set via CSS custom properties in AdSlot.css.
- *   - EthicalAds uses the "flat" theme for a clean, minimal look.
+ * Privacy/COPPA:
+ *   AdSlot.jsx injects the script with ?npa=1 (non-personalized ads).
+ *   This is the safe default for mixed adult/child audiences.
+ *   Review https://support.google.com/adsense/answer/9049919 for your situation.
+ *
+ * The AdSlot component returns null until VITE_ADSENSE_CLIENT is set,
+ * so nothing renders in dev or until you're approved.
+ *
+ *
+ * 2. AMAZON ASSOCIATES (affiliate links — curriculum page)
+ * -------------------------------------------------------
+ * Apply: https://affiliate-program.amazon.com  (instant approval for small sites)
+ *
+ * Cloudflare Pages → Settings → Environment Variables:
+ *   VITE_AMAZON_TAG = yourname-20    ← your Associates tracking tag
+ *
+ * Falls back to 'homeschoolhelp-20' placeholder until you set the var.
+ * All "Find on Amazon" links use rel="nofollow noopener noreferrer" and open in a new tab.
+ * The affiliate disclosure is shown below the curriculum header as required by FTC rules.
+ *
+ *
+ * 3. FUTURE UPGRADE PATH
+ * ----------------------
+ * ~50k sessions/month → apply to Mediavine (https://www.mediavine.com/publishers/)
+ * for 3–5× higher RPM on family/education content. Swap AdSense for their script.
  */
 export function getAdsConfig() {
   return {
-    enabled: !!import.meta.env.VITE_EA_PUBLISHER,
-    provider: 'ethical',
-    publisherId: import.meta.env.VITE_EA_PUBLISHER || null,
+    adsense: {
+      enabled: !!import.meta.env.VITE_ADSENSE_CLIENT,
+      client: import.meta.env.VITE_ADSENSE_CLIENT || null,
+    },
+    amazon: {
+      tag: import.meta.env.VITE_AMAZON_TAG || 'homeschoolhelp-20',
+    },
   }
 }

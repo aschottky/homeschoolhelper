@@ -1,8 +1,18 @@
 import { useState } from 'react'
 import { useSubscription } from '../../context/SubscriptionContext'
 import AdSlot from '../Ads/AdSlot'
-import { BookOpen, Star, ExternalLink, Filter, GraduationCap, Sparkles } from 'lucide-react'
+import { BookOpen, Star, ExternalLink, Filter, GraduationCap, Sparkles, ShoppingCart } from 'lucide-react'
 import './Curriculum.css'
+
+// Amazon Associates tag — replace with your real tag after joining Associates:
+// https://affiliate-program.amazon.com/
+// Once approved, swap 'homeschoolhelp-20' for your tag (format: yourname-20).
+const AMZN_TAG = import.meta.env.VITE_AMAZON_TAG || 'homeschoolhelp-20'
+
+function amazonUrl(searchTerm) {
+  const q = encodeURIComponent(searchTerm)
+  return `https://www.amazon.com/s?k=${q}&tag=${AMZN_TAG}`
+}
 
 const CURRICULUM_DATA = [
   {
@@ -14,7 +24,8 @@ const CURRICULUM_DATA = [
     description: 'Manipulative-based program that builds understanding through a concrete, sequential approach.',
     rating: 4.8,
     price: '$$',
-    tags: ['Hands-on', 'Sequential', 'Video lessons']
+    tags: ['Hands-on', 'Sequential', 'Video lessons'],
+    amazonSearch: 'Math-U-See curriculum',
   },
   {
     id: 2,
@@ -25,7 +36,8 @@ const CURRICULUM_DATA = [
     description: 'Multisensory reading program with scripted lessons and engaging activities.',
     rating: 4.9,
     price: '$$$',
-    tags: ['Multisensory', 'Scripted', 'Phonics-based']
+    tags: ['Multisensory', 'Scripted', 'Phonics-based'],
+    amazonSearch: 'All About Reading curriculum',
   },
   {
     id: 3,
@@ -36,7 +48,8 @@ const CURRICULUM_DATA = [
     description: 'Four-volume world history series that reads like a story with accompanying activities.',
     rating: 4.7,
     price: '$',
-    tags: ['Read-aloud', 'Activity guide', 'Chronological']
+    tags: ['Read-aloud', 'Activity guide', 'Chronological'],
+    amazonSearch: 'Story of the World Susan Wise Bauer',
   },
   {
     id: 4,
@@ -47,7 +60,8 @@ const CURRICULUM_DATA = [
     description: 'Introduces real scientific concepts with hands-on experiments and clear explanations.',
     rating: 4.6,
     price: '$$',
-    tags: ['Experiments', 'Secular', 'Colorful']
+    tags: ['Experiments', 'Secular', 'Colorful'],
+    amazonSearch: 'Real Science 4 Kids homeschool',
   },
   {
     id: 5,
@@ -58,7 +72,8 @@ const CURRICULUM_DATA = [
     description: 'Institute for Excellence in Writing teaches composition through models and structure.',
     rating: 4.5,
     price: '$$$',
-    tags: ['Video instruction', 'Structured', 'Progressive']
+    tags: ['Video instruction', 'Structured', 'Progressive'],
+    amazonSearch: 'Institute for Excellence in Writing IEW',
   },
   {
     id: 6,
@@ -69,7 +84,8 @@ const CURRICULUM_DATA = [
     description: 'Computer-based math with video lessons, automatic grading, and step-by-step solutions.',
     rating: 4.4,
     price: '$$',
-    tags: ['Digital', 'Self-grading', 'Independent']
+    tags: ['Digital', 'Self-grading', 'Independent'],
+    amazonSearch: 'Teaching Textbooks math homeschool',
   },
   {
     id: 7,
@@ -80,7 +96,8 @@ const CURRICULUM_DATA = [
     description: 'Christian-based science curriculum with a conversational tone and notebooking activities.',
     rating: 4.7,
     price: '$$',
-    tags: ['Faith-based', 'Notebooking', 'Thorough']
+    tags: ['Faith-based', 'Notebooking', 'Thorough'],
+    amazonSearch: 'Apologia Science homeschool curriculum',
   },
   {
     id: 8,
@@ -91,7 +108,8 @@ const CURRICULUM_DATA = [
     description: 'History through living books approach with study guides and timelines.',
     rating: 4.6,
     price: '$$',
-    tags: ['Living books', 'Charlotte Mason', 'Literature']
+    tags: ['Living books', 'Charlotte Mason', 'Literature'],
+    amazonSearch: 'Beautiful Feet Books history homeschool',
   },
   {
     id: 9,
@@ -102,7 +120,8 @@ const CURRICULUM_DATA = [
     description: 'Art curriculum featuring various mediums and techniques with video instruction.',
     rating: 4.8,
     price: '$$',
-    tags: ['Video lessons', 'Multi-medium', 'Project-based']
+    tags: ['Video lessons', 'Multi-medium', 'Project-based'],
+    amazonSearch: 'Masterpiece Society art curriculum homeschool',
   },
   {
     id: 10,
@@ -113,8 +132,9 @@ const CURRICULUM_DATA = [
     description: 'Math concepts taught through the story of Fred, making abstract concepts relatable.',
     rating: 4.3,
     price: '$',
-    tags: ['Story format', 'Engaging', 'Supplement']
-  }
+    tags: ['Story format', 'Engaging', 'Supplement'],
+    amazonSearch: 'Life of Fred math books',
+  },
 ]
 
 const SUBJECTS = ['All', 'Mathematics', 'Language Arts', 'Science', 'History', 'Art']
@@ -150,7 +170,11 @@ function Curriculum({ onNavigateToConsult }) {
         </button>
       </div>
 
-      <AdSlot id="curriculum-top" keywords="homeschool|curriculum|education|math|science|reading" />
+      <AdSlot slotId={import.meta.env.VITE_ADSENSE_SLOT_CURRICULUM} />
+
+      <p className="affiliate-disclosure">
+        * "Find on Amazon" links are affiliate links. We may earn a small commission at no extra cost to you, which helps keep Homeschool Helper free.
+      </p>
 
       <div className="curriculum-filters">
         <Filter size={18} />
@@ -210,9 +234,16 @@ function Curriculum({ onNavigateToConsult }) {
                 <span>{curr.rating}</span>
               </div>
               <span className="card-price">{curr.price}</span>
-              <button className="card-link">
-                Learn More <ExternalLink size={14} />
-              </button>
+              <a
+                className="card-link card-amzn-link"
+                href={amazonUrl(curr.amazonSearch)}
+                target="_blank"
+                rel="noopener noreferrer nofollow"
+                title={`Find ${curr.name} on Amazon`}
+              >
+                <ShoppingCart size={13} />
+                Find on Amazon <ExternalLink size={13} />
+              </a>
             </div>
 
           </div>
