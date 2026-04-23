@@ -1,6 +1,4 @@
 import { useState } from 'react'
-import { useSubscription } from '../../context/SubscriptionContext'
-import AdBanner from '../Ads/AdBanner'
 import { 
   Lightbulb, ChefHat, TreePine, Palette, Music, Gamepad2, 
   Hammer, Flower2, Film, MapPin, ShoppingCart, Dumbbell,
@@ -241,7 +239,6 @@ const ALTERNATIVE_ACTIVITIES = [
 ]
 
 function AlternativeActivities() {
-  const { isPremium } = useSubscription()
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedSubject, setSelectedSubject] = useState('')
   const [expandedActivity, setExpandedActivity] = useState(null)
@@ -269,8 +266,6 @@ function AlternativeActivities() {
           <p>Creative ways to fill school hours with everyday experiences</p>
         </div>
       </div>
-
-      {!isPremium && <AdBanner variant="horizontal" className="activities-ad" />}
 
       {/* Info Banner */}
       <div className="info-banner">

@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useData } from '../../context/SupabaseDataContext'
 import { useSubscription } from '../../context/SubscriptionContext'
-import AdBanner from '../Ads/AdBanner'
 import { 
   Heart, Award, Plus, Trash2, Calendar, Clock, MapPin, 
   Building2, Trophy, Music, Palette, Users, Dumbbell,

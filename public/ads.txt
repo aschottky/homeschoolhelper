@@ -1,0 +1,4 @@
+# EthicalAds ads.txt
+# Replace the line below with the exact line provided in your EthicalAds publisher dashboard
+# after your account is approved. Example format:
+# ethicalads.io, YOUR-PUBLISHER-ID, DIRECT

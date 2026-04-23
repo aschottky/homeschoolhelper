@@ -1,7 +1,5 @@
 import { useState, useEffect } from 'react'
 import { useData } from '../../context/SupabaseDataContext'
-import { useSubscription } from '../../context/SubscriptionContext'
-import AdBanner from '../Ads/AdBanner'
 import { 
   Sun, Plus, Trash2, Calendar, Clock, MapPin, TreePine, 
   Mountain, Bike, Bird, Leaf, Footprints, Tent, Fish,
@@ -26,7 +24,6 @@ const ACTIVITY_TYPES = [
 
 function OutdoorHours() {
   const { children } = useData()
-  const { isPremium } = useSubscription()
 
   const [outdoorLogs, setOutdoorLogs] = useState([])
   const [selectedChild, setSelectedChild] = useState('')
@@ -164,8 +161,6 @@ function OutdoorHours() {
           Log Outdoor Time
         </button>
       </div>
-
-      {!isPremium && <AdBanner variant="horizontal" className="outdoor-ad" />}
 
       {/* Stats Section */}
       <div className="outdoor-stats">

@@ -1,13 +1,11 @@
 import { useData } from '../../context/SupabaseDataContext'
-import { useSubscription } from '../../context/SubscriptionContext'
 import { getHighestBadge, BADGE_DEFINITIONS } from './Badges'
-import AdBanner from '../Ads/AdBanner'
+import AdSlot from '../Ads/AdSlot'
 import { Users, Clock, Target, TrendingUp, Plus, Trophy } from 'lucide-react'
 import './Dashboard.css'
 
 function Dashboard({ onNavigate }) {
   const { children, getSubjectHours, getChildTotalHours, getSubjectProgress } = useData()
-  const { isPremium } = useSubscription()
 
   const totalHoursLogged = children.reduce((total, child) => total + getChildTotalHours(child.id), 0)
   
@@ -53,7 +51,7 @@ function Dashboard({ onNavigate }) {
         <p>Track your homeschool progress at a glance</p>
       </div>
 
-      {!isPremium && <AdBanner variant="horizontal" className="dashboard-ad" />}
+      <AdSlot id="dashboard-top" keywords="homeschool|education|family|curriculum" />
 
       <div className="stats-grid">
         <div className="stat-card">
@@ -102,7 +100,7 @@ function Dashboard({ onNavigate }) {
       </div>
 
       <div className="children-progress">
-        {children.map((child, index) => {
+        {children.map((child) => {
           const childTotal = getChildTotalHours(child.id)
           const childRequired = child.subjects.reduce((t, s) => t + s.requiredHours, 0)
           const childProgress = childRequired > 0 ? (childTotal / childRequired) * 100 : 0
@@ -198,11 +196,6 @@ function Dashboard({ onNavigate }) {
                   Log Hours for {child.name}
                 </button>
               </div>
-
-              {/* Show ad after every 2nd child for free users */}
-              {!isPremium && (index + 1) % 2 === 0 && index < children.length - 1 && (
-                <AdBanner variant="horizontal" className="child-ad" />
-              )}
             </div>
           )
         })}

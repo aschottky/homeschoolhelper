@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useSubscription } from '../../context/SubscriptionContext'
-import AdBanner from '../Ads/AdBanner'
+import AdSlot from '../Ads/AdSlot'
 import { BookOpen, Star, ExternalLink, Filter, GraduationCap, Sparkles } from 'lucide-react'
 import './Curriculum.css'
 
@@ -150,7 +150,7 @@ function Curriculum({ onNavigateToConsult }) {
         </button>
       </div>
 
-      {!isPremium && <AdBanner variant="horizontal" className="curriculum-ad" />}
+      <AdSlot id="curriculum-top" keywords="homeschool|curriculum|education|math|science|reading" />
 
       <div className="curriculum-filters">
         <Filter size={18} />
@@ -182,7 +182,7 @@ function Curriculum({ onNavigateToConsult }) {
       </div>
 
       <div className="curriculum-grid">
-        {filteredCurricula.map((curr, index) => (
+        {filteredCurricula.map((curr) => (
           <div key={curr.id} className="curriculum-card">
             <div className="card-header">
               <div className="card-icon">
@@ -215,12 +215,6 @@ function Curriculum({ onNavigateToConsult }) {
               </button>
             </div>
 
-            {/* Show ad after every 4th card for free users */}
-            {!isPremium && (index + 1) % 4 === 0 && index < filteredCurricula.length - 1 && (
-              <div className="inline-ad-wrapper">
-                <AdBanner variant="inline" />
-              </div>
-            )}
           </div>
         ))}
       </div>

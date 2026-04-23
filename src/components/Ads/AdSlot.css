@@ -1,0 +1,46 @@
+/*
+  AdSlot wrapper — controls spacing, theming, and responsive behaviour.
+  EthicalAds injects its own ad div inside the [data-ea-publisher] element;
+  we only control the outer wrapper and CSS custom properties.
+*/
+
+/* ── Brand colour overrides ── */
+:root {
+  --ea-color-link-bold: var(--forest);          /* CTA / headline colour */
+  --ea-color-link-bold-dark: var(--sage);
+  --ea-bgcolor: rgba(45, 90, 74, 0.04);         /* very light sage tint */
+  --ea-font-family: var(--font-body, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif);
+  --ea-font-size: 13px;
+}
+
+/* ── Wrapper ── */
+.ad-slot-wrapper {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  margin: 0 0 24px;
+}
+
+/* ── EA placement itself ── */
+.ad-slot-wrapper .ea-placement {
+  max-width: 100%;
+  border-radius: var(--radius-md, 8px);
+  overflow: hidden;
+}
+
+/* Horizontal: full-width banner */
+.ad-slot-wrapper .ea-placement.horizontal {
+  width: 100%;
+}
+
+/* "Powered by" label sits above */
+.ad-slot-wrapper::before {
+  display: none; /* handled by EthicalAds "Ad by EthicalAds" text */
+}
+
+/* ── Responsive ── */
+@media (max-width: 600px) {
+  .ad-slot-wrapper {
+    margin-bottom: 16px;
+  }
+}

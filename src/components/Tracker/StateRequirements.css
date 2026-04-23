@@ -16,10 +16,6 @@
   color: var(--text-muted);
 }
 
-.state-ad {
-  margin-bottom: 32px;
-}
-
 .state-layout {
   display: grid;
   grid-template-columns: 320px 1fr;

@@ -2,8 +2,8 @@ import { useState, useEffect, useMemo } from 'react'
 import { useData } from '../../context/SupabaseDataContext'
 import { useAuth } from '../../context/AuthContext'
 import { useSubscription } from '../../context/SubscriptionContext'
+import AdSlot from '../Ads/AdSlot'
 import { AGE_GROUPS, SUGGESTED_BOOKS } from '../../data/readAloudBooks'
-import AdBanner from '../Ads/AdBanner'
 import { Book, BookOpen, Check, Plus, Trash2, Pencil, Filter, Sparkles, Lock, BookMarked, X, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react'
 import './ReadAlouds.css'
 
@@ -290,7 +290,7 @@ function ReadAlouds() {
         </div>
       </div>
 
-      {!isPremium && <AdBanner variant="horizontal" className="read-alouds-ad" />}
+      <AdSlot id="read-alouds-top" keywords="homeschool|books|reading|children|education" />
 
       {/* Premium Child Selector & Stats */}
       <div className={`tracking-section ${!isPremium ? 'locked' : ''}`}>

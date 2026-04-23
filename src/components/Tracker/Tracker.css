@@ -384,15 +384,6 @@
   transition: width 0.5s ease;
 }
 
-/* Dashboard Ad */
-.dashboard-ad {
-  margin-bottom: 24px;
-}
-
-.child-ad {
-  margin: 24px 0;
-}
-
 /* Responsive */
 @media (max-width: 1024px) {
   .tracker-sidebar {

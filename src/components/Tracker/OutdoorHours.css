@@ -19,10 +19,6 @@
   color: var(--text-muted);
 }
 
-.outdoor-ad {
-  margin-bottom: 32px;
-}
-
 /* Stats Section */
 .outdoor-stats {
   display: grid;

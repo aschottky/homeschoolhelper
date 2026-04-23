@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import { useSubscription, TIERS } from '../../context/SubscriptionContext'
-import AdBanner from '../Ads/AdBanner'
 import { Calendar, Clock, Check, Sparkles, Gift, Percent, Send, Video, Phone, MessageSquare } from 'lucide-react'
 import './Consultation.css'
 
@@ -112,8 +111,6 @@ function Consultation() {
         <h1>Request a Curriculum Consultation</h1>
         <p>Get personalized guidance from our experienced homeschool consultants</p>
       </div>
-
-      {!isPremium && <AdBanner variant="horizontal" className="consult-ad" />}
 
       <div className="consult-layout">
         <div className="consult-form-section">
@@ -351,7 +348,6 @@ function Consultation() {
             </div>
           )}
 
-          {!isPremium && <AdBanner variant="vertical" className="sidebar-ad" />}
         </div>
       </div>
     </div>

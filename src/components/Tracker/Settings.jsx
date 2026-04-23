@@ -1,7 +1,5 @@
 import { useState, useEffect } from 'react'
 import { useData } from '../../context/SupabaseDataContext'
-import { useSubscription } from '../../context/SubscriptionContext'
-import AdBanner from '../Ads/AdBanner'
 import { 
   Settings as SettingsIcon, School, Users, MapPin, Phone, Mail, 
   Save, CheckCircle, Building2, Plus, Trash2, Edit2, X, Check
@@ -12,7 +10,6 @@ const GUARDIAN_ROLES = ['Parent', 'Guardian', 'Stepparent', 'Grandparent', 'Fost
 
 function Settings() {
   const { homeschoolProfile, updateHomeschoolProfile, userState, setUserState } = useData()
-  const { isPremium } = useSubscription()
   
   const [formData, setFormData] = useState(homeschoolProfile)
   const [saved, setSaved] = useState(false)
@@ -92,8 +89,6 @@ function Settings() {
           <p>Customize your homeschool profile for reports and records</p>
         </div>
       </div>
-
-      {!isPremium && <AdBanner variant="horizontal" className="settings-ad" />}
 
       <form onSubmit={handleSave} className="settings-form">
         {/* Homeschool Identity */}

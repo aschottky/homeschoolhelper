@@ -16,10 +16,6 @@
   color: var(--text-muted);
 }
 
-.read-alouds-ad {
-  margin-bottom: 32px;
-}
-
 /* Tracking Section - sticky so it stays visible when scrolling the book list */
 .tracking-section {
   position: sticky;

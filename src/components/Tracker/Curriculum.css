@@ -16,10 +16,6 @@
   color: var(--text-muted);
 }
 
-.curriculum-ad {
-  margin-bottom: 32px;
-}
-
 .curriculum-filters {
   display: flex;
   align-items: center;
@@ -174,10 +170,6 @@
 .card-link:hover {
   color: var(--terracotta);
   gap: 8px;
-}
-
-.inline-ad-wrapper {
-  grid-column: 1 / -1;
 }
 
 .no-results {

@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useData } from '../../context/SupabaseDataContext'
 import { useSubscription } from '../../context/SubscriptionContext'
-import AdBanner from '../Ads/AdBanner'
 import { 
   GraduationCap, Plus, Save, FileText, Calendar, Settings, 
   ChevronDown, ChevronUp, Trash2, Image, Lock, Sparkles,

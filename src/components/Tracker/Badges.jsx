@@ -1,6 +1,4 @@
 import { useData } from '../../context/SupabaseDataContext'
-import { useSubscription } from '../../context/SubscriptionContext'
-import AdBanner from '../Ads/AdBanner'
 import { Trophy, Star, Target, Zap, Award, Crown, Flame, BookOpen, Medal, Sparkles } from 'lucide-react'
 import './Badges.css'
 
@@ -99,7 +97,6 @@ export function getHighestBadge(hours, requiredHours) {
 
 function Badges() {
   const { children, getSubjectHours, hourLogs } = useData()
-  const { isPremium } = useSubscription()
 
   // Calculate all earned badges across all children
   const getAllBadges = () => {
@@ -207,8 +204,6 @@ function Badges() {
           <span>{totalBadges} Badges Earned</span>
         </div>
       </div>
-
-      {!isPremium && <AdBanner variant="horizontal" className="badges-ad" />}
 
       {/* Badge Legend */}
       <div className="badge-legend">

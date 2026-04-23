@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { useSubscription } from '../../context/SubscriptionContext'
 import { STATE_REQUIREMENTS, COMPLIANCE_LEVELS, STATES_LIST } from '../../data/stateRequirements'
-import AdBanner from '../Ads/AdBanner'
 import { MapPin, ExternalLink, Clock, Calendar, BookOpen, AlertTriangle, Check, Sparkles, Lock } from 'lucide-react'
 import './StateRequirements.css'
 
@@ -27,8 +26,6 @@ function StateRequirements() {
           <p>Find the laws and requirements for homeschooling in your state</p>
         </div>
       </div>
-
-      {!isPremium && <AdBanner variant="horizontal" className="state-ad" />}
 
       <div className="state-layout">
         <div className="state-selector-section">

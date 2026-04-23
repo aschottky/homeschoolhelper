@@ -214,15 +214,6 @@
   }
 }
 
-/* Dashboard Ad */
-.dashboard-ad {
-  margin-bottom: 24px;
-}
-
-.child-ad {
-  margin: 24px 0;
-}
-
 @media (max-width: 768px) {
   .stats-grid {
     grid-template-columns: 1fr;

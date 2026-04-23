@@ -12,10 +12,6 @@
   color: var(--text-muted);
 }
 
-.consult-ad {
-  margin-bottom: 32px;
-}
-
 .consult-layout {
   display: grid;
   grid-template-columns: 1fr 340px;
@@ -307,10 +303,6 @@
 
 .premium-benefits ul {
   margin-bottom: 0;
-}
-
-.sidebar-ad {
-  margin-top: 0;
 }
 
 /* Success State */
