@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react'
-import { useData } from '../../context/SupabaseDataContext'
+import { useData } from '../../context/DataContext'
 import { useSubscription } from '../../context/SubscriptionContext'
 import { Link } from 'react-router-dom'
 import {

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useData } from '../../context/SupabaseDataContext'
+import { useData } from '../../context/DataContext'
 import { 
   Sun, Plus, Trash2, Calendar, Clock, MapPin, TreePine, 
   Mountain, Bike, Bird, Leaf, Footprints, Tent, Fish,

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './context/AuthContext'
-import { SupabaseDataProvider } from './context/SupabaseDataContext'
+import { DataProvider } from './context/DataContext'
 import { SubscriptionProvider } from './context/SubscriptionContext'
 import Navbar from './components/Navbar'
 import Hero from './components/Hero'
@@ -15,6 +15,7 @@ import About from './components/About'
 import LegalHelp from './components/LegalHelp'
 import FeaturesPage from './components/FeaturesPage'
 import Auth from './components/Auth/Auth'
+import ResetPassword from './components/Auth/ResetPassword'
 import ReferralCapture from './components/ReferralCapture'
 import './App.css'
 
@@ -81,7 +82,7 @@ function AppContent() {
       <ScrollToTop />
       <Routes>
         <Route path="/" element={
-          <SupabaseDataProvider>
+          <DataProvider>
             <div className="app">
               <Navbar />
               <main>
@@ -93,7 +94,7 @@ function AppContent() {
               </main>
               <Footer />
             </div>
-          </SupabaseDataProvider>
+          </DataProvider>
         } />
         <Route path="/about" element={
           <div className="app">
@@ -117,13 +118,14 @@ function AppContent() {
           </div>
         } />
         <Route path="/auth" element={<Auth />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/tracker" element={<Navigate to="/tracker/dashboard" replace />} />
         <Route path="/tracker/:tab" element={
           <TrackerGate>
             <SubscriptionProvider>
-              <SupabaseDataProvider>
+              <DataProvider>
                 <Tracker />
-              </SupabaseDataProvider>
+              </DataProvider>
             </SubscriptionProvider>
           </TrackerGate>
         } />

@@ -1,4 +1,4 @@
-import { useData } from '../../context/SupabaseDataContext'
+import { useData } from '../../context/DataContext'
 import { getHighestBadge, BADGE_DEFINITIONS } from './Badges'
 import AdSlot from '../Ads/AdSlot'
 import { Users, Clock, Target, TrendingUp, Plus, Trophy } from 'lucide-react'

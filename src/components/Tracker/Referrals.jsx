@@ -1,35 +1,15 @@
-/*
-  Database (run in Supabase SQL editor):
-
-  ALTER TABLE public.profiles
-    ADD COLUMN IF NOT EXISTS referral_code text UNIQUE,
-    ADD COLUMN IF NOT EXISTS referred_by uuid REFERENCES public.profiles(id);
-
-  CREATE TABLE IF NOT EXISTS public.referral_rewards (
-    id uuid DEFAULT uuid_generate_v4() PRIMARY KEY,
-    referrer_id uuid REFERENCES public.profiles(id),
-    referred_id uuid REFERENCES public.profiles(id),
-    reward_type text DEFAULT 'free_month',
-    status text DEFAULT 'pending',
-    created_at timestamptz DEFAULT now()
-  );
-
-  CREATE UNIQUE INDEX IF NOT EXISTS referral_rewards_referred_id_unique
-    ON public.referral_rewards (referred_id);
-
-  See supabase-schema.sql for RLS, indexes, and get_profile_id_by_referral_code().
-*/
+// Referral schema lives in db/schema.sql (profiles.referral_code, referral_rewards).
+// Code generation and application happen server-side in /api/referrals.
 
 import { useState, useEffect, useCallback } from 'react'
 import { useAuth } from '../../context/AuthContext'
-import { supabase } from '../../lib/supabase'
-import { generateReferralCode } from '../../lib/referralClient'
+import { api } from '../../lib/api'
 import { Gift, Copy, Check, Mail, Facebook } from 'lucide-react'
 import './Referrals.css'
 
 const SITE_ORIGIN =
   (typeof import.meta !== 'undefined' && import.meta.env?.VITE_SITE_URL) ||
-  (typeof window !== 'undefined' ? window.location.origin : 'https://homeschoolhelper.app')
+  (typeof window !== 'undefined' ? window.location.origin : '')
 
 export default function Referrals() {
   const { user, profile, isConfigured, fetchProfile } = useAuth()
@@ -47,18 +27,13 @@ export default function Referrals() {
   const loadRewards = useCallback(async () => {
     if (!isConfigured || !user?.id) return
     setLoadRewardsError(null)
-    const { data, error } = await supabase
-      .from('referral_rewards')
-      .select('id, referred_id, reward_type, status, created_at')
-      .eq('referrer_id', user.id)
-      .order('created_at', { ascending: false })
-
-    if (error) {
+    try {
+      const data = await api('/api/referrals')
+      setRewards(data?.rewards || [])
+    } catch (error) {
       setLoadRewardsError(error.message)
       setRewards([])
-      return
     }
-    setRewards(data || [])
   }, [isConfigured, user?.id])
 
   useEffect(() => {
@@ -77,38 +52,17 @@ export default function Referrals() {
 
     const ensureCode = async () => {
       try {
-        for (let attempt = 0; attempt < 12; attempt++) {
-          if (cancelled) return
-          const code = generateReferralCode()
-          const { data: updated, error } = await supabase
-            .from('profiles')
-            .update({ referral_code: code })
-            .eq('id', user.id)
-            .is('referral_code', null)
-            .select('referral_code')
-            .maybeSingle()
-
-          if (cancelled) return
-          if (error?.code === '23505') continue
-          if (error) {
-            console.error('referral_code save failed', error)
-            break
-          }
-          if (updated?.referral_code) {
-            setReferralCode(updated.referral_code)
-            await fetchProfile?.()
-            return
-          }
-          const { data: row } = await supabase
-            .from('profiles')
-            .select('referral_code')
-            .eq('id', user.id)
-            .maybeSingle()
-          if (row?.referral_code) {
-            setReferralCode(row.referral_code)
-            return
-          }
+        const data = await api('/api/referrals', {
+          method: 'POST',
+          body: { action: 'ensure-code' },
+        })
+        if (cancelled) return
+        if (data?.referral_code) {
+          setReferralCode(data.referral_code)
+          await fetchProfile?.()
         }
+      } catch (error) {
+        console.error('referral_code save failed', error)
       } finally {
         if (!cancelled) setGenerating(false)
       }
@@ -150,7 +104,7 @@ export default function Referrals() {
     return (
       <div className="referrals-page">
         <div className="referrals-card referrals-muted">
-          <p>Referrals require a connected Supabase project. Configure your environment to use this feature.</p>
+          <p>Referrals require an account. This build is running in demo mode without a backend.</p>
         </div>
       </div>
     )

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useData } from '../../context/SupabaseDataContext'
+import { useData } from '../../context/DataContext'
 import { useSubscription } from '../../context/SubscriptionContext'
 import { STATES_LIST, STATE_REQUIREMENTS } from '../../data/stateRequirements'
 import { Plus, Trash2, Edit2, Check, X, Settings, ChevronDown, ChevronUp, Sparkles, Lock, Calendar, GraduationCap, User, AlertTriangle, MapPin } from 'lucide-react'

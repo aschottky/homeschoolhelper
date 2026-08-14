@@ -1,4 +1,4 @@
-import { useData } from '../../context/SupabaseDataContext'
+import { useData } from '../../context/DataContext'
 import { Trophy, Star, Target, Zap, Award, Crown, Flame, BookOpen, Medal, Sparkles } from 'lucide-react'
 import './Badges.css'
 

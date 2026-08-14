@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useData } from '../../context/SupabaseDataContext'
+import { useData } from '../../context/DataContext'
 import { Trash2, Calendar, Clock, Filter, FileText } from 'lucide-react'
 import './HoursHistory.css'
 

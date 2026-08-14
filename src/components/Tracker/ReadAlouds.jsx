@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
-import { useData } from '../../context/SupabaseDataContext'
+import { useData } from '../../context/DataContext'
 import { useAuth } from '../../context/AuthContext'
 import { useSubscription } from '../../context/SubscriptionContext'
 import AdSlot from '../Ads/AdSlot'

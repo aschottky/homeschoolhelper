@@ -1,17 +1,16 @@
 import { useState, useEffect, useCallback } from 'react'
-import { useData } from '../../context/SupabaseDataContext'
+import { useData } from '../../context/DataContext'
 import { useAuth } from '../../context/AuthContext'
 import { BookOpen, FolderOpen, Users, Plus, Pencil, Trash2, X, Save, ListPlus, ListMinus, ChevronDown, ChevronUp, Crown, RefreshCw, ExternalLink, ShieldCheck, ShieldOff, ArrowUpCircle, ArrowDownCircle, Loader, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react'
 import { AGE_GROUPS } from '../../data/readAloudBooks'
 import './Admin.css'
 
-const CHECKOUT_API = import.meta.env.VITE_CHECKOUT_API_URL
-
-async function callAdminApi(action, payload, token) {
-  const res = await fetch(CHECKOUT_API, {
+async function callAdminApi(action, payload = {}) {
+  const res = await fetch('/api/admin', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-    body: JSON.stringify({ action, access_token: token, ...payload }),
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action, ...payload }),
   })
   const data = await res.json().catch(() => ({}))
   if (!res.ok) throw new Error(data?.error || `Request failed (${res.status})`)
@@ -41,7 +40,7 @@ const STATUS_BADGE = {
 const RESOURCE_COLORS = ['terracotta', 'forest', 'sage']
 
 // ── Users Tab ────────────────────────────────────────────────────────────────
-function UsersTab({ token }) {
+function UsersTab() {
   const [users, setUsers] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -62,13 +61,13 @@ function UsersTab({ token }) {
   const loadUsers = useCallback(async () => {
     setLoading(true); setError(null)
     try {
-      const data = await callAdminApi('admin-list-users', {}, token)
+      const data = await callAdminApi('admin-list-users')
       setUsers(data.users || [])
     } catch (err) {
       setError(err.message)
     }
     setLoading(false)
-  }, [token])
+  }, [])
 
   useEffect(() => { loadUsers() }, [loadUsers])
 
@@ -76,7 +75,7 @@ function UsersTab({ token }) {
     if (billingData[userId]) return
     setBillingLoading(prev => ({ ...prev, [userId]: true }))
     try {
-      const data = await callAdminApi('admin-billing-history', { target_user_id: userId }, token)
+      const data = await callAdminApi('admin-billing-history', { target_user_id: userId })
       setBillingData(prev => ({ ...prev, [userId]: data }))
     } catch (err) {
       setBillingData(prev => ({ ...prev, [userId]: { error: err.message } }))
@@ -103,7 +102,7 @@ function UsersTab({ token }) {
   const saveEdit = async (userId) => {
     setSaving(true)
     try {
-      await callAdminApi('admin-update-user', { target_user_id: userId, updates: editForm }, token)
+      await callAdminApi('admin-update-user', { target_user_id: userId, updates: editForm })
       setUsers(prev => prev.map(u => u.id === userId ? { ...u, ...editForm } : u))
       setBillingData(prev => { const n = { ...prev }; delete n[userId]; return n })
       setEditingId(null)
@@ -117,7 +116,7 @@ function UsersTab({ token }) {
   const quickUpdate = async (userId, updates) => {
     setSaving(true)
     try {
-      await callAdminApi('admin-update-user', { target_user_id: userId, updates }, token)
+      await callAdminApi('admin-update-user', { target_user_id: userId, updates })
       setUsers(prev => prev.map(u => u.id === userId ? { ...u, ...updates } : u))
       setBillingData(prev => { const n = { ...prev }; delete n[userId]; return n })
       showMsg('Updated.')
@@ -131,12 +130,6 @@ function UsersTab({ token }) {
     const q = search.toLowerCase()
     return !q || (u.auth_email || u.email || '').toLowerCase().includes(q) || (u.parent_name || '').toLowerCase().includes(q)
   })
-
-  if (!CHECKOUT_API) return (
-    <div className="admin-empty" style={{ padding: '1rem' }}>
-      <strong>VITE_CHECKOUT_API_URL</strong> is not configured. Set it in your <code>.env</code> to enable user management.
-    </div>
-  )
 
   return (
     <div className="admin-users">
@@ -356,14 +349,6 @@ function Admin() {
     deleteResource
   } = useData()
   const { user } = useAuth()
-  const [adminToken, setAdminToken] = useState('')
-  useEffect(() => {
-    import('../../lib/supabase').then(({ supabase }) => {
-      supabase.auth.getSession().then(({ data: { session } }) => {
-        if (session?.access_token) setAdminToken(session.access_token)
-      })
-    })
-  }, [user])
 
   const [activeSection, setActiveSection] = useState('books')
   const [books, setBooks] = useState([])
@@ -836,7 +821,7 @@ function Admin() {
 
       {activeSection === 'users' && (
         <div className="admin-section" style={{ padding: '1rem' }}>
-          <UsersTab token={adminToken} />
+          <UsersTab />
         </div>
       )}
 

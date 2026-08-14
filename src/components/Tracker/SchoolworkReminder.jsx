@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useData } from '../../context/SupabaseDataContext'
+import { useData } from '../../context/DataContext'
 import { Camera, X, Upload, Image as ImageIcon } from 'lucide-react'
 import './SchoolworkReminder.css'
 

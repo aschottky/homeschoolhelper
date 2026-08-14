@@ -1,5 +1,5 @@
-// TODO: Create annual price in Stripe Dashboard
-// and add STRIPE_ANNUAL_PRICE_ID to env vars (Supabase Edge Function secrets and/or GCP checkout function).
+// Checkout runs through the same-origin /api/checkout Vercel function.
+// STRIPE_PRICE_ID / STRIPE_ANNUAL_PRICE_ID are configured in Vercel env vars.
 
 import { useState, useEffect } from 'react'
 import { useSubscription, TIERS, TIER_BENEFITS } from '../../context/SubscriptionContext'
@@ -19,14 +19,6 @@ function Upgrade() {
   const [error, setError] = useState(null)
   const [checkoutSuccess, setCheckoutSuccess] = useState(false)
 
-  // Pre-warm the GCP function on page load so cold start is already done when user clicks
-  useEffect(() => {
-    const checkoutApiUrl = import.meta.env.VITE_CHECKOUT_API_URL
-    if (checkoutApiUrl) {
-      fetch(checkoutApiUrl, { method: 'OPTIONS' }).catch(() => {})
-    }
-  }, [])
-
   // Check for successful checkout return and activate subscription
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search)
@@ -35,29 +27,24 @@ function Upgrade() {
 
     if (sessionId) {
       window.history.replaceState({}, document.title, window.location.pathname)
-      const checkoutApiUrl = import.meta.env.VITE_CHECKOUT_API_URL
-      if (checkoutApiUrl) {
-        setLoading(true)
-        fetch(checkoutApiUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action: 'verify', session_id: sessionId }),
+      setLoading(true)
+      fetch('/api/checkout', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'verify', session_id: sessionId }),
+      })
+        .then(r => r.json())
+        .then(data => {
+          if (data.success) {
+            setCheckoutSuccess(true)
+            refreshSubscription()
+          } else {
+            setError(data.error || 'Could not activate subscription. Please contact support.')
+          }
         })
-          .then(r => r.json())
-          .then(data => {
-            if (data.success) {
-              setCheckoutSuccess(true)
-              refreshSubscription()
-            } else {
-              setError(data.error || 'Could not activate subscription. Please contact support.')
-            }
-          })
-          .catch(() => setError('Could not verify payment. Please contact support.'))
-          .finally(() => setLoading(false))
-      } else {
-        setCheckoutSuccess(true)
-        refreshSubscription()
-      }
+        .catch(() => setError('Could not verify payment. Please contact support.'))
+        .finally(() => setLoading(false))
     } else if (canceled) {
       setError('Checkout was canceled. You can try again anytime.')
       window.history.replaceState({}, document.title, window.location.pathname)

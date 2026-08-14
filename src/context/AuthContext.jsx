@@ -1,105 +1,64 @@
 import { createContext, useContext, useState, useEffect } from 'react'
-import { supabase, isSupabaseConfigured } from '../lib/supabase'
+import { authClient } from '../lib/authClient'
+import { isBackendConfigured } from '../lib/config'
+import { api } from '../lib/api'
 import { applyPendingReferral } from '../lib/referralClient'
 
 const AuthContext = createContext()
 
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(null)
+  const [isConfigured] = useState(isBackendConfigured())
+  const { data: sessionData, isPending } = authClient.useSession()
+  const user = isConfigured ? (sessionData?.user ?? null) : null
   const [profile, setProfile] = useState(null)
-  const [loading, setLoading] = useState(true)
-  const [isConfigured] = useState(isSupabaseConfigured())
+  const [profileLoading, setProfileLoading] = useState(false)
 
-  useEffect(() => {
-    if (!isConfigured) {
-      setLoading(false)
-      return
-    }
+  const loading = isConfigured && (isPending || profileLoading)
 
-    // Set a timeout to prevent infinite loading
-    const timeoutId = setTimeout(() => {
-      console.warn('Auth initialization timeout - proceeding anyway')
-      setLoading(false)
-    }, 10000) // 10 second timeout
-
-    // Get initial session with error handling
-    supabase.auth.getSession()
-      .then(({ data: { session }, error }) => {
-        clearTimeout(timeoutId)
-        if (error) {
-          console.error('Error getting session:', error)
-          setLoading(false)
-          return
-        }
-        setUser(session?.user ?? null)
-        if (session?.user) {
-          fetchProfile(session.user.id)
-        } else {
-          setLoading(false)
-        }
-      })
-      .catch((error) => {
-        clearTimeout(timeoutId)
-        console.error('Error initializing auth:', error)
-        setLoading(false)
-      })
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        clearTimeout(timeoutId)
-        setUser(session?.user ?? null)
-        if (session?.user) {
-          await fetchProfile(session.user.id)
-        } else {
-          setProfile(null)
-        }
-        setLoading(false)
-      }
-    )
-
-    return () => {
-      clearTimeout(timeoutId)
-      subscription.unsubscribe()
-    }
-  }, [isConfigured])
-
-  // Fetch user profile from database
-  const fetchProfile = async (userId) => {
+  // Fetch user profile from the API
+  const fetchProfile = async () => {
     try {
-      // Add timeout for profile fetch
-      const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Profile fetch timeout')), 5000)
-      )
-      
-      const profilePromise = supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .single()
-
-      const { data, error } = await Promise.race([profilePromise, timeoutPromise])
-
-      if (error && error.code !== 'PGRST116') {
-        console.error('Error fetching profile:', error)
-      }
-      
+      const data = await api('/api/data/profile')
       setProfile(data || null)
+      return data
     } catch (error) {
       console.error('Error fetching profile:', error)
-      // Continue even if profile fetch fails
       setProfile(null)
-    } finally {
-      setLoading(false)
+      return null
     }
   }
 
+  // Load the profile whenever the signed-in user changes
+  useEffect(() => {
+    if (!isConfigured || !user?.id) {
+      setProfile(null)
+      return
+    }
+    let cancelled = false
+    setProfileLoading(true)
+    api('/api/data/profile')
+      .then((data) => {
+        if (!cancelled) setProfile(data || null)
+      })
+      .catch((error) => {
+        console.error('Error fetching profile:', error)
+        if (!cancelled) setProfile(null)
+      })
+      .finally(() => {
+        if (!cancelled) setProfileLoading(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [isConfigured, user?.id])
+
+  // Apply a pending ?ref= referral code once signed in
   useEffect(() => {
     if (!isConfigured || !user?.id || loading) return
     let cancelled = false
     ;(async () => {
       await applyPendingReferral(user.id, async () => {
-        if (!cancelled) await fetchProfile(user.id)
+        if (!cancelled) await fetchProfile()
       })
     })()
     return () => {
@@ -109,75 +68,53 @@ export function AuthProvider({ children }) {
 
   // Sign up with email and password
   const signUp = async (email, password, metadata = {}) => {
-    const { data, error } = await supabase.auth.signUp({
+    const { data, error } = await authClient.signUp.email({
       email,
       password,
-      options: {
-        data: metadata
-      }
+      name: metadata.full_name || email.split('@')[0],
     })
-    
-    if (error) throw error
+    if (error) throw new Error(error.message || 'Sign up failed')
     return data
   }
 
   // Sign in with email and password
   const signIn = async (email, password) => {
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password
-    })
-    
-    if (error) throw error
+    const { data, error } = await authClient.signIn.email({ email, password })
+    if (error) throw new Error(error.message || 'Sign in failed')
     return data
   }
 
-  // Sign in with OAuth provider (Google, Facebook, etc.)
+  // Sign in with OAuth provider (Google)
   const signInWithProvider = async (provider) => {
-    const { data, error } = await supabase.auth.signInWithOAuth({
+    const { data, error } = await authClient.signIn.social({
       provider,
-      options: {
-        redirectTo: window.location.origin
-      }
+      callbackURL: '/tracker/dashboard',
     })
-    
-    if (error) throw error
+    if (error) throw new Error(error.message || 'Sign in failed')
     return data
   }
 
   // Sign out
   const signOut = async () => {
-    const { error } = await supabase.auth.signOut()
-    if (error) throw error
-    setUser(null)
+    const { error } = await authClient.signOut()
+    if (error) throw new Error(error.message || 'Sign out failed')
     setProfile(null)
   }
 
-  // Reset password
+  // Send password reset email (link lands on /reset-password)
   const resetPassword = async (email) => {
-    const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/reset-password`
+    const { data, error } = await authClient.requestPasswordReset({
+      email,
+      redirectTo: `${window.location.origin}/reset-password`,
     })
-    
-    if (error) throw error
+    if (error) throw new Error(error.message || 'Password reset failed')
     return data
   }
 
   // Update profile
   const updateProfile = async (updates) => {
     if (!user) throw new Error('No user logged in')
-
-    const { data, error } = await supabase
-      .from('profiles')
-      .upsert({
-        id: user.id,
-        ...updates,
-        updated_at: new Date().toISOString()
-      })
-      .select()
-      .single()
-
-    if (error) throw error
+    const data = await api('/api/data/profile', { method: 'PATCH', body: updates })
     setProfile(data)
     return data
   }
@@ -194,7 +131,7 @@ export function AuthProvider({ children }) {
     signOut,
     resetPassword,
     updateProfile,
-    fetchProfile: () => user && fetchProfile(user.id)
+    fetchProfile: () => user && fetchProfile(),
   }
 
   return (

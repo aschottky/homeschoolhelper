@@ -1,281 +1,102 @@
-# Deployment Guide: Homeschool Helper
+# Deployment — Vercel + Neon Postgres + Better Auth
 
-## 🎯 Overview
-This guide covers deploying Homeschool Helper to Cloudflare Pages with Supabase backend.
+The app is a Vite + React SPA with Vercel serverless functions under `/api`.
+Everything runs on Vercel: hosting, API, auth (Better Auth), database (Neon
+Postgres via the Vercel Marketplace), Stripe checkout + webhook, and password
+reset emails (Resend).
 
----
+## One-time setup
 
-## 📋 Prerequisites Checklist
+### 1. Vercel project
+- Import the GitHub repo at https://vercel.com/new
+- Framework preset: **Vite** (build `vite build`, output `dist`) — auto-detected
+- `vercel.json` already contains the SPA rewrite so react-router deep links work
 
-- [x] Domain: `homeschoolhelper.app`
-- [ ] Supabase account (free tier is fine)
-- [ ] Cloudflare account (free tier is fine)
-- [ ] GitHub account (for Cloudflare Pages)
+### 2. Neon Postgres
+- Vercel → Storage (or Marketplace) → **Neon** → create database, connect to the project
+- This injects `DATABASE_URL` into all environments
+- Run the schema (order matters):
+  ```bash
+  psql "$DATABASE_URL" -f db/auth-schema.sql
+  psql "$DATABASE_URL" -f db/schema.sql
+  psql "$DATABASE_URL" -f db/seed-books.sql
+  ```
+  (or paste the files into the Neon SQL editor)
 
----
+### 3. Better Auth
+- Generate a secret: `openssl rand -base64 32`
+- Set `BETTER_AUTH_SECRET` and `BETTER_AUTH_URL` (e.g. `https://homeschoolhelper.app`)
 
-## Part 1: Supabase Setup (Database + Auth)
+### 4. Google OAuth (optional but wired up)
+- Google Cloud Console → APIs & Services → Credentials → OAuth client (Web)
+- Authorized redirect URIs:
+  - `https://<your-domain>/api/auth/callback/google`
+  - `http://localhost:3000/api/auth/callback/google` (for `vercel dev`)
+- Set `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET`
 
-### Step 1: Create Supabase Project
+### 5. Resend (password reset emails)
+- https://resend.com → verify your sending domain → create API key
+- Set `RESEND_API_KEY` and `EMAIL_FROM` (e.g. `HomeschoolHelper <no-reply@homeschoolhelper.app>`)
+- Without these, password reset silently no-ops (the reset URL is logged server-side)
 
-1. Go to [supabase.com](https://supabase.com) and sign up/login
-2. Click **"New Project"**
-3. Fill in:
-   - **Name**: `homeschool-helper`
-   - **Database Password**: Create a strong password (save it!)
-   - **Region**: Choose closest to your users (e.g., `US East`)
-4. Click **"Create new project"**
-5. Wait 2-3 minutes for setup
+### 6. Stripe
+- Set `STRIPE_SECRET_KEY`, `STRIPE_PRICE_ID` (monthly), `STRIPE_ANNUAL_PRICE_ID`, `SITE_URL`
+- Dashboard → Developers → Webhooks → Add endpoint:
+  `https://<your-domain>/api/stripe-webhook`
+  with events: `checkout.session.completed`, `customer.subscription.updated`,
+  `customer.subscription.deleted`, `invoice.payment_succeeded`, `invoice.payment_failed`
+- Set `STRIPE_WEBHOOK_SECRET` from the new endpoint
 
-### Step 2: Run Database Schema
+### 7. Make yourself admin (once, after your first signup)
+```sql
+update profiles set is_admin = true where email = 'you@example.com';
+```
 
-1. In Supabase dashboard, go to **SQL Editor**
-2. Click **"New query"**
-3. Open `supabase-schema.sql` from this project
-4. Copy **ALL** the SQL code
-5. Paste into SQL Editor
-6. Click **"Run"** (or press Cmd/Ctrl + Enter)
-7. You should see "Success. No rows returned"
+## Environment variables
 
-### Step 3: Get API Credentials
+| Variable | Scope | Notes |
+|---|---|---|
+| `DATABASE_URL` | server | set automatically by the Neon integration |
+| `BETTER_AUTH_SECRET` | server | 32+ random bytes |
+| `BETTER_AUTH_URL` | server | canonical origin, e.g. `https://homeschoolhelper.app` |
+| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | server | Google OAuth |
+| `RESEND_API_KEY` / `EMAIL_FROM` | server | password reset emails |
+| `STRIPE_SECRET_KEY` | server | |
+| `STRIPE_PRICE_ID` / `STRIPE_ANNUAL_PRICE_ID` | server | subscription prices |
+| `STRIPE_WEBHOOK_SECRET` | server | from the webhook endpoint |
+| `SITE_URL` | server | used for Stripe success/cancel URLs |
+| `VITE_STRIPE_PUBLISHABLE_KEY` | build | |
+| `VITE_SITE_URL` | build | used for referral share links |
+| `VITE_ADSENSE_CLIENT`, `VITE_ADSENSE_SLOT_*` | build | AdSense (optional) |
+| `VITE_AMAZON_TAG` | build | Amazon Associates tag (optional) |
+| `VITE_DEMO_MODE` | build | `true` forces localStorage-only demo mode |
 
-1. Go to **Settings** → **API**
-2. Copy these values (you'll need them):
-   - **Project URL**: `https://xxxxx.supabase.co`
-   - **anon public key**: `eyJhbGc...` (long string)
-   - **service_role key**: `eyJhbGc...` (keep secret!)
+Also update `public/ads.txt` with your AdSense publisher ID.
 
-### Step 4: Configure Authentication
-
-1. Go to **Authentication** → **Providers**
-2. Enable **Email** (should be enabled by default)
-3. (Optional) Enable **Google**:
-   - Click "Google"
-   - Follow instructions to get OAuth credentials
-   - Add Client ID and Secret
-
-### Step 5: Set Up Email Templates (Optional)
-
-1. Go to **Authentication** → **Email Templates**
-2. Customize the confirmation email if desired
-3. Default templates work fine for now
-
----
-
-## Part 2: Cloudflare Pages Setup
-
-### Step 1: Push Code to GitHub
-
-If you haven't already:
+## Local development
 
 ```bash
-# Initialize git (if not done)
-git init
-git add .
-git commit -m "Initial commit"
-
-# Create GitHub repo, then:
-git remote add origin https://github.com/YOUR_USERNAME/homeschoolhelper.git
-git branch -M main
-git push -u origin main
+vercel link          # once
+vercel env pull .env.local
+vercel dev           # SPA + /api on http://localhost:3000
 ```
 
-### Step 2: Connect to Cloudflare Pages
+`npm run dev` (plain Vite) still works for UI-only work; set `VITE_DEMO_MODE=true`
+in `.env` to use localStorage demo mode without a backend.
 
-1. Go to [dash.cloudflare.com](https://dash.cloudflare.com)
-2. Click **"Workers & Pages"** → **"Create application"**
-3. Click **"Pages"** → **"Connect to Git"**
-4. Authorize Cloudflare to access GitHub
-5. Select your `homeschoolhelper` repository
-6. Click **"Begin setup"**
-
-### Step 3: Configure Build Settings
-
-Fill in:
-- **Project name**: `homeschoolhelper`
-- **Production branch**: `main`
-- **Framework preset**: `Vite`
-- **Build command**: `npm run build`
-- **Build output directory**: `dist`
-
-### Step 4: Add Environment Variables
-
-Before deploying, add these environment variables in Cloudflare:
-
-1. In the Pages project, go to **Settings** → **Environment Variables**
-2. Add these for **Production**:
-
-```
-VITE_SUPABASE_URL=https://your-project-id.supabase.co
-VITE_SUPABASE_ANON_KEY=your-anon-key-here
+Stripe webhooks locally:
+```bash
+stripe listen --forward-to localhost:3000/api/stripe-webhook
 ```
 
-3. Click **"Save"**
+## Architecture notes
 
-### Step 5: Deploy
-
-1. Click **"Save and Deploy"**
-2. Wait 2-3 minutes for build
-3. You'll get a URL like: `homeschoolhelper.pages.dev`
-
----
-
-## Part 3: Connect Custom Domain
-
-### Step 1: Add Domain to Cloudflare
-
-1. In Cloudflare dashboard, go to **"Websites"**
-2. Click **"Add a site"**
-3. Enter `homeschoolhelper.app`
-4. Select **Free** plan
-5. Cloudflare will scan your DNS records
-
-### Step 2: Update DNS Records
-
-1. Cloudflare will show you DNS records to add
-2. Add these records:
-
-| Type | Name | Content | Proxy |
-|------|------|---------|-------|
-| CNAME | @ | `homeschoolhelper.pages.dev` | ✅ Proxied |
-| CNAME | www | `homeschoolhelper.pages.dev` | ✅ Proxied |
-
-3. Click **"Continue"**
-
-### Step 3: Update Nameservers
-
-1. Cloudflare will give you nameservers (e.g., `alice.ns.cloudflare.com`)
-2. Go to your domain registrar (where you bought homeschoolhelper.app)
-3. Update nameservers to Cloudflare's
-4. Wait 24-48 hours for DNS propagation (usually faster)
-
-### Step 4: Connect Domain to Pages
-
-1. Go back to **Workers & Pages** → **homeschoolhelper**
-2. Click **"Custom domains"**
-3. Click **"Set up a custom domain"**
-4. Enter `homeschoolhelper.app`
-5. Click **"Activate"**
-6. Also add `www.homeschoolhelper.app` if desired
-
----
-
-## Part 4: SSL & Security
-
-Cloudflare automatically provides:
-- ✅ Free SSL certificate
-- ✅ DDoS protection
-- ✅ CDN (fast global delivery)
-- ✅ Analytics
-
-No additional setup needed!
-
----
-
-## Part 5: Post-Deployment Checklist
-
-### Verify Everything Works
-
-- [ ] Visit `https://homeschoolhelper.app`
-- [ ] Test sign up with email
-- [ ] Test sign in
-- [ ] Add a child
-- [ ] Log some hours
-- [ ] Check data appears in Supabase dashboard
-
-### Set Up Monitoring
-
-1. **Cloudflare Analytics**: Already available in dashboard
-2. **Supabase Logs**: Go to Supabase → Logs to see API calls
-3. **Error Tracking**: Consider adding Sentry later
-
-### Environment Variables Check
-
-Make sure these are set in Cloudflare Pages:
-- ✅ `VITE_SUPABASE_URL`
-- ✅ `VITE_SUPABASE_ANON_KEY`
-
----
-
-## Part 6: Production Optimizations
-
-### Enable Cloudflare Caching
-
-1. Go to **Rules** → **Page Rules**
-2. Create rule for `homeschoolhelper.app/*`
-3. Settings:
-   - Cache Level: Standard
-   - Browser Cache TTL: 4 hours
-
-### Set Up Redirects
-
-Create `public/_redirects` file (for SPA routing):
-
-```
-/*    /index.html   200
-```
-
-### Performance Tips
-
-- Cloudflare automatically minifies CSS/JS
-- Images: Consider Cloudflare Images or Cloudinary
-- Database: Supabase has connection pooling built-in
-
----
-
-## Troubleshooting
-
-### Build Fails
-
-- Check build logs in Cloudflare Pages
-- Ensure `npm run build` works locally
-- Check environment variables are set
-
-### Domain Not Working
-
-- Wait 24-48 hours for DNS propagation
-- Check nameservers are correct
-- Verify DNS records in Cloudflare
-
-### Supabase Connection Issues
-
-- Verify environment variables in Cloudflare
-- Check Supabase project is active
-- Test API key in Supabase dashboard
-
-### Authentication Not Working
-
-- Check Supabase Auth settings
-- Verify redirect URLs in Supabase dashboard
-- Add your domain to allowed URLs in Supabase
-
----
-
-## Next Steps
-
-1. **Stripe Integration**: Set up payments for premium
-2. **Email Service**: Configure transactional emails
-3. **Analytics**: Add Google Analytics or Plausible
-4. **Backup**: Set up Supabase backups
-5. **Monitoring**: Add error tracking (Sentry)
-
----
-
-## Support Resources
-
-- **Cloudflare Docs**: [developers.cloudflare.com/pages](https://developers.cloudflare.com/pages)
-- **Supabase Docs**: [supabase.com/docs](https://supabase.com/docs)
-- **Vite Deployment**: [vitejs.dev/guide/static-deploy](https://vitejs.dev/guide/static-deploy)
-
----
-
-## Cost Estimate (Free Tier)
-
-| Service | Cost |
-|---------|------|
-| Cloudflare Pages | Free (unlimited requests) |
-| Cloudflare Domain | Free (SSL, CDN, DDoS protection) |
-| Supabase | Free (500MB database, 50K MAU) |
-| **Total** | **$0/month** |
-
-You can scale up later if needed!
+- `/api/_lib/` holds shared server code (not deployed as functions):
+  `db.js` (pg pool), `auth.js` (Better Auth config + profile-creation hook),
+  `session.js` (requireUser/requireAdmin), `stripe.js`, `json.js`
+- 8 serverless functions: `auth/[...all]`, `data/[resource]`, `public`,
+  `admin`, `checkout`, `stripe-webhook`, `referrals`, `subscribe`
+- Access control lives in the API layer (no RLS) — every data query is scoped
+  to the session user; admin actions check `profiles.is_admin`
+- The frontend keeps a localStorage "demo mode" when signed out or when
+  `VITE_DEMO_MODE=true`

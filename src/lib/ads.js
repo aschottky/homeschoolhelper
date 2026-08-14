@@ -6,7 +6,7 @@
  * -------------------------------------------------
  * Apply: https://adsense.google.com  (approval 1-2 weeks)
  *
- * Cloudflare Pages → Settings → Environment Variables:
+ * Vercel → Project → Settings → Environment Variables:
  *   VITE_ADSENSE_CLIENT   = ca-pub-XXXXXXXXXXXXXXXX   ← your publisher ID
  *   VITE_ADSENSE_SLOT_DASHBOARD  = 1234567890         ← Dashboard ad unit
  *   VITE_ADSENSE_SLOT_CURRICULUM = 0987654321         ← Curriculum ad unit
@@ -28,7 +28,7 @@
  * -------------------------------------------------------
  * Apply: https://affiliate-program.amazon.com  (instant approval for small sites)
  *
- * Cloudflare Pages → Settings → Environment Variables:
+ * Vercel → Project → Settings → Environment Variables:
  *   VITE_AMAZON_TAG = yourname-20    ← your Associates tracking tag
  *
  * Falls back to 'homeschoolhelp-20' placeholder until you set the var.

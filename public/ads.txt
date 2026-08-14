@@ -1,4 +1,4 @@
-# EthicalAds ads.txt
-# Replace the line below with the exact line provided in your EthicalAds publisher dashboard
-# after your account is approved. Example format:
-# ethicalads.io, YOUR-PUBLISHER-ID, DIRECT
+# Google AdSense ads.txt
+# Replace pub-XXXXXXXXXXXXXXXX with your AdSense publisher ID (same value as
+# VITE_ADSENSE_CLIENT without the "ca-" prefix), then uncomment the line below.
+# google.com, pub-XXXXXXXXXXXXXXXX, DIRECT, f08c47fec0942fa0

@@ -1,20 +1,9 @@
-/*
- * Supabase: run in SQL Editor to create the subscribers table and allow public signups from the landing page.
- *
- * CREATE TABLE public.email_subscribers (
- *   id uuid DEFAULT uuid_generate_v4() PRIMARY KEY,
- *   email text UNIQUE NOT NULL,
- *   source text DEFAULT 'landing_page',
- *   created_at timestamptz DEFAULT now()
- * );
- * ALTER TABLE public.email_subscribers ENABLE ROW LEVEL SECURITY;
- * CREATE POLICY "Allow anonymous inserts"
- *   ON public.email_subscribers FOR INSERT
- *   WITH CHECK (true);
- */
+// Subscribers are stored in the email_subscribers table (db/schema.sql)
+// via POST /api/subscribe; localStorage is the demo-mode fallback.
 
 import { useState } from 'react'
-import { supabase, isSupabaseConfigured } from '../lib/supabase'
+import { api } from '../lib/api'
+import { isBackendConfigured } from '../lib/config'
 import { Check, Loader2, Mail } from 'lucide-react'
 import './EmailCapture.css'
 
@@ -83,22 +72,21 @@ function EmailCapture() {
 
     setStatus('loading')
 
-    if (isSupabaseConfigured()) {
-      const { error } = await supabase.from('email_subscribers').insert({
-        email: emailNorm,
-        source: 'landing_page',
-      })
+    if (isBackendConfigured()) {
+      try {
+        const result = await api('/api/subscribe', {
+          method: 'POST',
+          body: { email: emailNorm, source: 'landing_page' },
+        })
 
-      if (error) {
-        const dup =
-          error.code === '23505' ||
-          /duplicate|unique/i.test(error.message || '')
-        if (dup) {
+        if (result?.duplicate) {
           setErrorMessage('This email is already on the list.')
           saveLocalSubscriber(emailNorm)
-        } else {
-          setErrorMessage(error.message || 'Something went wrong. Please try again.')
+          setStatus('idle')
+          return
         }
+      } catch (error) {
+        setErrorMessage(error.message || 'Something went wrong. Please try again.')
         setStatus('idle')
         return
       }

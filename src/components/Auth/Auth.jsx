@@ -27,7 +27,7 @@ function Auth({ onBack, onSuccess }) {
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
 
-  // Demo mode notice if Supabase not configured
+  // Demo mode notice if the backend is disabled (VITE_DEMO_MODE=true)
   if (!isConfigured) {
     return (
       <div className="auth-page">
@@ -42,24 +42,20 @@ function Auth({ onBack, onSuccess }) {
               <BookOpen size={32} />
             </div>
             <h1>Demo Mode</h1>
-            <p>Supabase is not configured yet</p>
+            <p>Accounts are disabled in this build</p>
           </div>
 
           <div className="demo-notice">
             <AlertTriangle size={24} />
             <div>
-              <h3>Setup Required</h3>
+              <h3>Demo Mode Active</h3>
               <p>
-                To enable user accounts, you need to:
+                This build is running without a backend (VITE_DEMO_MODE=true),
+                so user accounts and cloud sync are disabled.
               </p>
-              <ol>
-                <li>Create a free Supabase project at <a href="https://supabase.com" target="_blank" rel="noopener noreferrer">supabase.com</a></li>
-                <li>Copy your project URL and anon key</li>
-                <li>Create a <code>.env</code> file with your credentials</li>
-                <li>Run the database schema SQL in Supabase</li>
-              </ol>
               <p>
-                For now, the app works in demo mode using localStorage.
+                The app works in demo mode using localStorage — your data stays
+                in this browser only.
               </p>
             </div>
           </div>
@@ -90,8 +86,7 @@ function Auth({ onBack, onSuccess }) {
           throw new Error('Password must be at least 6 characters')
         }
         await signUp(email, password, { full_name: name })
-        setMessage('Check your email to confirm your account!')
-        setMode('login')
+        setMessage('Account created! Signing you in...')
       } else if (mode === 'forgot') {
         await resetPassword(email)
         setMessage('Password reset email sent! Check your inbox.')

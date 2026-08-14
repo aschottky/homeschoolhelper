@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useData } from '../../context/SupabaseDataContext'
+import { useData } from '../../context/DataContext'
 import { 
   Settings as SettingsIcon, School, Users, MapPin, Phone, Mail, 
   Save, CheckCircle, Building2, Plus, Trash2, Edit2, X, Check
