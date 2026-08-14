@@ -1,13 +1,13 @@
 import pg from 'pg'
 
-// One pool per warm serverless instance. DATABASE_URL is injected by the
-// Neon integration on Vercel (pooled connection string).
+// One pool per warm serverless instance. The Neon integration on Vercel
+// injects the pooled connection string with an HSH_ prefix.
 const globalForPg = globalThis
 
 export const pool =
   globalForPg.__pgPool ??
   new pg.Pool({
-    connectionString: process.env.DATABASE_URL,
+    connectionString: process.env.DATABASE_URL || process.env.HSH_DATABASE_URL,
     max: 3,
     idleTimeoutMillis: 30000,
   })
