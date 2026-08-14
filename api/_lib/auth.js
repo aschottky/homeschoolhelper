@@ -16,7 +16,13 @@ export const auth = betterAuth({
   database: pool,
   secret: process.env.BETTER_AUTH_SECRET,
   baseURL: process.env.BETTER_AUTH_URL || process.env.SITE_URL,
-  trustedOrigins: [process.env.SITE_URL, process.env.BETTER_AUTH_URL].filter(Boolean),
+  trustedOrigins: [
+    process.env.SITE_URL,
+    process.env.BETTER_AUTH_URL,
+    'https://homeschoolhelper.app',
+    'https://www.homeschoolhelper.app',
+    'https://homeschoolhelper.vercel.app',
+  ].filter(Boolean),
   emailAndPassword: {
     enabled: true,
     sendResetPassword: async ({ user, url }) => {
