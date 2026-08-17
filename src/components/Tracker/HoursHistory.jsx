@@ -158,7 +158,7 @@ function HoursHistory() {
                           <p className="log-notes">{log.notes}</p>
                         )}
                       </div>
-                      <div className="log-hours">
+                      <div className="history-log-hours">
                         {formatHours(log.hours)}
                       </div>
                       <button

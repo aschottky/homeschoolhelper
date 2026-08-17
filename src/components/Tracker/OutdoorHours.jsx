@@ -251,7 +251,7 @@ function OutdoorHours() {
                 <div className="log-content">
                   <div className="log-header">
                     <h4>{activity.name}</h4>
-                    <span className="log-hours">{formatHours(log.hours)}</span>
+                    <span className="outdoor-log-hours">{formatHours(log.hours)}</span>
                   </div>
                   <div className="log-meta">
                     <span className="log-child">{getChildName(log.childId)}</span>

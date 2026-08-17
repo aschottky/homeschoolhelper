@@ -105,7 +105,7 @@
   line-height: 1.5;
 }
 
-.log-hours {
+.history-log-hours {
   font-weight: 700;
   color: var(--forest);
   font-size: 1rem;
@@ -167,7 +167,7 @@
     flex-wrap: wrap;
   }
 
-  .log-hours {
+  .history-log-hours {
     margin-left: 24px;
   }
 
