@@ -262,7 +262,7 @@ export default function Reports() {
 
   const reportContent = useMemo(() => {
     if (!child) {
-      return <p className="report-empty">Add a child in Family Profile to generate reports.</p>
+      return <p className="report-empty">Add a child in the Children tab to generate reports.</p>
     }
 
     if (reportType === 'progress') {
