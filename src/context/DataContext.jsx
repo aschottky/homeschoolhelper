@@ -100,6 +100,33 @@ const toBook = (b) => ({
   isDb: true
 })
 
+const toSchedule = (s) => ({
+  id: s.id,
+  childId: s.child_id,
+  subjectId: s.subject_id,
+  title: s.title || '',
+  daysOfWeek: (s.days_of_week || []).map(Number),
+  startDate: s.start_date,
+  endDate: s.end_date,
+  startLesson: s.start_lesson,
+  lessonsPerSession: s.lessons_per_session,
+  totalLessons: s.total_lessons || null
+})
+
+const toScheduleBreak = (b) => ({
+  id: b.id,
+  name: b.name,
+  startDate: b.start_date,
+  endDate: b.end_date
+})
+
+const toCompletion = (c) => ({
+  id: c.id,
+  scheduleId: c.schedule_id,
+  lessonNumber: c.lesson_number,
+  completedOn: c.completed_on
+})
+
 const toResource = (r) => ({
   id: r.id,
   category: r.category,
@@ -134,6 +161,9 @@ export function DataProvider({ children: childrenProp }) {
   const [suggestedBooks, setSuggestedBooks] = useState([])
   const [resources, setResources] = useState([])
   const [readAloudLogs, setReadAloudLogs] = useState([])
+  const [schedules, setSchedules] = useState([])
+  const [scheduleBreaks, setScheduleBreaks] = useState([])
+  const [lessonCompletions, setLessonCompletions] = useState([])
 
   // Load public data (suggested books, resources)
   useEffect(() => {
@@ -195,12 +225,18 @@ export function DataProvider({ children: childrenProp }) {
     const savedState = localStorage.getItem('homeschool_state')
     const savedProfile = localStorage.getItem('homeschool_profile')
     const savedSamples = localStorage.getItem('homeschool_schoolwork_samples')
+    const savedSchedules = localStorage.getItem('homeschool_schedules')
+    const savedBreaks = localStorage.getItem('homeschool_schedule_breaks')
+    const savedCompletions = localStorage.getItem('homeschool_lesson_completions')
 
     if (savedChildren) setChildren(JSON.parse(savedChildren))
     if (savedLogs) setHourLogs(JSON.parse(savedLogs))
     if (savedState) setUserState(savedState)
     if (savedProfile) setHomeschoolProfile(prev => ({ ...prev, ...JSON.parse(savedProfile) }))
     if (savedSamples) setSchoolworkSamples(JSON.parse(savedSamples))
+    if (savedSchedules) setSchedules(JSON.parse(savedSchedules))
+    if (savedBreaks) setScheduleBreaks(JSON.parse(savedBreaks))
+    if (savedCompletions) setLessonCompletions(JSON.parse(savedCompletions))
 
     setIsLoaded(true)
     setLoading(false)
@@ -217,6 +253,9 @@ export function DataProvider({ children: childrenProp }) {
       setHourLogs((data?.hour_logs || []).map(toHourLog))
       setReadAloudLogs((data?.read_aloud_logs || []).map(toReadAloud))
       setSchoolworkSamples((data?.schoolwork_samples || []).map(toSample))
+      setSchedules((data?.schedules || []).map(toSchedule))
+      setScheduleBreaks((data?.schedule_breaks || []).map(toScheduleBreak))
+      setLessonCompletions((data?.lesson_completions || []).map(toCompletion))
 
       setIsLoaded(true)
     } catch (error) {
@@ -225,6 +264,9 @@ export function DataProvider({ children: childrenProp }) {
       setHourLogs([])
       setReadAloudLogs([])
       setSchoolworkSamples([])
+      setSchedules([])
+      setScheduleBreaks([])
+      setLessonCompletions([])
       setIsLoaded(true)
     } finally {
       setLoading(false)
@@ -261,6 +303,24 @@ export function DataProvider({ children: childrenProp }) {
       localStorage.setItem('homeschool_schoolwork_samples', JSON.stringify(schoolworkSamples))
     }
   }, [schoolworkSamples, isLoaded, isConfigured, user])
+
+  useEffect(() => {
+    if (isLoaded && (!isConfigured || !user)) {
+      localStorage.setItem('homeschool_schedules', JSON.stringify(schedules))
+    }
+  }, [schedules, isLoaded, isConfigured, user])
+
+  useEffect(() => {
+    if (isLoaded && (!isConfigured || !user)) {
+      localStorage.setItem('homeschool_schedule_breaks', JSON.stringify(scheduleBreaks))
+    }
+  }, [scheduleBreaks, isLoaded, isConfigured, user])
+
+  useEffect(() => {
+    if (isLoaded && (!isConfigured || !user)) {
+      localStorage.setItem('homeschool_lesson_completions', JSON.stringify(lessonCompletions))
+    }
+  }, [lessonCompletions, isLoaded, isConfigured, user])
 
   // Add a new child
   const addChild = async (name, useStateRequirements = false, stateCode = null, birthDate = null, gradeLevel = null, trackHours = true, color = '#8FB39A') => {
@@ -342,6 +402,11 @@ export function DataProvider({ children: childrenProp }) {
     }
     setChildren(prev => prev.filter(child => child.id !== childId))
     setHourLogs(prev => prev.filter(log => log.childId !== childId))
+    setSchedules(prev => {
+      const removed = new Set(prev.filter(s => s.childId === childId).map(s => s.id))
+      setLessonCompletions(pc => pc.filter(c => !removed.has(c.scheduleId)))
+      return prev.filter(s => s.childId !== childId)
+    })
   }
 
   // Add a subject to a child
@@ -434,6 +499,11 @@ export function DataProvider({ children: childrenProp }) {
     setHourLogs(prev => prev.filter(log =>
       !(log.childId === childId && log.subjectId === subjectId)
     ))
+    setSchedules(prev => {
+      const removed = new Set(prev.filter(s => s.subjectId === subjectId).map(s => s.id))
+      setLessonCompletions(pc => pc.filter(c => !removed.has(c.scheduleId)))
+      return prev.filter(s => s.subjectId !== subjectId)
+    })
   }
 
   // Log hours for a subject
@@ -773,6 +843,115 @@ export function DataProvider({ children: childrenProp }) {
     setReadAloudLogs(prev => prev.filter(l => l.id !== logId))
   }
 
+  // --- Scheduler: per-subject lesson schedules ---
+  // Create-or-replace the schedule for a subject (one schedule per subject).
+  const saveSchedule = async (childId, subjectId, form) => {
+    if (isConfigured && user) {
+      const data = await api('/api/data/schedules', {
+        method: 'POST',
+        body: {
+          child_id: childId,
+          subject_id: subjectId,
+          title: form.title || null,
+          days_of_week: form.daysOfWeek,
+          start_date: form.startDate,
+          end_date: form.endDate,
+          start_lesson: form.startLesson,
+          lessons_per_session: form.lessonsPerSession,
+          total_lessons: form.totalLessons || null
+        }
+      })
+      const saved = toSchedule(data)
+      setSchedules(prev => [...prev.filter(s => s.subjectId !== subjectId), saved])
+      return saved
+    }
+    const existing = schedules.find(s => s.subjectId === subjectId)
+    const saved = {
+      id: existing?.id || `local-${Date.now()}`,
+      childId,
+      subjectId,
+      title: form.title || '',
+      daysOfWeek: form.daysOfWeek,
+      startDate: form.startDate,
+      endDate: form.endDate,
+      startLesson: form.startLesson,
+      lessonsPerSession: form.lessonsPerSession,
+      totalLessons: form.totalLessons || null
+    }
+    setSchedules(prev => [...prev.filter(s => s.subjectId !== subjectId), saved])
+    return saved
+  }
+
+  const deleteSchedule = async (scheduleId) => {
+    if (isConfigured && user) {
+      try {
+        await api(`/api/data/schedules?id=${scheduleId}`, { method: 'DELETE' })
+      } catch (error) {
+        console.error('Error deleting schedule:', error)
+      }
+    }
+    setSchedules(prev => prev.filter(s => s.id !== scheduleId))
+    setLessonCompletions(prev => prev.filter(c => c.scheduleId !== scheduleId))
+  }
+
+  const addScheduleBreak = async (name, startDate, endDate) => {
+    if (isConfigured && user) {
+      const data = await api('/api/data/schedule-breaks', {
+        method: 'POST',
+        body: { name, start_date: startDate, end_date: endDate }
+      })
+      const brk = toScheduleBreak(data)
+      setScheduleBreaks(prev => [...prev, brk])
+      return brk
+    }
+    const brk = { id: `local-${Date.now()}`, name, startDate, endDate }
+    setScheduleBreaks(prev => [...prev, brk])
+    return brk
+  }
+
+  const deleteScheduleBreak = async (breakId) => {
+    if (isConfigured && user) {
+      try {
+        await api(`/api/data/schedule-breaks?id=${breakId}`, { method: 'DELETE' })
+      } catch (error) {
+        console.error('Error deleting break:', error)
+      }
+    }
+    setScheduleBreaks(prev => prev.filter(b => b.id !== breakId))
+  }
+
+  const completeLesson = async (scheduleId, lessonNumber, completedOn) => {
+    if (isConfigured && user) {
+      const data = await api('/api/data/lesson-completions', {
+        method: 'POST',
+        body: { schedule_id: scheduleId, lesson_number: lessonNumber, completed_on: completedOn }
+      })
+      const comp = toCompletion(data)
+      setLessonCompletions(prev => [
+        ...prev.filter(c => !(c.scheduleId === scheduleId && c.lessonNumber === lessonNumber)),
+        comp
+      ])
+      return comp
+    }
+    const comp = { id: `local-${Date.now()}`, scheduleId, lessonNumber, completedOn }
+    setLessonCompletions(prev => [
+      ...prev.filter(c => !(c.scheduleId === scheduleId && c.lessonNumber === lessonNumber)),
+      comp
+    ])
+    return comp
+  }
+
+  const uncompleteLesson = async (completionId) => {
+    if (isConfigured && user) {
+      try {
+        await api(`/api/data/lesson-completions?id=${completionId}`, { method: 'DELETE' })
+      } catch (error) {
+        console.error('Error removing completion:', error)
+      }
+    }
+    setLessonCompletions(prev => prev.filter(c => c.id !== completionId))
+  }
+
   // --- Admin: suggested books ---
   const addSuggestedBook = async (book) => {
     const data = await api('/api/admin', {
@@ -910,6 +1089,15 @@ export function DataProvider({ children: childrenProp }) {
     getSubjectProgress,
     getSubjectsForState,
     DEFAULT_SUBJECTS,
+    schedules,
+    scheduleBreaks,
+    lessonCompletions,
+    saveSchedule,
+    deleteSchedule,
+    addScheduleBreak,
+    deleteScheduleBreak,
+    completeLesson,
+    uncompleteLesson,
     addSchoolworkSample,
     deleteSchoolworkSample,
     getSchoolworkSamples,

@@ -3,8 +3,17 @@ import { json, httpError, handle } from '../_lib/json.js'
 import { requireUser } from '../_lib/session.js'
 
 // Authenticated CRUD for the signed-in user's data.
-// Resources: bootstrap, profile, children, subjects, hour-logs, samples, read-alouds
+// Resources: bootstrap, profile, children, subjects, hour-logs, samples,
+// read-alouds, schedules, schedule-breaks, lesson-completions
 // All rows are returned snake_case, exactly as Postgres emits them.
+
+// Date columns are cast to 'YYYY-MM-DD' text in scheduler queries: pg returns
+// bare `date` columns as local-midnight Date objects, which shift a day when
+// serialized to UTC ISO strings in some timezones.
+const SCHEDULE_COLS = `id, child_id, subject_id, title, days_of_week,
+  start_date::text, end_date::text, start_lesson, lessons_per_session, total_lessons, created_at`
+const BREAK_COLS = 'id, user_id, name, start_date::text, end_date::text, created_at'
+const COMPLETION_COLS = 'id, schedule_id, lesson_number, completed_on::text, created_at'
 
 const PROFILE_FIELDS = [
   'homeschool_name', 'parent_name', 'address', 'city',
@@ -56,18 +65,29 @@ export async function GET(request) {
       let hourLogs = []
       let readAlouds = []
       let samples = []
+      let schedules = []
+      let completions = []
       if (childIds.length > 0) {
-        const [s, h, r, w] = await Promise.all([
+        const [s, h, r, w, sch, comp] = await Promise.all([
           pool.query('select * from subjects where child_id = any($1) order by created_at asc', [childIds]),
           pool.query('select * from hour_logs where child_id = any($1) order by date desc', [childIds]),
           pool.query('select * from read_aloud_logs where child_id = any($1)', [childIds]),
           pool.query('select * from schoolwork_samples where child_id = any($1) order by uploaded_at desc', [childIds]),
+          pool.query(`select ${SCHEDULE_COLS} from schedules where child_id = any($1)`, [childIds]),
+          pool.query(`select ${COMPLETION_COLS} from lesson_completions
+                        where schedule_id in (select id from schedules where child_id = any($1))`, [childIds]),
         ])
         subjects = s.rows
         hourLogs = h.rows
         readAlouds = r.rows
         samples = w.rows
+        schedules = sch.rows
+        completions = comp.rows
       }
+      const { rows: breaks } = await pool.query(
+        `select ${BREAK_COLS} from schedule_breaks where user_id = $1 order by start_date asc`,
+        [user.id]
+      )
       return json({
         children: children.map((c) => ({
           ...c,
@@ -76,6 +96,9 @@ export async function GET(request) {
         hour_logs: hourLogs,
         read_aloud_logs: readAlouds,
         schoolwork_samples: samples,
+        schedules,
+        schedule_breaks: breaks,
+        lesson_completions: completions,
       })
     }
 
@@ -149,6 +172,80 @@ export async function POST(request) {
         `insert into schoolwork_samples (child_id, subject_id, image_url, file_name, file_size, notes)
          values ($1, $2, $3, $4, $5, $6) returning *`,
         [child_id, subject_id, image_url, file_name || null, file_size || null, notes || null]
+      )
+      return json(row)
+    }
+
+    // Create-or-replace a subject's schedule (one schedule per subject).
+    if (resource === 'schedules') {
+      const {
+        child_id, subject_id, title, days_of_week,
+        start_date, end_date, start_lesson, lessons_per_session, total_lessons,
+      } = body
+      if (!child_id || !subject_id || !start_date || !end_date) {
+        throw httpError(400, 'child_id, subject_id, start_date and end_date are required')
+      }
+      if (!Array.isArray(days_of_week) || days_of_week.length === 0
+          || days_of_week.some((d) => !Number.isInteger(d) || d < 0 || d > 6)) {
+        throw httpError(400, 'days_of_week must be a non-empty array of 0-6')
+      }
+      await ownChild(user.id, child_id)
+      const { rows: [subj] } = await pool.query(
+        'select id from subjects where id = $1 and child_id = $2', [subject_id, child_id]
+      )
+      if (!subj) throw httpError(404, 'Subject not found')
+      const { rows: [row] } = await pool.query(
+        `insert into schedules
+           (child_id, subject_id, title, days_of_week, start_date, end_date,
+            start_lesson, lessons_per_session, total_lessons)
+         values ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+         on conflict (subject_id) do update set
+           title = excluded.title,
+           days_of_week = excluded.days_of_week,
+           start_date = excluded.start_date,
+           end_date = excluded.end_date,
+           start_lesson = excluded.start_lesson,
+           lessons_per_session = excluded.lessons_per_session,
+           total_lessons = excluded.total_lessons,
+           updated_at = now()
+         returning ${SCHEDULE_COLS}`,
+        [child_id, subject_id, title || null, days_of_week, start_date, end_date,
+         start_lesson || 1, lessons_per_session || 1, total_lessons || null]
+      )
+      return json(row)
+    }
+
+    if (resource === 'schedule-breaks') {
+      const { name, start_date, end_date } = body
+      if (!name || !start_date || !end_date) {
+        throw httpError(400, 'name, start_date and end_date are required')
+      }
+      const { rows: [row] } = await pool.query(
+        `insert into schedule_breaks (user_id, name, start_date, end_date)
+         values ($1, $2, $3, $4) returning ${BREAK_COLS}`,
+        [user.id, name, start_date, end_date]
+      )
+      return json(row)
+    }
+
+    if (resource === 'lesson-completions') {
+      const { schedule_id, lesson_number, completed_on } = body
+      if (!schedule_id || !Number.isInteger(lesson_number) || !completed_on) {
+        throw httpError(400, 'schedule_id, lesson_number and completed_on are required')
+      }
+      const { rows: [owned] } = await pool.query(
+        `select s.id from schedules s
+           join children c on c.id = s.child_id
+          where s.id = $1 and c.user_id = $2`,
+        [schedule_id, user.id]
+      )
+      if (!owned) throw httpError(404, 'Schedule not found')
+      const { rows: [row] } = await pool.query(
+        `insert into lesson_completions (schedule_id, lesson_number, completed_on)
+         values ($1, $2, $3)
+         on conflict (schedule_id, lesson_number) do update set completed_on = excluded.completed_on
+         returning ${COMPLETION_COLS}`,
+        [schedule_id, lesson_number, completed_on]
       )
       return json(row)
     }
@@ -296,11 +393,35 @@ export async function DELETE(request) {
       return json({ ok: true })
     }
 
+    if (resource === 'schedule-breaks') {
+      const { rowCount } = await pool.query(
+        'delete from schedule_breaks where id = $1 and user_id = $2',
+        [id, user.id]
+      )
+      if (!rowCount) throw httpError(404, 'Break not found')
+      return json({ ok: true })
+    }
+
+    if (resource === 'lesson-completions') {
+      const { rowCount } = await pool.query(
+        `delete from lesson_completions where id = $1
+           and schedule_id in (
+             select s.id from schedules s
+               join children c on c.id = s.child_id
+              where c.user_id = $2
+           )`,
+        [id, user.id]
+      )
+      if (!rowCount) throw httpError(404, 'Not found')
+      return json({ ok: true })
+    }
+
     const tables = {
       'subjects': 'subjects',
       'hour-logs': 'hour_logs',
       'samples': 'schoolwork_samples',
       'read-alouds': 'read_aloud_logs',
+      'schedules': 'schedules',
     }
     const table = tables[resource]
     if (!table) throw httpError(404, 'Unknown resource')

@@ -223,6 +223,56 @@ create table if not exists suggested_books (
 );
 
 -- =============================================
+-- SCHEDULES (per-subject lesson plan for the school year)
+-- =============================================
+-- Lessons are NOT pinned to dates: each scheduled day serves the next
+-- uncompleted lessons, so a missed day rolls everything forward on its own.
+create table if not exists schedules (
+  id uuid default gen_random_uuid() primary key,
+  child_id uuid references children(id) on delete cascade not null,
+  subject_id uuid references subjects(id) on delete cascade not null unique,
+  title text, -- optional curriculum name, e.g. "Saxon Math 5/4"
+  days_of_week smallint[] not null, -- 0=Sun .. 6=Sat
+  start_date date not null,
+  end_date date not null,
+  start_lesson integer default 1 not null,
+  lessons_per_session integer default 1 not null,
+  total_lessons integer,
+  created_at timestamptz default now() not null,
+  updated_at timestamptz default now() not null
+);
+
+create index if not exists schedules_child_id_idx on schedules(child_id);
+
+-- =============================================
+-- SCHEDULE BREAKS (family-wide no-school date ranges)
+-- =============================================
+create table if not exists schedule_breaks (
+  id uuid default gen_random_uuid() primary key,
+  user_id text references profiles(id) on delete cascade not null,
+  name text not null,
+  start_date date not null,
+  end_date date not null,
+  created_at timestamptz default now() not null
+);
+
+create index if not exists schedule_breaks_user_id_idx on schedule_breaks(user_id);
+
+-- =============================================
+-- LESSON COMPLETIONS (one row per checked-off lesson)
+-- =============================================
+create table if not exists lesson_completions (
+  id uuid default gen_random_uuid() primary key,
+  schedule_id uuid references schedules(id) on delete cascade not null,
+  lesson_number integer not null,
+  completed_on date not null,
+  created_at timestamptz default now() not null,
+  unique (schedule_id, lesson_number)
+);
+
+create index if not exists lesson_completions_schedule_id_idx on lesson_completions(schedule_id);
+
+-- =============================================
 -- HOMEPAGE RESOURCES (admin-managed, public read)
 -- =============================================
 create table if not exists resources (

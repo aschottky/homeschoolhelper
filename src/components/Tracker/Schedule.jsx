@@ -1,0 +1,839 @@
+import { useState, useMemo, useRef, useEffect } from 'react'
+import { useData } from '../../context/DataContext'
+import {
+  CalendarDays, ChevronLeft, ChevronRight, Plus, Pencil, Trash2, X,
+  Palmtree, Clock, CheckCircle2,
+} from 'lucide-react'
+import {
+  DAY_LABELS, todayStr, addDays, toDate, isScheduledDay,
+  sessionForDate, projectedFinish, scheduleProgress,
+} from '../../lib/scheduler'
+import './Schedule.css'
+
+// Default school year: today through the coming May 31.
+function defaultYearEnd() {
+  const now = new Date()
+  const year = now.getMonth() >= 5 ? now.getFullYear() + 1 : now.getFullYear()
+  return `${year}-05-31`
+}
+
+function prettyDate(dateStr) {
+  return toDate(dateStr).toLocaleDateString(undefined, {
+    weekday: 'long', month: 'long', day: 'numeric',
+  })
+}
+
+function shortDate(dateStr) {
+  return toDate(dateStr).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+}
+
+function daysSummary(daysOfWeek) {
+  return [...daysOfWeek].sort((a, b) => a - b).map((d) => DAY_LABELS[d]).join(' · ')
+}
+
+function ScheduleEditor({ child, subject, schedule, onSave, onDelete, onClose }) {
+  const [title, setTitle] = useState(schedule?.title || '')
+  const [days, setDays] = useState(schedule?.daysOfWeek || [1, 3, 5])
+  const [startDate, setStartDate] = useState(schedule?.startDate || todayStr())
+  const [endDate, setEndDate] = useState(schedule?.endDate || defaultYearEnd())
+  const [startLesson, setStartLesson] = useState(schedule?.startLesson ?? 1)
+  const [perSession, setPerSession] = useState(schedule?.lessonsPerSession ?? 1)
+  const [totalLessons, setTotalLessons] = useState(schedule?.totalLessons ?? '')
+  const [error, setError] = useState('')
+  const [saving, setSaving] = useState(false)
+
+  const toggleDay = (d) => {
+    setDays((prev) => prev.includes(d) ? prev.filter((x) => x !== d) : [...prev, d])
+  }
+
+  const submit = async (e) => {
+    e.preventDefault()
+    if (days.length === 0) return setError('Pick at least one day of the week.')
+    if (!startDate || !endDate || endDate <= startDate) {
+      return setError('The school year needs a start date before its end date.')
+    }
+    const total = totalLessons === '' ? null : Number(totalLessons)
+    if (total != null && total < Number(startLesson)) {
+      return setError('Total lessons can’t be lower than the starting lesson.')
+    }
+    setError('')
+    setSaving(true)
+    try {
+      await onSave({
+        title: title.trim(),
+        daysOfWeek: [...days].sort((a, b) => a - b),
+        startDate,
+        endDate,
+        startLesson: Math.max(1, Number(startLesson) || 1),
+        lessonsPerSession: Math.max(1, Number(perSession) || 1),
+        totalLessons: total,
+      })
+      onClose()
+    } catch (err) {
+      setError(err.message || 'Could not save the schedule.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div className="schedule-modal-overlay" onClick={onClose}>
+      <div className="schedule-modal" onClick={(e) => e.stopPropagation()}>
+        <div className="schedule-modal-header">
+          <h3>{schedule ? 'Edit' : 'Set up'} schedule — {subject.name}</h3>
+          <button type="button" className="btn-icon-only" onClick={onClose} aria-label="Close">
+            <X size={20} />
+          </button>
+        </div>
+        <p className="schedule-modal-subtitle">{child.name}</p>
+
+        <form onSubmit={submit}>
+          <div className="form-group">
+            <label>Curriculum (optional)</label>
+            <input
+              type="text"
+              className="form-input"
+              placeholder="e.g. Saxon Math 5/4"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+            />
+          </div>
+
+          <div className="form-group">
+            <label>Days of the week</label>
+            <div className="day-chips">
+              {DAY_LABELS.map((label, d) => (
+                <button
+                  key={d}
+                  type="button"
+                  className={`day-chip ${days.includes(d) ? 'selected' : ''}`}
+                  onClick={() => toggleDay(d)}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="form-row">
+            <div className="form-group">
+              <label>School year starts</label>
+              <input type="date" className="form-input" value={startDate}
+                onChange={(e) => setStartDate(e.target.value)} />
+            </div>
+            <div className="form-group">
+              <label>School year ends</label>
+              <input type="date" className="form-input" value={endDate}
+                onChange={(e) => setEndDate(e.target.value)} />
+            </div>
+          </div>
+
+          <div className="form-row">
+            <div className="form-group">
+              <label>Start at lesson</label>
+              <input type="number" min="1" className="form-input" value={startLesson}
+                onChange={(e) => setStartLesson(e.target.value)} />
+            </div>
+            <div className="form-group">
+              <label>Lessons per session</label>
+              <input type="number" min="1" className="form-input" value={perSession}
+                onChange={(e) => setPerSession(e.target.value)} />
+            </div>
+            <div className="form-group">
+              <label>Total lessons (optional)</label>
+              <input type="number" min="1" className="form-input" placeholder="e.g. 120"
+                value={totalLessons} onChange={(e) => setTotalLessons(e.target.value)} />
+            </div>
+          </div>
+
+          {error && <p className="schedule-form-error">{error}</p>}
+
+          <div className="schedule-modal-actions">
+            {schedule && (
+              <button
+                type="button"
+                className="btn-tracker btn-danger"
+                onClick={async () => { await onDelete(); onClose() }}
+              >
+                <Trash2 size={16} /> Remove
+              </button>
+            )}
+            <div className="schedule-modal-actions-right">
+              <button type="button" className="btn-tracker btn-secondary" onClick={onClose}>
+                Cancel
+              </button>
+              <button type="submit" className="btn-tracker btn-primary" disabled={saving}>
+                {saving ? 'Saving…' : 'Save schedule'}
+              </button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  )
+}
+
+function HourPromptModal({ subjectName, lessonNumber, date, onLog, onSkip }) {
+  const [hours, setHours] = useState('')
+  const [minutes, setMinutes] = useState('')
+  const [notes, setNotes] = useState('')
+  const [saving, setSaving] = useState(false)
+
+  const total = (Number(hours) || 0) + (Number(minutes) || 0) / 60
+
+  const submit = async (e) => {
+    e.preventDefault()
+    if (total <= 0) return
+    setSaving(true)
+    try {
+      await onLog(total, notes.trim() || `Lesson ${lessonNumber}`)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div className="schedule-modal-overlay">
+      <div className="schedule-modal schedule-modal-sm">
+        <div className="schedule-modal-header">
+          <h3><CheckCircle2 size={20} /> Lesson {lessonNumber} done!</h3>
+        </div>
+        <p className="schedule-modal-subtitle">
+          Log hours for {subjectName} on {shortDate(date)}?
+        </p>
+        <form onSubmit={submit}>
+          <div className="form-row">
+            <div className="form-group">
+              <label>Hours</label>
+              <input type="number" min="0" step="1" className="form-input" value={hours}
+                onChange={(e) => setHours(e.target.value)} placeholder="0" autoFocus />
+            </div>
+            <div className="form-group">
+              <label>Minutes</label>
+              <input type="number" min="0" max="59" step="1" className="form-input" value={minutes}
+                onChange={(e) => setMinutes(e.target.value)} placeholder="45" />
+            </div>
+          </div>
+          <div className="form-group">
+            <label>Notes (optional)</label>
+            <input type="text" className="form-input" value={notes}
+              onChange={(e) => setNotes(e.target.value)} placeholder={`Lesson ${lessonNumber}`} />
+          </div>
+          <div className="schedule-modal-actions">
+            <button type="button" className="btn-tracker btn-secondary" onClick={onSkip}>
+              Skip
+            </button>
+            <button type="submit" className="btn-tracker btn-primary" disabled={total <= 0 || saving}>
+              <Clock size={16} /> {saving ? 'Logging…' : 'Log hours'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  )
+}
+
+function BreaksCard() {
+  const { scheduleBreaks, addScheduleBreak, deleteScheduleBreak } = useData()
+  const [adding, setAdding] = useState(false)
+  const [name, setName] = useState('')
+  const [start, setStart] = useState('')
+  const [end, setEnd] = useState('')
+
+  const submit = async (e) => {
+    e.preventDefault()
+    if (!name.trim() || !start || !end || end < start) return
+    await addScheduleBreak(name.trim(), start, end)
+    setName(''); setStart(''); setEnd(''); setAdding(false)
+  }
+
+  return (
+    <div className="tracker-section schedule-breaks">
+      <div className="tracker-section-header">
+        <h3><Palmtree size={20} /> Breaks &amp; holidays</h3>
+        {!adding && (
+          <button type="button" className="btn-tracker btn-secondary btn-sm" onClick={() => setAdding(true)}>
+            <Plus size={16} /> Add break
+          </button>
+        )}
+      </div>
+      {scheduleBreaks.length === 0 && !adding && (
+        <p className="schedule-muted">No breaks yet. Add Thanksgiving, Christmas, spring break…
+          scheduled lessons skip right over them.</p>
+      )}
+      {scheduleBreaks.length > 0 && (
+        <ul className="breaks-list">
+          {[...scheduleBreaks].sort((a, b) => a.startDate.localeCompare(b.startDate)).map((b) => (
+            <li key={b.id}>
+              <span className="break-name">{b.name}</span>
+              <span className="break-dates">{shortDate(b.startDate)} – {shortDate(b.endDate)}</span>
+              <button type="button" className="btn-icon-only" aria-label={`Delete ${b.name}`}
+                onClick={() => deleteScheduleBreak(b.id)}>
+                <Trash2 size={16} />
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+      {adding && (
+        <form className="break-form" onSubmit={submit}>
+          <div className="form-row">
+            <div className="form-group">
+              <label>Name</label>
+              <input type="text" className="form-input" placeholder="Christmas break"
+                value={name} onChange={(e) => setName(e.target.value)} autoFocus />
+            </div>
+            <div className="form-group">
+              <label>First day off</label>
+              <input type="date" className="form-input" value={start} onChange={(e) => setStart(e.target.value)} />
+            </div>
+            <div className="form-group">
+              <label>Last day off</label>
+              <input type="date" className="form-input" value={end} onChange={(e) => setEnd(e.target.value)} />
+            </div>
+          </div>
+          <div className="schedule-modal-actions-right">
+            <button type="button" className="btn-tracker btn-secondary btn-sm" onClick={() => setAdding(false)}>
+              Cancel
+            </button>
+            <button type="submit" className="btn-tracker btn-primary btn-sm">Save break</button>
+          </div>
+        </form>
+      )}
+    </div>
+  )
+}
+
+// ── Calendar views ──────────────────────────────────────────────
+// One entry per subject meeting on a date, with how much of the
+// session was actually checked off that day.
+function dayItemsFor(childSchedules, dateStr, completions, breaks) {
+  return childSchedules
+    .filter((s) => isScheduledDay(s, dateStr, breaks))
+    .map((s) => ({
+      schedule: s,
+      done: completions.filter((c) => c.scheduleId === s.id && c.completedOn === dateStr).length,
+      expected: s.lessonsPerSession,
+    }))
+}
+
+function itemState(item, dateStr, today) {
+  if (item.done >= item.expected) return 'done'
+  if (item.done > 0) return 'partial'
+  return dateStr < today ? 'missed' : 'upcoming'
+}
+
+// Worst state wins, so a day's single color is honest at a glance.
+const STATE_RANK = { missed: 3, partial: 2, done: 1, upcoming: 0 }
+function dayAggregate(items, dateStr, today) {
+  if (items.length === 0) return null
+  let worst = 'done'
+  let all = true
+  for (const it of items) {
+    const st = itemState(it, dateStr, today)
+    if (st !== 'done') all = false
+    if (STATE_RANK[st] > STATE_RANK[worst]) worst = st
+  }
+  if (dateStr >= today && worst !== 'partial' && !all) return 'upcoming'
+  return all ? 'done' : worst
+}
+
+const pad2 = (n) => String(n).padStart(2, '0')
+
+function monthCells(year, month) {
+  const cells = []
+  const startPad = new Date(year, month, 1).getDay()
+  const daysInMonth = new Date(year, month + 1, 0).getDate()
+  for (let i = 0; i < startPad; i++) cells.push(null)
+  for (let d = 1; d <= daysInMonth; d++) cells.push(`${year}-${pad2(month + 1)}-${pad2(d)}`)
+  return cells
+}
+
+function CalendarLegend() {
+  return (
+    <div className="cal-legend">
+      <span><i className="cal-dot done" /> Done</span>
+      <span><i className="cal-dot partial" /> Partial</span>
+      <span><i className="cal-dot missed" /> Missed</span>
+      <span><i className="cal-dot upcoming" /> Planned</span>
+      <span><i className="cal-dot break" /> Break</span>
+    </div>
+  )
+}
+
+function MonthView({ childSchedules, lessonCompletions, scheduleBreaks, viewDate, setViewDate, openDay, today }) {
+  const year = Number(viewDate.slice(0, 4))
+  const month = Number(viewDate.slice(5, 7)) - 1
+  const label = new Date(year, month, 1).toLocaleDateString(undefined, { month: 'long', year: 'numeric' })
+  const cells = monthCells(year, month)
+
+  const navMonth = (delta) => {
+    const d = new Date(year, month + delta, 1)
+    setViewDate(`${d.getFullYear()}-${pad2(d.getMonth() + 1)}-01`)
+  }
+
+  // Month summary over school days that have already happened.
+  let complete = 0, partial = 0, missed = 0, planned = 0
+  const infoByDate = new Map()
+  for (const dateStr of cells) {
+    if (!dateStr) continue
+    const items = dayItemsFor(childSchedules, dateStr, lessonCompletions, scheduleBreaks)
+    if (items.length === 0) continue
+    infoByDate.set(dateStr, items)
+    const agg = dayAggregate(items, dateStr, today)
+    if (dateStr >= today) { planned++; continue }
+    if (agg === 'done') complete++
+    else if (agg === 'partial') partial++
+    else missed++
+  }
+
+  return (
+    <div className="cal-month">
+      <div className="schedule-day-nav">
+        <button type="button" className="btn-icon-only" aria-label="Previous month" onClick={() => navMonth(-1)}>
+          <ChevronLeft size={20} />
+        </button>
+        <div className="schedule-day-label"><strong>{label}</strong></div>
+        <button type="button" className="btn-icon-only" aria-label="Next month" onClick={() => navMonth(1)}>
+          <ChevronRight size={20} />
+        </button>
+      </div>
+
+      <div className="cal-weekdays">
+        {DAY_LABELS.map((d) => <span key={d}>{d}</span>)}
+      </div>
+      <div className="cal-grid">
+        {cells.map((dateStr, i) => {
+          if (!dateStr) return <span key={`pad${i}`} className="cal-cell empty" />
+          const brk = scheduleBreaks.find((b) => dateStr >= b.startDate && dateStr <= b.endDate)
+          const items = infoByDate.get(dateStr) || []
+          const hasMissed = !brk && dateStr < today
+            && items.some((it) => itemState(it, dateStr, today) === 'missed')
+          return (
+            <button
+              key={dateStr}
+              type="button"
+              className={[
+                'cal-cell',
+                dateStr === today ? 'today' : '',
+                brk ? 'break' : '',
+                hasMissed ? 'missed-day' : '',
+              ].join(' ')}
+              title={brk ? `Break: ${brk.name}` : items.map((it) =>
+                `${it.schedule.subjectName}: ${it.done}/${it.expected}`).join('\n') || undefined}
+              onClick={() => openDay(dateStr)}
+            >
+              <span className="cal-cell-num">{Number(dateStr.slice(8, 10))}</span>
+              {!brk && items.length > 0 && (
+                <span className="cal-dots">
+                  {items.map((it) => (
+                    <i key={it.schedule.id}
+                      className={`cal-dot ${itemState(it, dateStr, today)}`}
+                      style={{ '--subject-color': it.schedule.subjectColor }} />
+                  ))}
+                </span>
+              )}
+            </button>
+          )
+        })}
+      </div>
+
+      <p className="cal-summary">
+        {complete + partial + missed === 0 && planned === 0
+          ? 'No school days scheduled this month.'
+          : <>
+              {complete + partial + missed > 0 && (
+                <>So far: <strong>{complete}</strong> complete
+                {partial > 0 && <>, <strong className="cal-summary-partial">{partial}</strong> partial</>}
+                {missed > 0 && <>, <strong className="cal-summary-missed">{missed}</strong> missed</>}
+                {'. '}</>
+              )}
+              {planned > 0 && <>{planned} school day{planned === 1 ? '' : 's'} still ahead this month.</>}
+            </>}
+      </p>
+      <CalendarLegend />
+    </div>
+  )
+}
+
+function YearView({ childSchedules, lessonCompletions, scheduleBreaks, viewDate, setViewDate, openMonth, today }) {
+  const year = Number(viewDate.slice(0, 4))
+
+  return (
+    <div className="cal-year">
+      <div className="schedule-day-nav">
+        <button type="button" className="btn-icon-only" aria-label="Previous year"
+          onClick={() => setViewDate(`${year - 1}-01-01`)}>
+          <ChevronLeft size={20} />
+        </button>
+        <div className="schedule-day-label"><strong>{year}</strong></div>
+        <button type="button" className="btn-icon-only" aria-label="Next year"
+          onClick={() => setViewDate(`${year + 1}-01-01`)}>
+          <ChevronRight size={20} />
+        </button>
+      </div>
+
+      <div className="year-grid">
+        {Array.from({ length: 12 }, (_, month) => {
+          const cells = monthCells(year, month)
+          const name = new Date(year, month, 1).toLocaleDateString(undefined, { month: 'short' })
+          return (
+            <button key={month} type="button" className="mini-month"
+              onClick={() => openMonth(`${year}-${pad2(month + 1)}-01`)}>
+              <span className="mini-month-name">{name}</span>
+              <span className="mini-grid">
+                {cells.map((dateStr, i) => {
+                  if (!dateStr) return <i key={`p${i}`} className="mini-day empty" />
+                  const brk = isBreak(dateStr, scheduleBreaks)
+                  const items = brk ? [] : dayItemsFor(childSchedules, dateStr, lessonCompletions, scheduleBreaks)
+                  const agg = brk ? 'break' : dayAggregate(items, dateStr, today)
+                  return (
+                    <i key={dateStr}
+                      className={`mini-day ${agg || ''} ${dateStr === today ? 'today' : ''}`} />
+                  )
+                })}
+              </span>
+            </button>
+          )
+        })}
+      </div>
+      <CalendarLegend />
+    </div>
+  )
+}
+
+const isBreak = (dateStr, breaks) => breaks.some((b) => dateStr >= b.startDate && dateStr <= b.endDate)
+
+function Schedule() {
+  const {
+    children, schedules, scheduleBreaks, lessonCompletions,
+    saveSchedule, deleteSchedule, completeLesson, uncompleteLesson, logHours,
+  } = useData()
+
+  const today = todayStr()
+  const [childId, setChildId] = useState(children[0]?.id || '')
+  const [viewDate, setViewDate] = useState(today)
+  const [viewMode, setViewMode] = useState('day')
+  const [editingSubject, setEditingSubject] = useState(null)
+  const [hourPrompt, setHourPrompt] = useState(null)
+  const promptedRef = useRef(new Set())
+
+  // Keep a valid child selected as children load/change.
+  useEffect(() => {
+    if (!children.some((c) => c.id === childId) && children.length > 0) {
+      setChildId(children[0].id)
+    }
+  }, [children, childId])
+
+  const child = children.find((c) => c.id === childId)
+
+  const childSchedules = useMemo(
+    () => schedules.filter((s) => s.childId === childId),
+    [schedules, childId]
+  )
+
+  const scheduleBySubject = useMemo(() => {
+    const map = new Map()
+    childSchedules.forEach((s) => map.set(s.subjectId, s))
+    return map
+  }, [childSchedules])
+
+  // Calendar views want the subject's name/color on each schedule.
+  const enrichedSchedules = useMemo(() => {
+    if (!child) return []
+    return childSchedules.map((s) => {
+      const subject = child.subjects.find((sub) => sub.id === s.subjectId)
+      return {
+        ...s,
+        subjectName: subject?.name || 'Subject',
+        subjectColor: subject?.color || '#8FB39A',
+      }
+    })
+  }, [child, childSchedules])
+
+  // The day's checklist: one entry per scheduled subject meeting on viewDate.
+  const dayItems = useMemo(() => {
+    if (!child) return []
+    return child.subjects
+      .map((subject) => {
+        const schedule = scheduleBySubject.get(subject.id)
+        if (!schedule) return null
+        const session = sessionForDate(schedule, viewDate, lessonCompletions, scheduleBreaks, today)
+        return session ? { subject, schedule, session } : null
+      })
+      .filter(Boolean)
+  }, [child, scheduleBySubject, viewDate, lessonCompletions, scheduleBreaks, today])
+
+  const viewBreak = scheduleBreaks.find((b) => viewDate >= b.startDate && viewDate <= b.endDate)
+
+  const tick = async (schedule, subject, lessonNumber) => {
+    await completeLesson(schedule.id, lessonNumber, viewDate)
+    const key = `${subject.id}:${viewDate}`
+    if (!promptedRef.current.has(key)) {
+      promptedRef.current.add(key)
+      setHourPrompt({ schedule, subject, lessonNumber })
+    }
+  }
+
+  if (children.length === 0) {
+    return (
+      <div className="tracker-section">
+        <div className="empty-state">
+          <div className="empty-state-icon"><CalendarDays size={36} /></div>
+          <h3>No children yet</h3>
+          <p>Add a child first — then give each subject its own lesson schedule.</p>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="schedule-page">
+      <div className="tracker-section">
+        <div className="tracker-section-header">
+          <h2><CalendarDays size={24} /> Schedule</h2>
+        </div>
+
+        {children.length > 1 && (
+          <div className="schedule-child-chips">
+            {children.map((c) => (
+              <button
+                key={c.id}
+                type="button"
+                className={`child-chip ${c.id === childId ? 'selected' : ''}`}
+                style={{ '--chip-color': c.color || '#8FB39A' }}
+                onClick={() => setChildId(c.id)}
+              >
+                {c.name}
+              </button>
+            ))}
+          </div>
+        )}
+
+        <div className="schedule-view-toggle" role="tablist">
+          {['day', 'month', 'year'].map((mode) => (
+            <button key={mode} type="button" role="tab"
+              aria-selected={viewMode === mode}
+              className={`view-toggle-btn ${viewMode === mode ? 'selected' : ''}`}
+              onClick={() => setViewMode(mode)}>
+              {mode[0].toUpperCase() + mode.slice(1)}
+            </button>
+          ))}
+        </div>
+
+        {viewMode === 'month' && (
+          <MonthView
+            childSchedules={enrichedSchedules}
+            lessonCompletions={lessonCompletions}
+            scheduleBreaks={scheduleBreaks}
+            viewDate={viewDate}
+            setViewDate={setViewDate}
+            openDay={(d) => { setViewDate(d); setViewMode('day') }}
+            today={today}
+          />
+        )}
+
+        {viewMode === 'year' && (
+          <YearView
+            childSchedules={enrichedSchedules}
+            lessonCompletions={lessonCompletions}
+            scheduleBreaks={scheduleBreaks}
+            viewDate={viewDate}
+            setViewDate={setViewDate}
+            openMonth={(d) => { setViewDate(d); setViewMode('month') }}
+            today={today}
+          />
+        )}
+
+        {viewMode === 'day' && (
+        <>
+        <div className="schedule-day-nav">
+          <button type="button" className="btn-icon-only" aria-label="Previous day"
+            onClick={() => setViewDate(addDays(viewDate, -1))}>
+            <ChevronLeft size={20} />
+          </button>
+          <div className="schedule-day-label">
+            <strong>{viewDate === today ? 'Today' : prettyDate(viewDate)}</strong>
+            {viewDate === today && <span>{prettyDate(viewDate)}</span>}
+            {viewDate !== today && (
+              <button type="button" className="schedule-today-link" onClick={() => setViewDate(today)}>
+                Back to today
+              </button>
+            )}
+          </div>
+          <button type="button" className="btn-icon-only" aria-label="Next day"
+            onClick={() => setViewDate(addDays(viewDate, 1))}>
+            <ChevronRight size={20} />
+          </button>
+        </div>
+
+        {viewBreak && (
+          <div className="schedule-break-banner">
+            <Palmtree size={18} /> School break: {viewBreak.name}
+          </div>
+        )}
+
+        {!viewBreak && dayItems.length === 0 && (
+          <p className="schedule-muted schedule-day-empty">
+            {childSchedules.length === 0
+              ? 'No schedules set up yet — add one below to see lessons here.'
+              : `No lessons scheduled for ${child?.name || 'this child'} on this day.`}
+          </p>
+        )}
+
+        <div className="schedule-day-list">
+          {dayItems.map(({ subject, schedule, session }) => (
+            <div key={subject.id} className="schedule-day-item"
+              style={{ '--subject-color': subject.color || '#8FB39A' }}>
+              <div className="schedule-day-item-head">
+                <span className="subject-dot" />
+                <span className="subject-name">{subject.name}</span>
+                {schedule.title && <span className="subject-curriculum">{schedule.title}</span>}
+              </div>
+
+              {session.type === 'future' ? (
+                <ul className="lesson-list">
+                  {session.lessons.length === 0 && (
+                    <li className="lesson-row projected">All lessons finished 🎉</li>
+                  )}
+                  {session.lessons.map((n) => (
+                    <li key={n} className="lesson-row projected">
+                      <span className="lesson-checkbox ghost" aria-hidden="true" />
+                      <span>Lesson {n}</span>
+                      <span className="lesson-tag">projected</span>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <ul className="lesson-list">
+                  {session.done.map((c) => (
+                    <li key={`d${c.lessonNumber}`} className="lesson-row done">
+                      <button type="button" className="lesson-checkbox checked"
+                        aria-label={`Un-check lesson ${c.lessonNumber}`}
+                        onClick={() => uncompleteLesson(c.id)}>
+                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none"
+                          stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                          <polyline points="20 6 9 17 4 12" />
+                        </svg>
+                      </button>
+                      <span>Lesson {c.lessonNumber}</span>
+                    </li>
+                  ))}
+                  {session.upcoming.map((n) => (
+                    <li key={`u${n}`} className="lesson-row">
+                      <button type="button" className="lesson-checkbox"
+                        aria-label={`Mark lesson ${n} done`}
+                        onClick={() => tick(schedule, subject, n)} />
+                      <span>Lesson {n}</span>
+                      {session.type === 'past' && <span className="lesson-tag">not done</span>}
+                    </li>
+                  ))}
+                  {session.done.length === 0 && session.upcoming.length === 0 && (
+                    <li className="lesson-row projected">All lessons finished 🎉</li>
+                  )}
+                </ul>
+              )}
+            </div>
+          ))}
+        </div>
+        </>
+        )}
+      </div>
+
+      {child && (
+        <div className="tracker-section">
+          <div className="tracker-section-header">
+            <h3>Subject schedules — {child.name}</h3>
+          </div>
+          {child.subjects.length === 0 && (
+            <p className="schedule-muted">This child has no subjects yet — add subjects under Children first.</p>
+          )}
+          <ul className="schedule-config-list">
+            {child.subjects.map((subject) => {
+              const schedule = scheduleBySubject.get(subject.id)
+              if (!schedule) {
+                return (
+                  <li key={subject.id} className="schedule-config-row">
+                    <span className="subject-dot" style={{ '--subject-color': subject.color || '#8FB39A' }} />
+                    <div className="schedule-config-info">
+                      <span className="subject-name">{subject.name}</span>
+                      <span className="schedule-muted">Not scheduled</span>
+                    </div>
+                    <button type="button" className="btn-tracker btn-secondary btn-sm"
+                      onClick={() => setEditingSubject(subject)}>
+                      <Plus size={16} /> Add schedule
+                    </button>
+                  </li>
+                )
+              }
+              const progress = scheduleProgress(schedule, lessonCompletions)
+              const finish = projectedFinish(schedule, lessonCompletions, scheduleBreaks, today)
+              return (
+                <li key={subject.id} className="schedule-config-row">
+                  <span className="subject-dot" style={{ '--subject-color': subject.color || '#8FB39A' }} />
+                  <div className="schedule-config-info">
+                    <span className="subject-name">
+                      {subject.name}
+                      {schedule.title && <span className="subject-curriculum">{schedule.title}</span>}
+                    </span>
+                    <span className="schedule-config-meta">
+                      {daysSummary(schedule.daysOfWeek)}
+                      {' · '}
+                      {progress.nextLesson
+                        ? `next lesson ${progress.nextLesson}`
+                        : 'all lessons done'}
+                      {schedule.totalLessons ? ` of ${schedule.totalLessons}` : ''}
+                      {schedule.lessonsPerSession > 1 ? ` · ${schedule.lessonsPerSession}/session` : ''}
+                      {finish?.date && (
+                        <span className={finish.pastYearEnd ? 'finish-warn' : 'finish-ok'}>
+                          {' · '}finishes ~{shortDate(finish.date)}
+                          {finish.pastYearEnd ? ' (past year end!)' : ''}
+                        </span>
+                      )}
+                      {finish?.done && ' · complete 🎉'}
+                    </span>
+                  </div>
+                  <button type="button" className="btn-icon-only" aria-label={`Edit ${subject.name} schedule`}
+                    onClick={() => setEditingSubject(subject)}>
+                    <Pencil size={16} />
+                  </button>
+                </li>
+              )
+            })}
+          </ul>
+        </div>
+      )}
+
+      <BreaksCard />
+
+      {editingSubject && child && (
+        <ScheduleEditor
+          child={child}
+          subject={editingSubject}
+          schedule={scheduleBySubject.get(editingSubject.id) || null}
+          onSave={(form) => saveSchedule(child.id, editingSubject.id, form)}
+          onDelete={() => {
+            const s = scheduleBySubject.get(editingSubject.id)
+            return s ? deleteSchedule(s.id) : Promise.resolve()
+          }}
+          onClose={() => setEditingSubject(null)}
+        />
+      )}
+
+      {hourPrompt && child && (
+        <HourPromptModal
+          subjectName={hourPrompt.subject.name}
+          lessonNumber={hourPrompt.lessonNumber}
+          date={viewDate}
+          onLog={async (hours, notes) => {
+            await logHours(child.id, hourPrompt.subject.id, hours, viewDate, notes)
+            setHourPrompt(null)
+          }}
+          onSkip={() => setHourPrompt(null)}
+        />
+      )}
+    </div>
+  )
+}
+
+export default Schedule

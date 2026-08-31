@@ -18,6 +18,7 @@ import VolunteerExtracurricular from './VolunteerExtracurricular'
 import IDCards from './IDCards'
 import StateRequirements from './StateRequirements'
 import Curriculum from './Curriculum'
+import Schedule from './Schedule'
 import Consultation from './Consultation'
 import Reports from './Reports'
 // Settings is now rendered inside FamilyProfile
@@ -27,7 +28,7 @@ import SchoolworkReminder from './SchoolworkReminder'
 import {
   LayoutDashboard, Users, Clock, History, Trophy, GraduationCap, BookOpen, Sun, Lightbulb,
   Heart, CreditCard, MapPin, BookMarked, MessageSquare, Crown, Sparkles, Shield, DollarSign,
-  LogOut, FileText, Gift, MoreHorizontal, X,
+  LogOut, FileText, Gift, MoreHorizontal, X, CalendarDays,
 } from 'lucide-react'
 import './Tracker.css'
 
@@ -37,6 +38,7 @@ import './Tracker.css'
 const PRIMARY_TABS = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { id: 'family-profile', label: 'Children', icon: Users },
+  { id: 'schedule', label: 'Schedule', icon: CalendarDays },
   { id: 'log', label: 'Log Hours', icon: Clock },
   { id: 'history', label: 'History', icon: History },
   { id: 'reports', label: 'Reports', icon: FileText },
@@ -60,7 +62,7 @@ const BASE_SECONDARY_TABS = [
   { id: 'referrals', label: 'Refer a Friend', icon: Gift },
 ]
 
-const VALID_TABS = new Set(['dashboard', 'referrals', 'family-profile', 'children', 'settings', 'log', 'history', 'reports', 'badges', 'grades', 'read-alouds', 'outdoor', 'expenses', 'activities', 'volunteer', 'id-cards', 'state', 'curriculum', 'consultation', 'admin', 'upgrade'])
+const VALID_TABS = new Set(['dashboard', 'referrals', 'family-profile', 'children', 'settings', 'schedule', 'log', 'history', 'reports', 'badges', 'grades', 'read-alouds', 'outdoor', 'expenses', 'activities', 'volunteer', 'id-cards', 'state', 'curriculum', 'consultation', 'admin', 'upgrade'])
 
 function TrackerNavLink({ tab, active, dot, onClick }) {
   return (
@@ -166,6 +168,8 @@ function Tracker() {
       case 'settings':
         navigate('/tracker/family-profile', { replace: true })
         return null
+      case 'schedule':
+        return <Schedule />
       case 'log':
         return <LogHours />
       case 'history':
