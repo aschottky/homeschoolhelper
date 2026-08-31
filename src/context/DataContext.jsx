@@ -105,6 +105,7 @@ const toSchedule = (s) => ({
   childId: s.child_id,
   subjectId: s.subject_id,
   title: s.title || '',
+  unitLabel: s.unit_label || 'Lesson',
   daysOfWeek: (s.days_of_week || []).map(Number),
   startDate: s.start_date,
   endDate: s.end_date,
@@ -124,7 +125,8 @@ const toCompletion = (c) => ({
   id: c.id,
   scheduleId: c.schedule_id,
   lessonNumber: c.lesson_number,
-  completedOn: c.completed_on
+  completedOn: c.completed_on,
+  notes: c.notes || ''
 })
 
 const toResource = (r) => ({
@@ -234,7 +236,8 @@ export function DataProvider({ children: childrenProp }) {
     if (savedState) setUserState(savedState)
     if (savedProfile) setHomeschoolProfile(prev => ({ ...prev, ...JSON.parse(savedProfile) }))
     if (savedSamples) setSchoolworkSamples(JSON.parse(savedSamples))
-    if (savedSchedules) setSchedules(JSON.parse(savedSchedules))
+    // Older saved schedules may predate unitLabel
+    if (savedSchedules) setSchedules(JSON.parse(savedSchedules).map(s => ({ unitLabel: 'Lesson', ...s })))
     if (savedBreaks) setScheduleBreaks(JSON.parse(savedBreaks))
     if (savedCompletions) setLessonCompletions(JSON.parse(savedCompletions))
 
@@ -853,6 +856,7 @@ export function DataProvider({ children: childrenProp }) {
           child_id: childId,
           subject_id: subjectId,
           title: form.title || null,
+          unit_label: form.unitLabel || 'Lesson',
           days_of_week: form.daysOfWeek,
           start_date: form.startDate,
           end_date: form.endDate,
@@ -871,6 +875,7 @@ export function DataProvider({ children: childrenProp }) {
       childId,
       subjectId,
       title: form.title || '',
+      unitLabel: form.unitLabel || 'Lesson',
       daysOfWeek: form.daysOfWeek,
       startDate: form.startDate,
       endDate: form.endDate,
@@ -920,11 +925,12 @@ export function DataProvider({ children: childrenProp }) {
     setScheduleBreaks(prev => prev.filter(b => b.id !== breakId))
   }
 
-  const completeLesson = async (scheduleId, lessonNumber, completedOn) => {
+  // notes: undefined/null leaves any existing note alone; '' clears it.
+  const completeLesson = async (scheduleId, lessonNumber, completedOn, notes = null) => {
     if (isConfigured && user) {
       const data = await api('/api/data/lesson-completions', {
         method: 'POST',
-        body: { schedule_id: scheduleId, lesson_number: lessonNumber, completed_on: completedOn }
+        body: { schedule_id: scheduleId, lesson_number: lessonNumber, completed_on: completedOn, notes }
       })
       const comp = toCompletion(data)
       setLessonCompletions(prev => [
@@ -933,11 +939,21 @@ export function DataProvider({ children: childrenProp }) {
       ])
       return comp
     }
-    const comp = { id: `local-${Date.now()}`, scheduleId, lessonNumber, completedOn }
-    setLessonCompletions(prev => [
-      ...prev.filter(c => !(c.scheduleId === scheduleId && c.lessonNumber === lessonNumber)),
-      comp
-    ])
+    let comp
+    setLessonCompletions(prev => {
+      const existing = prev.find(c => c.scheduleId === scheduleId && c.lessonNumber === lessonNumber)
+      comp = {
+        id: existing?.id || `local-${Date.now()}`,
+        scheduleId,
+        lessonNumber,
+        completedOn,
+        notes: notes == null ? (existing?.notes || '') : notes
+      }
+      return [
+        ...prev.filter(c => !(c.scheduleId === scheduleId && c.lessonNumber === lessonNumber)),
+        comp
+      ]
+    })
     return comp
   }
 

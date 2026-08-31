@@ -232,6 +232,7 @@ create table if not exists schedules (
   child_id uuid references children(id) on delete cascade not null,
   subject_id uuid references subjects(id) on delete cascade not null unique,
   title text, -- optional curriculum name, e.g. "Saxon Math 5/4"
+  unit_label text default 'Lesson' not null, -- what one session covers: Lesson/Unit/Chapter/custom
   days_of_week smallint[] not null, -- 0=Sun .. 6=Sat
   start_date date not null,
   end_date date not null,
@@ -266,6 +267,7 @@ create table if not exists lesson_completions (
   schedule_id uuid references schedules(id) on delete cascade not null,
   lesson_number integer not null,
   completed_on date not null,
+  notes text, -- e.g. what was read that day
   created_at timestamptz default now() not null,
   unique (schedule_id, lesson_number)
 );

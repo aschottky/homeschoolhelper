@@ -143,15 +143,70 @@
 
 .lesson-row {
   display: flex;
-  align-items: center;
-  gap: 10px;
+  flex-direction: column;
+  gap: 4px;
   font-size: 0.9375rem;
   color: var(--text-dark);
 }
 
-.lesson-row.done span {
+.lesson-row-main {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Projected rows have no .lesson-row-main wrapper — keep them inline */
+.lesson-row.projected {
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+}
+
+.lesson-row.done .lesson-row-main > span {
   color: var(--text-muted);
   text-decoration: line-through;
+}
+
+.lesson-note-btn {
+  border: none;
+  background: none;
+  padding: 4px;
+  display: inline-flex;
+  color: var(--sage);
+  cursor: pointer;
+  border-radius: 6px;
+}
+
+.lesson-note-btn:hover {
+  color: var(--forest);
+}
+
+.lesson-note-btn.has-note {
+  color: var(--forest);
+}
+
+.lesson-note-text {
+  border: none;
+  background: var(--sage-light);
+  border-radius: var(--radius-md);
+  padding: 6px 10px;
+  margin-left: 32px;
+  align-self: flex-start;
+  font-family: var(--font-body);
+  font-size: 0.875rem;
+  font-style: italic;
+  color: var(--forest-dark);
+  text-align: left;
+  cursor: pointer;
+}
+
+.lesson-note-edit {
+  margin-left: 32px;
+}
+
+.lesson-note-edit .form-input {
+  padding: 8px 12px;
+  font-size: 0.875rem;
 }
 
 .lesson-row.projected {

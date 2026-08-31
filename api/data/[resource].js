@@ -10,10 +10,10 @@ import { requireUser } from '../_lib/session.js'
 // Date columns are cast to 'YYYY-MM-DD' text in scheduler queries: pg returns
 // bare `date` columns as local-midnight Date objects, which shift a day when
 // serialized to UTC ISO strings in some timezones.
-const SCHEDULE_COLS = `id, child_id, subject_id, title, days_of_week,
+const SCHEDULE_COLS = `id, child_id, subject_id, title, unit_label, days_of_week,
   start_date::text, end_date::text, start_lesson, lessons_per_session, total_lessons, created_at`
 const BREAK_COLS = 'id, user_id, name, start_date::text, end_date::text, created_at'
-const COMPLETION_COLS = 'id, schedule_id, lesson_number, completed_on::text, created_at'
+const COMPLETION_COLS = 'id, schedule_id, lesson_number, completed_on::text, notes, created_at'
 
 const PROFILE_FIELDS = [
   'homeschool_name', 'parent_name', 'address', 'city',
@@ -179,7 +179,7 @@ export async function POST(request) {
     // Create-or-replace a subject's schedule (one schedule per subject).
     if (resource === 'schedules') {
       const {
-        child_id, subject_id, title, days_of_week,
+        child_id, subject_id, title, unit_label, days_of_week,
         start_date, end_date, start_lesson, lessons_per_session, total_lessons,
       } = body
       if (!child_id || !subject_id || !start_date || !end_date) {
@@ -196,11 +196,12 @@ export async function POST(request) {
       if (!subj) throw httpError(404, 'Subject not found')
       const { rows: [row] } = await pool.query(
         `insert into schedules
-           (child_id, subject_id, title, days_of_week, start_date, end_date,
+           (child_id, subject_id, title, unit_label, days_of_week, start_date, end_date,
             start_lesson, lessons_per_session, total_lessons)
-         values ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+         values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
          on conflict (subject_id) do update set
            title = excluded.title,
+           unit_label = excluded.unit_label,
            days_of_week = excluded.days_of_week,
            start_date = excluded.start_date,
            end_date = excluded.end_date,
@@ -209,7 +210,7 @@ export async function POST(request) {
            total_lessons = excluded.total_lessons,
            updated_at = now()
          returning ${SCHEDULE_COLS}`,
-        [child_id, subject_id, title || null, days_of_week, start_date, end_date,
+        [child_id, subject_id, title || null, unit_label || 'Lesson', days_of_week, start_date, end_date,
          start_lesson || 1, lessons_per_session || 1, total_lessons || null]
       )
       return json(row)
@@ -229,7 +230,7 @@ export async function POST(request) {
     }
 
     if (resource === 'lesson-completions') {
-      const { schedule_id, lesson_number, completed_on } = body
+      const { schedule_id, lesson_number, completed_on, notes } = body
       if (!schedule_id || !Number.isInteger(lesson_number) || !completed_on) {
         throw httpError(400, 'schedule_id, lesson_number and completed_on are required')
       }
@@ -241,11 +242,14 @@ export async function POST(request) {
       )
       if (!owned) throw httpError(404, 'Schedule not found')
       const { rows: [row] } = await pool.query(
-        `insert into lesson_completions (schedule_id, lesson_number, completed_on)
-         values ($1, $2, $3)
-         on conflict (schedule_id, lesson_number) do update set completed_on = excluded.completed_on
+        `insert into lesson_completions (schedule_id, lesson_number, completed_on, notes)
+         values ($1, $2, $3, nullif($4, ''))
+         on conflict (schedule_id, lesson_number) do update set
+           completed_on = excluded.completed_on,
+           -- null = "not editing the note" keeps the old one; '' clears it
+           notes = case when $4 is null then lesson_completions.notes else nullif($4, '') end
          returning ${COMPLETION_COLS}`,
-        [schedule_id, lesson_number, completed_on]
+        [schedule_id, lesson_number, completed_on, notes ?? null]
       )
       return json(row)
     }

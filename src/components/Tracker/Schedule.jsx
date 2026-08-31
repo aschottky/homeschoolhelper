@@ -2,7 +2,7 @@ import { useState, useMemo, useRef, useEffect } from 'react'
 import { useData } from '../../context/DataContext'
 import {
   CalendarDays, ChevronLeft, ChevronRight, Plus, Pencil, Trash2, X,
-  Palmtree, Clock, CheckCircle2,
+  Palmtree, Clock, CheckCircle2, StickyNote,
 } from 'lucide-react'
 import {
   DAY_LABELS, todayStr, addDays, toDate, isScheduledDay,
@@ -31,8 +31,13 @@ function daysSummary(daysOfWeek) {
   return [...daysOfWeek].sort((a, b) => a - b).map((d) => DAY_LABELS[d]).join(' · ')
 }
 
+const UNIT_PRESETS = ['Lesson', 'Unit', 'Chapter']
+
 function ScheduleEditor({ child, subject, schedule, onSave, onDelete, onClose }) {
   const [title, setTitle] = useState(schedule?.title || '')
+  const savedLabel = schedule?.unitLabel || 'Lesson'
+  const [unitPreset, setUnitPreset] = useState(UNIT_PRESETS.includes(savedLabel) ? savedLabel : 'Other')
+  const [customUnit, setCustomUnit] = useState(UNIT_PRESETS.includes(savedLabel) ? '' : savedLabel)
   const [days, setDays] = useState(schedule?.daysOfWeek || [1, 3, 5])
   const [startDate, setStartDate] = useState(schedule?.startDate || todayStr())
   const [endDate, setEndDate] = useState(schedule?.endDate || defaultYearEnd())
@@ -54,13 +59,15 @@ function ScheduleEditor({ child, subject, schedule, onSave, onDelete, onClose })
     }
     const total = totalLessons === '' ? null : Number(totalLessons)
     if (total != null && total < Number(startLesson)) {
-      return setError('Total lessons can’t be lower than the starting lesson.')
+      return setError('Total can’t be lower than the starting number.')
     }
+    const unitLabel = unitPreset === 'Other' ? (customUnit.trim() || 'Lesson') : unitPreset
     setError('')
     setSaving(true)
     try {
       await onSave({
         title: title.trim(),
+        unitLabel,
         daysOfWeek: [...days].sort((a, b) => a - b),
         startDate,
         endDate,
@@ -99,6 +106,24 @@ function ScheduleEditor({ child, subject, schedule, onSave, onDelete, onClose })
             />
           </div>
 
+          <div className="form-row">
+            <div className="form-group">
+              <label>Counted as</label>
+              <select className="form-select" value={unitPreset}
+                onChange={(e) => setUnitPreset(e.target.value)}>
+                {UNIT_PRESETS.map((u) => <option key={u} value={u}>{u}s</option>)}
+                <option value="Other">Other…</option>
+              </select>
+            </div>
+            {unitPreset === 'Other' && (
+              <div className="form-group">
+                <label>Custom label</label>
+                <input type="text" className="form-input" placeholder="e.g. Worksheet"
+                  value={customUnit} onChange={(e) => setCustomUnit(e.target.value)} />
+              </div>
+            )}
+          </div>
+
           <div className="form-group">
             <label>Days of the week</label>
             <div className="day-chips">
@@ -130,17 +155,17 @@ function ScheduleEditor({ child, subject, schedule, onSave, onDelete, onClose })
 
           <div className="form-row">
             <div className="form-group">
-              <label>Start at lesson</label>
+              <label>Start at {unitPreset === 'Other' ? (customUnit.trim() || 'lesson').toLowerCase() : unitPreset.toLowerCase()}</label>
               <input type="number" min="1" className="form-input" value={startLesson}
                 onChange={(e) => setStartLesson(e.target.value)} />
             </div>
             <div className="form-group">
-              <label>Lessons per session</label>
+              <label>Per session</label>
               <input type="number" min="1" className="form-input" value={perSession}
                 onChange={(e) => setPerSession(e.target.value)} />
             </div>
             <div className="form-group">
-              <label>Total lessons (optional)</label>
+              <label>Total (optional)</label>
               <input type="number" min="1" className="form-input" placeholder="e.g. 120"
                 value={totalLessons} onChange={(e) => setTotalLessons(e.target.value)} />
             </div>
@@ -173,7 +198,7 @@ function ScheduleEditor({ child, subject, schedule, onSave, onDelete, onClose })
   )
 }
 
-function HourPromptModal({ subjectName, lessonNumber, date, onLog, onSkip }) {
+function HourPromptModal({ subjectName, unitLabel, lessonNumber, date, onLog, onSkip }) {
   const [hours, setHours] = useState('')
   const [minutes, setMinutes] = useState('')
   const [notes, setNotes] = useState('')
@@ -186,7 +211,7 @@ function HourPromptModal({ subjectName, lessonNumber, date, onLog, onSkip }) {
     if (total <= 0) return
     setSaving(true)
     try {
-      await onLog(total, notes.trim() || `Lesson ${lessonNumber}`)
+      await onLog(total, notes.trim() || `${unitLabel} ${lessonNumber}`)
     } finally {
       setSaving(false)
     }
@@ -196,7 +221,7 @@ function HourPromptModal({ subjectName, lessonNumber, date, onLog, onSkip }) {
     <div className="schedule-modal-overlay">
       <div className="schedule-modal schedule-modal-sm">
         <div className="schedule-modal-header">
-          <h3><CheckCircle2 size={20} /> Lesson {lessonNumber} done!</h3>
+          <h3><CheckCircle2 size={20} /> {unitLabel} {lessonNumber} done!</h3>
         </div>
         <p className="schedule-modal-subtitle">
           Log hours for {subjectName} on {shortDate(date)}?
@@ -217,7 +242,7 @@ function HourPromptModal({ subjectName, lessonNumber, date, onLog, onSkip }) {
           <div className="form-group">
             <label>Notes (optional)</label>
             <input type="text" className="form-input" value={notes}
-              onChange={(e) => setNotes(e.target.value)} placeholder={`Lesson ${lessonNumber}`} />
+              onChange={(e) => setNotes(e.target.value)} placeholder={`${unitLabel} ${lessonNumber}`} />
           </div>
           <div className="schedule-modal-actions">
             <button type="button" className="btn-tracker btn-secondary" onClick={onSkip}>
@@ -516,7 +541,20 @@ function Schedule() {
   const [viewMode, setViewMode] = useState('day')
   const [editingSubject, setEditingSubject] = useState(null)
   const [hourPrompt, setHourPrompt] = useState(null)
+  const [noteEditing, setNoteEditing] = useState(null) // completion id
+  const [noteDraft, setNoteDraft] = useState('')
   const promptedRef = useRef(new Set())
+
+  const startNote = (c) => {
+    setNoteEditing(c.id)
+    setNoteDraft(c.notes || '')
+  }
+
+  const saveNote = async (schedule, c) => {
+    setNoteEditing(null)
+    // '' deliberately clears the note; re-posting keeps the completion date.
+    await completeLesson(schedule.id, c.lessonNumber, c.completedOn, noteDraft.trim())
+  }
 
   // Keep a valid child selected as children load/change.
   useEffect(() => {
@@ -694,12 +732,12 @@ function Schedule() {
               {session.type === 'future' ? (
                 <ul className="lesson-list">
                   {session.lessons.length === 0 && (
-                    <li className="lesson-row projected">All lessons finished 🎉</li>
+                    <li className="lesson-row projected">All done 🎉</li>
                   )}
                   {session.lessons.map((n) => (
                     <li key={n} className="lesson-row projected">
                       <span className="lesson-checkbox ghost" aria-hidden="true" />
-                      <span>Lesson {n}</span>
+                      <span>{schedule.unitLabel} {n}</span>
                       <span className="lesson-tag">projected</span>
                     </li>
                   ))}
@@ -708,28 +746,55 @@ function Schedule() {
                 <ul className="lesson-list">
                   {session.done.map((c) => (
                     <li key={`d${c.lessonNumber}`} className="lesson-row done">
-                      <button type="button" className="lesson-checkbox checked"
-                        aria-label={`Un-check lesson ${c.lessonNumber}`}
-                        onClick={() => uncompleteLesson(c.id)}>
-                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none"
-                          stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                          <polyline points="20 6 9 17 4 12" />
-                        </svg>
-                      </button>
-                      <span>Lesson {c.lessonNumber}</span>
+                      <div className="lesson-row-main">
+                        <button type="button" className="lesson-checkbox checked"
+                          aria-label={`Un-check ${schedule.unitLabel.toLowerCase()} ${c.lessonNumber}`}
+                          onClick={() => uncompleteLesson(c.id)}>
+                          <svg viewBox="0 0 24 24" width="14" height="14" fill="none"
+                            stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                            <polyline points="20 6 9 17 4 12" />
+                          </svg>
+                        </button>
+                        <span>{schedule.unitLabel} {c.lessonNumber}</span>
+                        <button type="button"
+                          className={`lesson-note-btn ${c.notes ? 'has-note' : ''}`}
+                          aria-label={c.notes ? 'Edit note' : 'Add note'}
+                          onClick={() => startNote(c)}>
+                          <StickyNote size={15} />
+                        </button>
+                      </div>
+                      {noteEditing === c.id ? (
+                        <form className="lesson-note-edit"
+                          onSubmit={(e) => { e.preventDefault(); saveNote(schedule, c) }}>
+                          <input type="text" className="form-input" autoFocus
+                            placeholder="e.g. The Very Hungry Caterpillar"
+                            value={noteDraft}
+                            onChange={(e) => setNoteDraft(e.target.value)}
+                            onBlur={() => saveNote(schedule, c)}
+                            onKeyDown={(e) => { if (e.key === 'Escape') setNoteEditing(null) }} />
+                        </form>
+                      ) : (
+                        c.notes && (
+                          <button type="button" className="lesson-note-text" onClick={() => startNote(c)}>
+                            {c.notes}
+                          </button>
+                        )
+                      )}
                     </li>
                   ))}
                   {session.upcoming.map((n) => (
                     <li key={`u${n}`} className="lesson-row">
-                      <button type="button" className="lesson-checkbox"
-                        aria-label={`Mark lesson ${n} done`}
-                        onClick={() => tick(schedule, subject, n)} />
-                      <span>Lesson {n}</span>
-                      {session.type === 'past' && <span className="lesson-tag">not done</span>}
+                      <div className="lesson-row-main">
+                        <button type="button" className="lesson-checkbox"
+                          aria-label={`Mark ${schedule.unitLabel.toLowerCase()} ${n} done`}
+                          onClick={() => tick(schedule, subject, n)} />
+                        <span>{schedule.unitLabel} {n}</span>
+                        {session.type === 'past' && <span className="lesson-tag">not done</span>}
+                      </div>
                     </li>
                   ))}
                   {session.done.length === 0 && session.upcoming.length === 0 && (
-                    <li className="lesson-row projected">All lessons finished 🎉</li>
+                    <li className="lesson-row projected">All done 🎉</li>
                   )}
                 </ul>
               )}
@@ -780,8 +845,8 @@ function Schedule() {
                       {daysSummary(schedule.daysOfWeek)}
                       {' · '}
                       {progress.nextLesson
-                        ? `next lesson ${progress.nextLesson}`
-                        : 'all lessons done'}
+                        ? `next ${schedule.unitLabel.toLowerCase()} ${progress.nextLesson}`
+                        : `all ${schedule.unitLabel.toLowerCase()}s done`}
                       {schedule.totalLessons ? ` of ${schedule.totalLessons}` : ''}
                       {schedule.lessonsPerSession > 1 ? ` · ${schedule.lessonsPerSession}/session` : ''}
                       {finish?.date && (
@@ -823,6 +888,7 @@ function Schedule() {
       {hourPrompt && child && (
         <HourPromptModal
           subjectName={hourPrompt.subject.name}
+          unitLabel={hourPrompt.schedule.unitLabel}
           lessonNumber={hourPrompt.lessonNumber}
           date={viewDate}
           onLog={async (hours, notes) => {
