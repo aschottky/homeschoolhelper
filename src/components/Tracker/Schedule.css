@@ -574,6 +574,10 @@
   font-weight: 600;
 }
 
+.schedule-add-subject {
+  margin-top: 16px;
+}
+
 /* ── Breaks ──────────────────────────────── */
 .breaks-list {
   list-style: none;

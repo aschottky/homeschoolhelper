@@ -33,7 +33,12 @@ function daysSummary(daysOfWeek) {
 
 const UNIT_PRESETS = ['Lesson', 'Unit', 'Chapter']
 
+// Palette for subjects created here (Children tab uses the same family).
+const SUBJECT_COLORS = ['#2D5A4A', '#E8A87C', '#8FB39A', '#D4896A', '#5A8F7B', '#C4A484', '#6B8E7B', '#B58863']
+
+// subject === null means "create a new subject along with its schedule".
 function ScheduleEditor({ child, subject, schedule, onSave, onDelete, onClose }) {
+  const [subjectName, setSubjectName] = useState('')
   const [title, setTitle] = useState(schedule?.title || '')
   const savedLabel = schedule?.unitLabel || 'Lesson'
   const [unitPreset, setUnitPreset] = useState(UNIT_PRESETS.includes(savedLabel) ? savedLabel : 'Other')
@@ -53,6 +58,7 @@ function ScheduleEditor({ child, subject, schedule, onSave, onDelete, onClose })
 
   const submit = async (e) => {
     e.preventDefault()
+    if (!subject && !subjectName.trim()) return setError('Give the subject a name.')
     if (days.length === 0) return setError('Pick at least one day of the week.')
     if (!startDate || !endDate || endDate <= startDate) {
       return setError('The school year needs a start date before its end date.')
@@ -66,6 +72,7 @@ function ScheduleEditor({ child, subject, schedule, onSave, onDelete, onClose })
     setSaving(true)
     try {
       await onSave({
+        subjectName: subjectName.trim(),
         title: title.trim(),
         unitLabel,
         daysOfWeek: [...days].sort((a, b) => a - b),
@@ -87,7 +94,9 @@ function ScheduleEditor({ child, subject, schedule, onSave, onDelete, onClose })
     <div className="schedule-modal-overlay" onClick={onClose}>
       <div className="schedule-modal" onClick={(e) => e.stopPropagation()}>
         <div className="schedule-modal-header">
-          <h3>{schedule ? 'Edit' : 'Set up'} schedule — {subject.name}</h3>
+          <h3>{subject
+            ? `${schedule ? 'Edit' : 'Set up'} schedule — ${subject.name}`
+            : 'Add subject'}</h3>
           <button type="button" className="btn-icon-only" onClick={onClose} aria-label="Close">
             <X size={20} />
           </button>
@@ -95,6 +104,19 @@ function ScheduleEditor({ child, subject, schedule, onSave, onDelete, onClose })
         <p className="schedule-modal-subtitle">{child.name}</p>
 
         <form onSubmit={submit}>
+          {!subject && (
+            <div className="form-group">
+              <label>Subject name</label>
+              <input
+                type="text"
+                className="form-input"
+                placeholder="e.g. Reading"
+                value={subjectName}
+                onChange={(e) => setSubjectName(e.target.value)}
+                autoFocus
+              />
+            </div>
+          )}
           <div className="form-group">
             <label>Curriculum (optional)</label>
             <input
@@ -532,7 +554,7 @@ const isBreak = (dateStr, breaks) => breaks.some((b) => dateStr >= b.startDate &
 function Schedule() {
   const {
     children, schedules, scheduleBreaks, lessonCompletions,
-    saveSchedule, deleteSchedule, completeLesson, uncompleteLesson, logHours,
+    saveSchedule, deleteSchedule, completeLesson, uncompleteLesson, logHours, addSubject,
   } = useData()
 
   const today = todayStr()
@@ -811,7 +833,7 @@ function Schedule() {
             <h3>Subject schedules — {child.name}</h3>
           </div>
           {child.subjects.length === 0 && (
-            <p className="schedule-muted">This child has no subjects yet — add subjects under Children first.</p>
+            <p className="schedule-muted">No subjects yet — add one below to start scheduling.</p>
           )}
           <ul className="schedule-config-list">
             {child.subjects.map((subject) => {
@@ -866,6 +888,10 @@ function Schedule() {
               )
             })}
           </ul>
+          <button type="button" className="btn-tracker btn-secondary btn-sm schedule-add-subject"
+            onClick={() => setEditingSubject('new')}>
+            <Plus size={16} /> Add subject
+          </button>
         </div>
       )}
 
@@ -874,10 +900,18 @@ function Schedule() {
       {editingSubject && child && (
         <ScheduleEditor
           child={child}
-          subject={editingSubject}
-          schedule={scheduleBySubject.get(editingSubject.id) || null}
-          onSave={(form) => saveSchedule(child.id, editingSubject.id, form)}
+          subject={editingSubject === 'new' ? null : editingSubject}
+          schedule={editingSubject === 'new' ? null : (scheduleBySubject.get(editingSubject.id) || null)}
+          onSave={async (form) => {
+            if (editingSubject === 'new') {
+              const color = SUBJECT_COLORS[child.subjects.length % SUBJECT_COLORS.length]
+              const subject = await addSubject(child.id, form.subjectName, 0, color)
+              return saveSchedule(child.id, subject.id, form)
+            }
+            return saveSchedule(child.id, editingSubject.id, form)
+          }}
           onDelete={() => {
+            if (editingSubject === 'new') return Promise.resolve()
             const s = scheduleBySubject.get(editingSubject.id)
             return s ? deleteSchedule(s.id) : Promise.resolve()
           }}
