@@ -63,9 +63,8 @@ function Footer() {
         <div className="footer-bottom">
           <p>&copy; {currentYear} HomeSchool Helper. All rights reserved.</p>
           <div className="footer-legal">
-            <a href="#">Privacy Policy</a>
-            <a href="#">Terms of Service</a>
-            <a href="#">Cookie Settings</a>
+            <Link to="/privacy" className="footer-link-btn">Privacy Policy</Link>
+            <Link to="/terms" className="footer-link-btn">Terms of Service</Link>
           </div>
         </div>
       </div>

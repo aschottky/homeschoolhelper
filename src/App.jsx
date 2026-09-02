@@ -13,6 +13,8 @@ import Footer from './components/Footer'
 import Tracker from './components/Tracker/Tracker'
 import About from './components/About'
 import LegalHelp from './components/LegalHelp'
+import PrivacyPolicy from './components/PrivacyPolicy'
+import TermsOfService from './components/TermsOfService'
 import FeaturesPage from './components/FeaturesPage'
 import Auth from './components/Auth/Auth'
 import ResetPassword from './components/Auth/ResetPassword'
@@ -114,6 +116,20 @@ function AppContent() {
           <div className="app">
             <Navbar />
             <main><FeaturesPage /></main>
+            <Footer />
+          </div>
+        } />
+        <Route path="/privacy" element={
+          <div className="app">
+            <Navbar />
+            <main><PrivacyPolicy /></main>
+            <Footer />
+          </div>
+        } />
+        <Route path="/terms" element={
+          <div className="app">
+            <Navbar />
+            <main><TermsOfService /></main>
             <Footer />
           </div>
         } />
