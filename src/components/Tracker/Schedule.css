@@ -692,6 +692,12 @@
   margin-bottom: 0;
 }
 
+.schedule-field-hint {
+  margin: 6px 0 0;
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+}
+
 .schedule-form-error {
   color: #C0532F;
   font-size: 0.875rem;

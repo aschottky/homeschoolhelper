@@ -10,7 +10,8 @@ import { requireUser } from '../_lib/session.js'
 // Date columns are cast to 'YYYY-MM-DD' text in scheduler queries: pg returns
 // bare `date` columns as local-midnight Date objects, which shift a day when
 // serialized to UTC ISO strings in some timezones.
-const SCHEDULE_COLS = `id, child_id, subject_id, title, unit_label, days_of_week,
+const SCHEDULE_COLS = `id, child_id, subject_id, title, kind, unit_label,
+  freq, interval_weeks, month_ordinal, month_weekday, days_of_week,
   start_date::text, end_date::text, start_lesson, lessons_per_session, total_lessons, created_at`
 const BREAK_COLS = 'id, user_id, name, start_date::text, end_date::text, created_at'
 const COMPLETION_COLS = 'id, schedule_id, lesson_number, completed_on::text, notes, created_at'
@@ -179,15 +180,26 @@ export async function POST(request) {
     // Create-or-replace a subject's schedule (one schedule per subject).
     if (resource === 'schedules') {
       const {
-        child_id, subject_id, title, unit_label, days_of_week,
+        child_id, subject_id, title, kind, unit_label, days_of_week,
+        freq, interval_weeks, month_ordinal, month_weekday,
         start_date, end_date, start_lesson, lessons_per_session, total_lessons,
       } = body
       if (!child_id || !subject_id || !start_date || !end_date) {
         throw httpError(400, 'child_id, subject_id, start_date and end_date are required')
       }
-      if (!Array.isArray(days_of_week) || days_of_week.length === 0
-          || days_of_week.some((d) => !Number.isInteger(d) || d < 0 || d > 6)) {
-        throw httpError(400, 'days_of_week must be a non-empty array of 0-6')
+      const scheduleKind = kind === 'activity' ? 'activity' : 'numbered'
+      const scheduleFreq = freq === 'monthly' ? 'monthly' : 'weekly'
+      if (scheduleFreq === 'weekly') {
+        if (!Array.isArray(days_of_week) || days_of_week.length === 0
+            || days_of_week.some((d) => !Number.isInteger(d) || d < 0 || d > 6)) {
+          throw httpError(400, 'days_of_week must be a non-empty array of 0-6')
+        }
+      } else {
+        const ord = Number(month_ordinal)
+        const wd = Number(month_weekday)
+        if (!((ord >= 1 && ord <= 4) || ord === -1) || !(wd >= 0 && wd <= 6)) {
+          throw httpError(400, 'monthly schedules need month_ordinal (1-4 or -1) and month_weekday (0-6)')
+        }
       }
       await ownChild(user.id, child_id)
       const { rows: [subj] } = await pool.query(
@@ -196,12 +208,18 @@ export async function POST(request) {
       if (!subj) throw httpError(404, 'Subject not found')
       const { rows: [row] } = await pool.query(
         `insert into schedules
-           (child_id, subject_id, title, unit_label, days_of_week, start_date, end_date,
+           (child_id, subject_id, title, kind, unit_label, freq, interval_weeks,
+            month_ordinal, month_weekday, days_of_week, start_date, end_date,
             start_lesson, lessons_per_session, total_lessons)
-         values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+         values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
          on conflict (subject_id) do update set
            title = excluded.title,
+           kind = excluded.kind,
            unit_label = excluded.unit_label,
+           freq = excluded.freq,
+           interval_weeks = excluded.interval_weeks,
+           month_ordinal = excluded.month_ordinal,
+           month_weekday = excluded.month_weekday,
            days_of_week = excluded.days_of_week,
            start_date = excluded.start_date,
            end_date = excluded.end_date,
@@ -210,7 +228,12 @@ export async function POST(request) {
            total_lessons = excluded.total_lessons,
            updated_at = now()
          returning ${SCHEDULE_COLS}`,
-        [child_id, subject_id, title || null, unit_label || 'Lesson', days_of_week, start_date, end_date,
+        [child_id, subject_id, title || null, scheduleKind, unit_label || 'Lesson',
+         scheduleFreq, Math.max(1, Number(interval_weeks) || 1),
+         scheduleFreq === 'monthly' ? Number(month_ordinal) : null,
+         scheduleFreq === 'monthly' ? Number(month_weekday) : null,
+         scheduleFreq === 'weekly' ? days_of_week : [],
+         start_date, end_date,
          start_lesson || 1, lessons_per_session || 1, total_lessons || null]
       )
       return json(row)

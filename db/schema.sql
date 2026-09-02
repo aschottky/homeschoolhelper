@@ -231,9 +231,16 @@ create table if not exists schedules (
   id uuid default gen_random_uuid() primary key,
   child_id uuid references children(id) on delete cascade not null,
   subject_id uuid references subjects(id) on delete cascade not null unique,
-  title text, -- optional curriculum name, e.g. "Saxon Math 5/4"
+  title text, -- curriculum name ("Saxon Math 5/4") or activity label ("Flying a kite")
+  kind text default 'numbered' not null check (kind in ('numbered', 'activity')),
   unit_label text default 'Lesson' not null, -- what one session covers: Lesson/Unit/Chapter/custom
-  days_of_week smallint[] not null, -- 0=Sun .. 6=Sat
+  -- Recurrence: weekly (every interval_weeks on days_of_week) or monthly
+  -- (the month_ordinal-th month_weekday of each month; -1 = last)
+  freq text default 'weekly' not null check (freq in ('weekly', 'monthly')),
+  interval_weeks smallint default 1 not null,
+  month_ordinal smallint, -- 1..4 or -1 (last); monthly only
+  month_weekday smallint, -- 0=Sun .. 6=Sat; monthly only
+  days_of_week smallint[] default '{}' not null, -- 0=Sun .. 6=Sat; weekly only
   start_date date not null,
   end_date date not null,
   start_lesson integer default 1 not null,

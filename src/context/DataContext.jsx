@@ -105,7 +105,12 @@ const toSchedule = (s) => ({
   childId: s.child_id,
   subjectId: s.subject_id,
   title: s.title || '',
+  kind: s.kind || 'numbered',
   unitLabel: s.unit_label || 'Lesson',
+  freq: s.freq || 'weekly',
+  intervalWeeks: Number(s.interval_weeks) || 1,
+  monthOrdinal: s.month_ordinal == null ? null : Number(s.month_ordinal),
+  monthWeekday: s.month_weekday == null ? null : Number(s.month_weekday),
   daysOfWeek: (s.days_of_week || []).map(Number),
   startDate: s.start_date,
   endDate: s.end_date,
@@ -236,8 +241,13 @@ export function DataProvider({ children: childrenProp }) {
     if (savedState) setUserState(savedState)
     if (savedProfile) setHomeschoolProfile(prev => ({ ...prev, ...JSON.parse(savedProfile) }))
     if (savedSamples) setSchoolworkSamples(JSON.parse(savedSamples))
-    // Older saved schedules may predate unitLabel
-    if (savedSchedules) setSchedules(JSON.parse(savedSchedules).map(s => ({ unitLabel: 'Lesson', ...s })))
+    // Older saved schedules may predate newer fields
+    if (savedSchedules) {
+      setSchedules(JSON.parse(savedSchedules).map(s => ({
+        unitLabel: 'Lesson', kind: 'numbered', freq: 'weekly', intervalWeeks: 1,
+        monthOrdinal: null, monthWeekday: null, ...s
+      })))
+    }
     if (savedBreaks) setScheduleBreaks(JSON.parse(savedBreaks))
     if (savedCompletions) setLessonCompletions(JSON.parse(savedCompletions))
 
@@ -856,7 +866,12 @@ export function DataProvider({ children: childrenProp }) {
           child_id: childId,
           subject_id: subjectId,
           title: form.title || null,
+          kind: form.kind || 'numbered',
           unit_label: form.unitLabel || 'Lesson',
+          freq: form.freq || 'weekly',
+          interval_weeks: form.intervalWeeks || 1,
+          month_ordinal: form.monthOrdinal ?? null,
+          month_weekday: form.monthWeekday ?? null,
           days_of_week: form.daysOfWeek,
           start_date: form.startDate,
           end_date: form.endDate,
@@ -875,7 +890,12 @@ export function DataProvider({ children: childrenProp }) {
       childId,
       subjectId,
       title: form.title || '',
+      kind: form.kind || 'numbered',
       unitLabel: form.unitLabel || 'Lesson',
+      freq: form.freq || 'weekly',
+      intervalWeeks: form.intervalWeeks || 1,
+      monthOrdinal: form.monthOrdinal ?? null,
+      monthWeekday: form.monthWeekday ?? null,
       daysOfWeek: form.daysOfWeek,
       startDate: form.startDate,
       endDate: form.endDate,

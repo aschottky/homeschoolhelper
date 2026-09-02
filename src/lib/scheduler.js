@@ -38,11 +38,51 @@ export function isBreakDay(dateStr, breaks) {
   return breaks.some((b) => dateStr >= b.startDate && dateStr <= b.endDate)
 }
 
-// Is this a day the subject meets? (right weekday, inside the year, not a break)
+// Which occurrence of its weekday a date is within its month: 1..5,
+// plus -1 when it's the last such weekday of the month.
+export function weekdayOrdinal(dateStr) {
+  const d = toDate(dateStr)
+  const ordinal = Math.ceil(d.getDate() / 7)
+  const daysInMonth = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate()
+  const isLast = d.getDate() + 7 > daysInMonth
+  return { ordinal, isLast }
+}
+
+// Does the date match the schedule's recurrence pattern? (ignores the
+// start/end range — projections walk past endDate on purpose)
+export function matchesPattern(schedule, dateStr, breaks) {
+  if (isBreakDay(dateStr, breaks)) return false
+  const dow = dayOfWeek(dateStr)
+
+  if (schedule.freq === 'monthly') {
+    if (dow !== schedule.monthWeekday) return false
+    const { ordinal, isLast } = weekdayOrdinal(dateStr)
+    return schedule.monthOrdinal === -1 ? isLast : ordinal === schedule.monthOrdinal
+  }
+
+  // weekly: right weekday, and the right week when repeating every N weeks
+  if (!schedule.daysOfWeek.includes(dow)) return false
+  const interval = schedule.intervalWeeks || 1
+  if (interval > 1) {
+    // Anchor on the Sunday of the week containing startDate.
+    const anchor = toDate(schedule.startDate)
+    anchor.setDate(anchor.getDate() - anchor.getDay())
+    const weeks = Math.floor(Math.round((toDate(dateStr) - anchor) / 86400000) / 7)
+    if (weeks < 0 || weeks % interval !== 0) return false
+  }
+  return true
+}
+
+// Is this a day the subject meets? (pattern match, inside the year)
 export function isScheduledDay(schedule, dateStr, breaks) {
   if (dateStr < schedule.startDate || dateStr > schedule.endDate) return false
-  if (!schedule.daysOfWeek.includes(dayOfWeek(dateStr))) return false
-  return !isBreakDay(dateStr, breaks)
+  return matchesPattern(schedule, dateStr, breaks)
+}
+
+// Stable per-date completion key for activity schedules: 2026-09-02 -> 20260902.
+// Reuses the (schedule_id, lesson_number) uniqueness for one-tick-per-day.
+export function activityKey(dateStr) {
+  return Number(dateStr.replace(/-/g, ''))
 }
 
 // Next `count` uncompleted lesson numbers, starting from startLesson.
@@ -66,6 +106,17 @@ export function nextLessons(schedule, completedSet, count) {
 //   { type: 'past',   done, upcoming }  → checked off that day + backfillable next lessons
 //   { type: 'today',  done, upcoming }  → checked so far + next up (auto-rolled)
 //   { type: 'future', lessons }         → projection assuming no more missed days
+// Activity schedules ("Flying a kite" every other Tuesday): one checkbox per
+// scheduled day, keyed by activityKey(date) instead of a lesson number.
+export function activityForDate(schedule, dateStr, completions, breaks, today = todayStr()) {
+  if (!isScheduledDay(schedule, dateStr, breaks)) return null
+  const comp = completions.find(
+    (c) => c.scheduleId === schedule.id && c.completedOn === dateStr
+  ) || null
+  const type = dateStr < today ? 'past' : dateStr === today ? 'today' : 'future'
+  return { type, comp }
+}
+
 export function sessionForDate(schedule, dateStr, completions, breaks, today = todayStr()) {
   if (!isScheduledDay(schedule, dateStr, breaks)) return null
   const mine = completions.filter((c) => c.scheduleId === schedule.id)
@@ -106,7 +157,7 @@ export function sessionForDate(schedule, dateStr, completions, breaks, today = t
 // When does the curriculum finish at the current pace? Needs totalLessons.
 // Walks past endDate if necessary so "you won't make it" is visible.
 export function projectedFinish(schedule, completions, breaks, today = todayStr()) {
-  if (!schedule.totalLessons) return null
+  if (schedule.kind === 'activity' || !schedule.totalLessons) return null
   const mine = completions.filter((c) => c.scheduleId === schedule.id)
   const completedSet = new Set(mine.map((c) => c.lessonNumber))
   let remaining = 0
@@ -118,11 +169,9 @@ export function projectedFinish(schedule, completions, breaks, today = todayStr(
   const doneToday = mine.filter((c) => c.completedOn === today).length
   let d = today < schedule.startDate ? schedule.startDate : today
   let guard = 0
-  // Beyond endDate the weekday pattern continues but breaks still apply.
-  const meets = (day) =>
-    schedule.daysOfWeek.includes(dayOfWeek(day)) && !isBreakDay(day, breaks)
+  // Beyond endDate the recurrence pattern continues but breaks still apply.
   while (guard++ < 1500) {
-    if (meets(d)) {
+    if (matchesPattern(schedule, d, breaks)) {
       const cap = d === today
         ? Math.max(0, schedule.lessonsPerSession - doneToday)
         : schedule.lessonsPerSession
@@ -134,6 +183,22 @@ export function projectedFinish(schedule, completions, breaks, today = todayStr(
     d = addDays(d, 1)
   }
   return null
+}
+
+// Human-readable recurrence, e.g. "Mon · Wed · Fri", "Every other week: Tue",
+// "3rd Wed of the month".
+export function describeRecurrence(schedule) {
+  if (schedule.freq === 'monthly') {
+    const ord = schedule.monthOrdinal === -1
+      ? 'Last'
+      : ['', '1st', '2nd', '3rd', '4th'][schedule.monthOrdinal] || `${schedule.monthOrdinal}th`
+    return `${ord} ${DAY_LABELS[schedule.monthWeekday] ?? '?'} of the month`
+  }
+  const days = [...schedule.daysOfWeek].sort((a, b) => a - b).map((d) => DAY_LABELS[d]).join(' · ')
+  const interval = schedule.intervalWeeks || 1
+  if (interval === 1) return days
+  if (interval === 2) return `Every other week: ${days}`
+  return `Every ${interval} weeks: ${days}`
 }
 
 // Completed-lesson count and the next lesson number, for "Lesson 17 of 120".
