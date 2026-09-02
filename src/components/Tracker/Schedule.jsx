@@ -408,17 +408,38 @@ function BreaksCard() {
 // ── Calendar views ──────────────────────────────────────────────
 // One entry per subject meeting on a date, with how much of the
 // session was actually checked off that day.
-function dayItemsFor(childSchedules, dateStr, completions, breaks) {
-  return childSchedules
-    .filter((s) => isScheduledDay(s, dateStr, breaks))
-    // A finished curriculum only counts through its finish day; after that it
-    // drops off the calendar instead of showing as endless "missed"/"planned".
-    .filter((s) => !(isScheduleFinished(s, completions) && dateStr > lastCompletionDate(s, completions)))
-    .map((s) => ({
-      schedule: s,
-      done: completions.filter((c) => c.scheduleId === s.id && c.completedOn === dateStr).length,
-      expected: s.kind === 'activity' ? 1 : s.lessonsPerSession,
-    }))
+function dayItemsFor(childSchedules, dateStr, completions, breaks, today = todayStr()) {
+  const items = []
+  for (const s of childSchedules) {
+    if (!isScheduledDay(s, dateStr, breaks)) continue
+
+    // Activities don't roll forward — a missed one stays missed.
+    if (s.kind === 'activity') {
+      const done = completions.filter((c) => c.scheduleId === s.id && c.completedOn === dateStr).length
+      items.push({ schedule: s, done, expected: 1 })
+      continue
+    }
+
+    // Numbered curricula auto-roll, so a day only counts when a lesson is
+    // actually done there or genuinely still due there (per the projection).
+    // This keeps a short plan from painting the whole month with "planned".
+    const session = sessionForDate(s, dateStr, completions, breaks, today)
+    if (!session) continue
+    if (session.type === 'future') {
+      if (session.lessons.length === 0) continue
+      items.push({ schedule: s, done: 0, expected: session.lessons.length })
+    } else if (session.type === 'today') {
+      const done = session.done.length
+      const upcoming = session.upcoming.length
+      if (done === 0 && upcoming === 0) continue
+      items.push({ schedule: s, done, expected: done + upcoming })
+    } else { // past — only actual completions count; unfilled days rolled forward
+      const done = session.done.length
+      if (done === 0) continue
+      items.push({ schedule: s, done, expected: done })
+    }
+  }
+  return items
 }
 
 function itemState(item, dateStr, today) {
@@ -481,7 +502,7 @@ function MonthView({ childSchedules, lessonCompletions, scheduleBreaks, viewDate
   const infoByDate = new Map()
   for (const dateStr of cells) {
     if (!dateStr) continue
-    const items = dayItemsFor(childSchedules, dateStr, lessonCompletions, scheduleBreaks)
+    const items = dayItemsFor(childSchedules, dateStr, lessonCompletions, scheduleBreaks, today)
     if (items.length === 0) continue
     infoByDate.set(dateStr, items)
     const agg = dayAggregate(items, dateStr, today)
@@ -589,7 +610,7 @@ function YearView({ childSchedules, lessonCompletions, scheduleBreaks, viewDate,
                 {cells.map((dateStr, i) => {
                   if (!dateStr) return <i key={`p${i}`} className="mini-day empty" />
                   const brk = isBreak(dateStr, scheduleBreaks)
-                  const items = brk ? [] : dayItemsFor(childSchedules, dateStr, lessonCompletions, scheduleBreaks)
+                  const items = brk ? [] : dayItemsFor(childSchedules, dateStr, lessonCompletions, scheduleBreaks, today)
                   const agg = brk ? 'break' : dayAggregate(items, dateStr, today)
                   return (
                     <i key={dateStr}
