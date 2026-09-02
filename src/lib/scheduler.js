@@ -154,6 +154,29 @@ export function sessionForDate(schedule, dateStr, completions, breaks, today = t
   return { type: 'future', lessons: queue.slice(0, schedule.lessonsPerSession) }
 }
 
+// A numbered curriculum with a known total is "finished" once every lesson
+// from startLesson..totalLessons is checked off. Activities and open-ended
+// (no total) schedules never finish.
+export function isScheduleFinished(schedule, completions) {
+  if (schedule.kind === 'activity' || !schedule.totalLessons) return false
+  const done = new Set(
+    completions.filter((c) => c.scheduleId === schedule.id).map((c) => c.lessonNumber)
+  )
+  for (let n = schedule.startLesson; n <= schedule.totalLessons; n++) {
+    if (!done.has(n)) return false
+  }
+  return true
+}
+
+// The date the final lesson was checked off (max completedOn), or null.
+export function lastCompletionDate(schedule, completions) {
+  const dates = completions
+    .filter((c) => c.scheduleId === schedule.id)
+    .map((c) => c.completedOn)
+    .sort()
+  return dates[dates.length - 1] || null
+}
+
 // When does the curriculum finish at the current pace? Needs totalLessons.
 // Walks past endDate if necessary so "you won't make it" is visible.
 export function projectedFinish(schedule, completions, breaks, today = todayStr()) {

@@ -141,6 +141,21 @@
   gap: 6px;
 }
 
+.schedule-day-item.finished {
+  border-left-color: var(--forest);
+  background: linear-gradient(0deg, rgba(45, 90, 74, 0.04), rgba(45, 90, 74, 0.04));
+}
+
+.schedule-finished-banner {
+  margin-top: 10px;
+  padding: 10px 14px;
+  border-radius: var(--radius-md);
+  background: var(--sage-light);
+  color: var(--forest-dark);
+  font-weight: 600;
+  font-size: 0.9375rem;
+}
+
 .lesson-row {
   display: flex;
   flex-direction: column;

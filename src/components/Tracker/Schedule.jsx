@@ -7,7 +7,7 @@ import {
 import {
   DAY_LABELS, todayStr, addDays, toDate, isScheduledDay,
   sessionForDate, activityForDate, activityKey, projectedFinish,
-  scheduleProgress, describeRecurrence,
+  scheduleProgress, describeRecurrence, isScheduleFinished, lastCompletionDate,
 } from '../../lib/scheduler'
 import './Schedule.css'
 
@@ -411,6 +411,9 @@ function BreaksCard() {
 function dayItemsFor(childSchedules, dateStr, completions, breaks) {
   return childSchedules
     .filter((s) => isScheduledDay(s, dateStr, breaks))
+    // A finished curriculum only counts through its finish day; after that it
+    // drops off the calendar instead of showing as endless "missed"/"planned".
+    .filter((s) => !(isScheduleFinished(s, completions) && dateStr > lastCompletionDate(s, completions)))
     .map((s) => ({
       schedule: s,
       done: completions.filter((c) => c.scheduleId === s.id && c.completedOn === dateStr).length,
@@ -677,7 +680,18 @@ function Schedule() {
           return activity ? { subject, schedule, activity } : null
         }
         const session = sessionForDate(schedule, viewDate, lessonCompletions, scheduleBreaks, today)
-        return session ? { subject, schedule, session } : null
+        if (!session) return null
+        // Once finished, drop the card from every scheduled day EXCEPT the day
+        // the last lesson was checked off — that day gets the celebration.
+        if (isScheduleFinished(schedule, lessonCompletions)) {
+          const finishDay = lastCompletionDate(schedule, lessonCompletions)
+          if (viewDate !== finishDay) return null
+          return { subject, schedule, session, finished: true }
+        }
+        // Future days the plan is projected to have already completed: nothing
+        // to show, so don't render an empty card.
+        if (session.type === 'future' && session.lessons.length === 0) return null
+        return { subject, schedule, session }
       })
       .filter(Boolean)
   }, [child, scheduleBySubject, viewDate, lessonCompletions, scheduleBreaks, today])
@@ -802,8 +816,8 @@ function Schedule() {
         )}
 
         <div className="schedule-day-list">
-          {dayItems.map(({ subject, schedule, session, activity }) => (
-            <div key={subject.id} className="schedule-day-item"
+          {dayItems.map(({ subject, schedule, session, activity, finished }) => (
+            <div key={subject.id} className={`schedule-day-item ${finished ? 'finished' : ''}`}
               style={{ '--subject-color': subject.color || '#8FB39A' }}>
               <div className="schedule-day-item-head">
                 <span className="subject-dot" />
@@ -870,9 +884,6 @@ function Schedule() {
                 </ul>
               ) : session.type === 'future' ? (
                 <ul className="lesson-list">
-                  {session.lessons.length === 0 && (
-                    <li className="lesson-row projected">All done 🎉</li>
-                  )}
                   {session.lessons.map((n) => (
                     <li key={n} className="lesson-row projected">
                       <span className="lesson-checkbox ghost" aria-hidden="true" />
@@ -932,10 +943,13 @@ function Schedule() {
                       </div>
                     </li>
                   ))}
-                  {session.done.length === 0 && session.upcoming.length === 0 && (
-                    <li className="lesson-row projected">All done 🎉</li>
-                  )}
                 </ul>
+              )}
+
+              {finished && (
+                <div className="schedule-finished-banner">
+                  🎉 Curriculum complete — every {schedule.unitLabel.toLowerCase()} done!
+                </div>
               )}
             </div>
           ))}
