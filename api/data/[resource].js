@@ -177,10 +177,11 @@ export async function POST(request) {
       return json(row)
     }
 
-    // Create-or-replace a subject's schedule (one schedule per subject).
+    // Create a schedule, or update an existing one when `id` is given.
+    // A subject may carry several schedules at once.
     if (resource === 'schedules') {
       const {
-        child_id, subject_id, title, kind, unit_label, days_of_week,
+        id, child_id, subject_id, title, kind, unit_label, days_of_week,
         freq, interval_weeks, month_ordinal, month_weekday,
         start_date, end_date, start_lesson, lessons_per_session, total_lessons,
       } = body
@@ -206,35 +207,37 @@ export async function POST(request) {
         'select id from subjects where id = $1 and child_id = $2', [subject_id, child_id]
       )
       if (!subj) throw httpError(404, 'Subject not found')
+      const values = [child_id, subject_id, title || null, scheduleKind, unit_label || 'Lesson',
+        scheduleFreq, Math.max(1, Number(interval_weeks) || 1),
+        scheduleFreq === 'monthly' ? Number(month_ordinal) : null,
+        scheduleFreq === 'monthly' ? Number(month_weekday) : null,
+        scheduleFreq === 'weekly' ? days_of_week : [],
+        start_date, end_date,
+        start_lesson || 1, lessons_per_session || 1, total_lessons || null]
+      if (id) {
+        const { rows: [row] } = await pool.query(
+          `update schedules set
+             child_id = $1, subject_id = $2, title = $3, kind = $4, unit_label = $5,
+             freq = $6, interval_weeks = $7, month_ordinal = $8, month_weekday = $9,
+             days_of_week = $10, start_date = $11, end_date = $12,
+             start_lesson = $13, lessons_per_session = $14, total_lessons = $15,
+             updated_at = now()
+           where id = $16
+             and child_id in (select id from children where user_id = $17)
+           returning ${SCHEDULE_COLS}`,
+          [...values, id, user.id]
+        )
+        if (!row) throw httpError(404, 'Schedule not found')
+        return json(row)
+      }
       const { rows: [row] } = await pool.query(
         `insert into schedules
            (child_id, subject_id, title, kind, unit_label, freq, interval_weeks,
             month_ordinal, month_weekday, days_of_week, start_date, end_date,
             start_lesson, lessons_per_session, total_lessons)
          values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
-         on conflict (subject_id) do update set
-           title = excluded.title,
-           kind = excluded.kind,
-           unit_label = excluded.unit_label,
-           freq = excluded.freq,
-           interval_weeks = excluded.interval_weeks,
-           month_ordinal = excluded.month_ordinal,
-           month_weekday = excluded.month_weekday,
-           days_of_week = excluded.days_of_week,
-           start_date = excluded.start_date,
-           end_date = excluded.end_date,
-           start_lesson = excluded.start_lesson,
-           lessons_per_session = excluded.lessons_per_session,
-           total_lessons = excluded.total_lessons,
-           updated_at = now()
          returning ${SCHEDULE_COLS}`,
-        [child_id, subject_id, title || null, scheduleKind, unit_label || 'Lesson',
-         scheduleFreq, Math.max(1, Number(interval_weeks) || 1),
-         scheduleFreq === 'monthly' ? Number(month_ordinal) : null,
-         scheduleFreq === 'monthly' ? Number(month_weekday) : null,
-         scheduleFreq === 'weekly' ? days_of_week : [],
-         start_date, end_date,
-         start_lesson || 1, lessons_per_session || 1, total_lessons || null]
+        values
       )
       return json(row)
     }

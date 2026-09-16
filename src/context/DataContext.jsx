@@ -857,12 +857,13 @@ export function DataProvider({ children: childrenProp }) {
   }
 
   // --- Scheduler: per-subject lesson schedules ---
-  // Create-or-replace the schedule for a subject (one schedule per subject).
-  const saveSchedule = async (childId, subjectId, form) => {
+  // Create a schedule (a subject can have several), or update one by id.
+  const saveSchedule = async (childId, subjectId, form, scheduleId = null) => {
     if (isConfigured && user) {
       const data = await api('/api/data/schedules', {
         method: 'POST',
         body: {
+          id: scheduleId || undefined,
           child_id: childId,
           subject_id: subjectId,
           title: form.title || null,
@@ -881,12 +882,11 @@ export function DataProvider({ children: childrenProp }) {
         }
       })
       const saved = toSchedule(data)
-      setSchedules(prev => [...prev.filter(s => s.subjectId !== subjectId), saved])
+      setSchedules(prev => [...prev.filter(s => s.id !== saved.id), saved])
       return saved
     }
-    const existing = schedules.find(s => s.subjectId === subjectId)
     const saved = {
-      id: existing?.id || `local-${Date.now()}`,
+      id: scheduleId || `local-${Date.now()}`,
       childId,
       subjectId,
       title: form.title || '',
@@ -903,7 +903,7 @@ export function DataProvider({ children: childrenProp }) {
       lessonsPerSession: form.lessonsPerSession,
       totalLessons: form.totalLessons || null
     }
-    setSchedules(prev => [...prev.filter(s => s.subjectId !== subjectId), saved])
+    setSchedules(prev => [...prev.filter(s => s.id !== saved.id), saved])
     return saved
   }
 

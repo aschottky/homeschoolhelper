@@ -227,10 +227,11 @@ create table if not exists suggested_books (
 -- =============================================
 -- Lessons are NOT pinned to dates: each scheduled day serves the next
 -- uncompleted lessons, so a missed day rolls everything forward on its own.
+-- A subject can carry several schedules at once (e.g. two math curricula).
 create table if not exists schedules (
   id uuid default gen_random_uuid() primary key,
   child_id uuid references children(id) on delete cascade not null,
-  subject_id uuid references subjects(id) on delete cascade not null unique,
+  subject_id uuid references subjects(id) on delete cascade not null,
   title text, -- curriculum name ("Saxon Math 5/4") or activity label ("Flying a kite")
   kind text default 'numbered' not null check (kind in ('numbered', 'activity')),
   unit_label text default 'Lesson' not null, -- what one session covers: Lesson/Unit/Chapter/custom
@@ -251,6 +252,7 @@ create table if not exists schedules (
 );
 
 create index if not exists schedules_child_id_idx on schedules(child_id);
+create index if not exists schedules_subject_id_idx on schedules(subject_id);
 
 -- =============================================
 -- SCHEDULE BREAKS (family-wide no-school date ranges)

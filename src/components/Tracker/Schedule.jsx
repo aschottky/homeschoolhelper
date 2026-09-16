@@ -36,8 +36,13 @@ const UNIT_PRESETS = ['Lesson', 'Unit', 'Chapter']
 // Palette for subjects created here (Children tab uses the same family).
 const SUBJECT_COLORS = ['#2D5A4A', '#E8A87C', '#8FB39A', '#D4896A', '#5A8F7B', '#C4A484', '#6B8E7B', '#B58863']
 
-// subject === null means "create a new subject along with its schedule".
-function ScheduleEditor({ child, subject, schedule, onSave, onDelete, onClose }) {
+// subject === null means the subject is chosen inside the editor: with
+// pickSubject a dropdown of the child's subjects (plus "New subject…"),
+// otherwise a name field that creates a new subject along with its schedule.
+function ScheduleEditor({ child, subject, schedule, subjects = [], pickSubject = false, onSave, onDelete, onClose }) {
+  const [subjectId, setSubjectId] = useState(
+    subject?.id || (pickSubject && subjects[0]?.id) || '__new'
+  )
   const [subjectName, setSubjectName] = useState('')
   const [title, setTitle] = useState(schedule?.title || '')
   const savedLabel = schedule?.unitLabel || 'Lesson'
@@ -68,7 +73,8 @@ function ScheduleEditor({ child, subject, schedule, onSave, onDelete, onClose })
   const submit = async (e) => {
     e.preventDefault()
     const freq = repeat === 'monthly' ? 'monthly' : 'weekly'
-    if (!subject && !subjectName.trim()) return setError('Give the subject a name.')
+    const newSubject = !subject && subjectId === '__new'
+    if (newSubject && !subjectName.trim()) return setError('Give the subject a name.')
     if (freq === 'weekly' && days.length === 0) return setError('Pick at least one day of the week.')
     if (!startDate || !endDate || endDate <= startDate) {
       return setError('The school year needs a start date before its end date.')
@@ -83,6 +89,7 @@ function ScheduleEditor({ child, subject, schedule, onSave, onDelete, onClose })
     setSaving(true)
     try {
       await onSave({
+        subjectId: subject?.id || (newSubject ? null : subjectId),
         subjectName: subjectName.trim(),
         title: title.trim(),
         kind: isActivity ? 'activity' : 'numbered',
@@ -111,8 +118,8 @@ function ScheduleEditor({ child, subject, schedule, onSave, onDelete, onClose })
       <div className="schedule-modal" onClick={(e) => e.stopPropagation()}>
         <div className="schedule-modal-header">
           <h3>{subject
-            ? `${schedule ? 'Edit' : 'Set up'} schedule — ${subject.name}`
-            : 'Add subject'}</h3>
+            ? `${schedule ? 'Edit' : 'Add'} schedule — ${subject.name}`
+            : pickSubject ? 'Add schedule' : 'Add subject'}</h3>
           <button type="button" className="btn-icon-only" onClick={onClose} aria-label="Close">
             <X size={20} />
           </button>
@@ -120,7 +127,17 @@ function ScheduleEditor({ child, subject, schedule, onSave, onDelete, onClose })
         <p className="schedule-modal-subtitle">{child.name}</p>
 
         <form onSubmit={submit}>
-          {!subject && (
+          {!subject && pickSubject && (
+            <div className="form-group">
+              <label>Subject</label>
+              <select className="form-select" value={subjectId} autoFocus
+                onChange={(e) => setSubjectId(e.target.value)}>
+                {subjects.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+                <option value="__new">＋ New subject…</option>
+              </select>
+            </div>
+          )}
+          {!subject && subjectId === '__new' && (
             <div className="form-group">
               <label>Subject name</label>
               <input
@@ -129,7 +146,7 @@ function ScheduleEditor({ child, subject, schedule, onSave, onDelete, onClose })
                 placeholder="e.g. Reading"
                 value={subjectName}
                 onChange={(e) => setSubjectName(e.target.value)}
-                autoFocus
+                autoFocus={!pickSubject}
               />
             </div>
           )}
@@ -639,7 +656,8 @@ function Schedule() {
   const [childId, setChildId] = useState(children[0]?.id || '')
   const [viewDate, setViewDate] = useState(today)
   const [viewMode, setViewMode] = useState('day')
-  const [editingSubject, setEditingSubject] = useState(null)
+  // { subject?, schedule?, pick?, newSubject? } — which editor flavor is open.
+  const [editing, setEditing] = useState(null)
   const [hourPrompt, setHourPrompt] = useState(null)
   const [noteEditing, setNoteEditing] = useState(null) // completion id
   const [noteDraft, setNoteDraft] = useState('')
@@ -670,9 +688,14 @@ function Schedule() {
     [schedules, childId]
   )
 
-  const scheduleBySubject = useMemo(() => {
+  // A subject can carry several schedules (e.g. two math curricula).
+  const schedulesBySubject = useMemo(() => {
     const map = new Map()
-    childSchedules.forEach((s) => map.set(s.subjectId, s))
+    childSchedules.forEach((s) => {
+      const list = map.get(s.subjectId) || []
+      list.push(s)
+      map.set(s.subjectId, list)
+    })
     return map
   }, [childSchedules])
 
@@ -689,33 +712,34 @@ function Schedule() {
     })
   }, [child, childSchedules])
 
-  // The day's checklist: one entry per scheduled subject meeting on viewDate.
+  // The day's checklist: one entry per schedule meeting on viewDate.
   const dayItems = useMemo(() => {
     if (!child) return []
-    return child.subjects
-      .map((subject) => {
-        const schedule = scheduleBySubject.get(subject.id)
-        if (!schedule) return null
+    const items = []
+    for (const subject of child.subjects) {
+      for (const schedule of schedulesBySubject.get(subject.id) || []) {
         if (schedule.kind === 'activity') {
           const activity = activityForDate(schedule, viewDate, lessonCompletions, scheduleBreaks, today)
-          return activity ? { subject, schedule, activity } : null
+          if (activity) items.push({ subject, schedule, activity })
+          continue
         }
         const session = sessionForDate(schedule, viewDate, lessonCompletions, scheduleBreaks, today)
-        if (!session) return null
+        if (!session) continue
         // Once finished, drop the card from every scheduled day EXCEPT the day
         // the last lesson was checked off — that day gets the celebration.
         if (isScheduleFinished(schedule, lessonCompletions)) {
           const finishDay = lastCompletionDate(schedule, lessonCompletions)
-          if (viewDate !== finishDay) return null
-          return { subject, schedule, session, finished: true }
+          if (viewDate === finishDay) items.push({ subject, schedule, session, finished: true })
+          continue
         }
         // Future days the plan is projected to have already completed: nothing
         // to show, so don't render an empty card.
-        if (session.type === 'future' && session.lessons.length === 0) return null
-        return { subject, schedule, session }
-      })
-      .filter(Boolean)
-  }, [child, scheduleBySubject, viewDate, lessonCompletions, scheduleBreaks, today])
+        if (session.type === 'future' && session.lessons.length === 0) continue
+        items.push({ subject, schedule, session })
+      }
+    }
+    return items
+  }, [child, schedulesBySubject, viewDate, lessonCompletions, scheduleBreaks, today])
 
   const viewBreak = scheduleBreaks.find((b) => viewDate >= b.startDate && viewDate <= b.endDate)
 
@@ -838,7 +862,7 @@ function Schedule() {
 
         <div className="schedule-day-list">
           {dayItems.map(({ subject, schedule, session, activity, finished }) => (
-            <div key={subject.id} className={`schedule-day-item ${finished ? 'finished' : ''}`}
+            <div key={schedule.id} className={`schedule-day-item ${finished ? 'finished' : ''}`}
               style={{ '--subject-color': subject.color || '#8FB39A' }}>
               <div className="schedule-day-item-head">
                 <span className="subject-dot" />
@@ -983,14 +1007,20 @@ function Schedule() {
         <div className="tracker-section">
           <div className="tracker-section-header">
             <h3>Subject schedules — {child.name}</h3>
+            {child.subjects.length > 0 && (
+              <button type="button" className="btn-tracker btn-secondary btn-sm"
+                onClick={() => setEditing({ pick: true })}>
+                <Plus size={16} /> Add schedule
+              </button>
+            )}
           </div>
           {child.subjects.length === 0 && (
             <p className="schedule-muted">No subjects yet — add one below to start scheduling.</p>
           )}
           <ul className="schedule-config-list">
-            {child.subjects.map((subject) => {
-              const schedule = scheduleBySubject.get(subject.id)
-              if (!schedule) {
+            {child.subjects.flatMap((subject) => {
+              const subjectSchedules = schedulesBySubject.get(subject.id) || []
+              if (subjectSchedules.length === 0) {
                 return (
                   <li key={subject.id} className="schedule-config-row">
                     <span className="subject-dot" style={{ '--subject-color': subject.color || '#8FB39A' }} />
@@ -999,54 +1029,64 @@ function Schedule() {
                       <span className="schedule-muted">Not scheduled</span>
                     </div>
                     <button type="button" className="btn-tracker btn-secondary btn-sm"
-                      onClick={() => setEditingSubject(subject)}>
+                      onClick={() => setEditing({ subject })}>
                       <Plus size={16} /> Add schedule
                     </button>
                   </li>
                 )
               }
-              const progress = scheduleProgress(schedule, lessonCompletions)
-              const finish = projectedFinish(schedule, lessonCompletions, scheduleBreaks, today)
-              const isActivity = schedule.kind === 'activity'
-              return (
-                <li key={subject.id} className="schedule-config-row">
-                  <span className="subject-dot" style={{ '--subject-color': subject.color || '#8FB39A' }} />
-                  <div className="schedule-config-info">
-                    <span className="subject-name">
-                      {subject.name}
-                      {schedule.title && <span className="subject-curriculum">{schedule.title}</span>}
-                    </span>
-                    <span className="schedule-config-meta">
-                      {describeRecurrence(schedule)}
-                      {isActivity ? ' · activity' : (
-                        <>
-                          {' · '}
-                          {progress.nextLesson
-                            ? `next ${schedule.unitLabel.toLowerCase()} ${progress.nextLesson}`
-                            : `all ${schedule.unitLabel.toLowerCase()}s done`}
-                          {schedule.totalLessons ? ` of ${schedule.totalLessons}` : ''}
-                          {schedule.lessonsPerSession > 1 ? ` · ${schedule.lessonsPerSession}/session` : ''}
-                          {finish?.date && (
-                            <span className={finish.pastYearEnd ? 'finish-warn' : 'finish-ok'}>
-                              {' · '}finishes ~{shortDate(finish.date)}
-                              {finish.pastYearEnd ? ' (past year end!)' : ''}
-                            </span>
-                          )}
-                          {finish?.done && ' · complete 🎉'}
-                        </>
-                      )}
-                    </span>
-                  </div>
-                  <button type="button" className="btn-icon-only" aria-label={`Edit ${subject.name} schedule`}
-                    onClick={() => setEditingSubject(subject)}>
-                    <Pencil size={16} />
-                  </button>
-                </li>
-              )
+              return subjectSchedules.map((schedule, i) => {
+                const progress = scheduleProgress(schedule, lessonCompletions)
+                const finish = projectedFinish(schedule, lessonCompletions, scheduleBreaks, today)
+                const isActivity = schedule.kind === 'activity'
+                return (
+                  <li key={schedule.id} className="schedule-config-row">
+                    <span className="subject-dot" style={{ '--subject-color': subject.color || '#8FB39A' }} />
+                    <div className="schedule-config-info">
+                      <span className="subject-name">
+                        {subject.name}
+                        {schedule.title && <span className="subject-curriculum">{schedule.title}</span>}
+                      </span>
+                      <span className="schedule-config-meta">
+                        {describeRecurrence(schedule)}
+                        {isActivity ? ' · activity' : (
+                          <>
+                            {' · '}
+                            {progress.nextLesson
+                              ? `next ${schedule.unitLabel.toLowerCase()} ${progress.nextLesson}`
+                              : `all ${schedule.unitLabel.toLowerCase()}s done`}
+                            {schedule.totalLessons ? ` of ${schedule.totalLessons}` : ''}
+                            {schedule.lessonsPerSession > 1 ? ` · ${schedule.lessonsPerSession}/session` : ''}
+                            {finish?.date && (
+                              <span className={finish.pastYearEnd ? 'finish-warn' : 'finish-ok'}>
+                                {' · '}finishes ~{shortDate(finish.date)}
+                                {finish.pastYearEnd ? ' (past year end!)' : ''}
+                              </span>
+                            )}
+                            {finish?.done && ' · complete 🎉'}
+                          </>
+                        )}
+                      </span>
+                    </div>
+                    {i === subjectSchedules.length - 1 && (
+                      <button type="button" className="btn-icon-only"
+                        aria-label={`Add another ${subject.name} schedule`}
+                        onClick={() => setEditing({ subject })}>
+                        <Plus size={16} />
+                      </button>
+                    )}
+                    <button type="button" className="btn-icon-only"
+                      aria-label={`Edit ${subject.name}${schedule.title ? ` — ${schedule.title}` : ''} schedule`}
+                      onClick={() => setEditing({ subject, schedule })}>
+                      <Pencil size={16} />
+                    </button>
+                  </li>
+                )
+              })
             })}
           </ul>
           <button type="button" className="btn-tracker btn-secondary btn-sm schedule-add-subject"
-            onClick={() => setEditingSubject('new')}>
+            onClick={() => setEditing({ newSubject: true })}>
             <Plus size={16} /> Add subject
           </button>
         </div>
@@ -1054,25 +1094,24 @@ function Schedule() {
 
       <BreaksCard />
 
-      {editingSubject && child && (
+      {editing && child && (
         <ScheduleEditor
           child={child}
-          subject={editingSubject === 'new' ? null : editingSubject}
-          schedule={editingSubject === 'new' ? null : (scheduleBySubject.get(editingSubject.id) || null)}
+          subject={editing.subject || null}
+          schedule={editing.schedule || null}
+          subjects={child.subjects}
+          pickSubject={!!editing.pick}
           onSave={async (form) => {
-            if (editingSubject === 'new') {
+            let subjectId = form.subjectId
+            if (!subjectId) {
               const color = SUBJECT_COLORS[child.subjects.length % SUBJECT_COLORS.length]
               const subject = await addSubject(child.id, form.subjectName, 0, color)
-              return saveSchedule(child.id, subject.id, form)
+              subjectId = subject.id
             }
-            return saveSchedule(child.id, editingSubject.id, form)
+            return saveSchedule(child.id, subjectId, form, editing.schedule?.id || null)
           }}
-          onDelete={() => {
-            if (editingSubject === 'new') return Promise.resolve()
-            const s = scheduleBySubject.get(editingSubject.id)
-            return s ? deleteSchedule(s.id) : Promise.resolve()
-          }}
-          onClose={() => setEditingSubject(null)}
+          onDelete={() => editing.schedule ? deleteSchedule(editing.schedule.id) : Promise.resolve()}
+          onClose={() => setEditing(null)}
         />
       )}
 
