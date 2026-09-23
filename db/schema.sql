@@ -284,6 +284,20 @@ create table if not exists lesson_completions (
 create index if not exists lesson_completions_schedule_id_idx on lesson_completions(schedule_id);
 
 -- =============================================
+-- SCHEDULE DAY NOTES (one free-form note per schedule per day)
+-- =============================================
+create table if not exists schedule_day_notes (
+  id uuid default gen_random_uuid() primary key,
+  schedule_id uuid references schedules(id) on delete cascade not null,
+  note_on date not null,
+  notes text not null,
+  created_at timestamptz default now() not null,
+  unique (schedule_id, note_on)
+);
+
+create index if not exists schedule_day_notes_schedule_id_idx on schedule_day_notes(schedule_id);
+
+-- =============================================
 -- HOMEPAGE RESOURCES (admin-managed, public read)
 -- =============================================
 create table if not exists resources (

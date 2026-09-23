@@ -650,6 +650,7 @@ function Schedule() {
   const {
     children, schedules, scheduleBreaks, lessonCompletions,
     saveSchedule, deleteSchedule, completeLesson, uncompleteLesson, logHours, addSubject,
+    scheduleDayNotes, saveScheduleDayNote,
   } = useData()
 
   const today = todayStr()
@@ -661,6 +662,8 @@ function Schedule() {
   const [hourPrompt, setHourPrompt] = useState(null)
   const [noteEditing, setNoteEditing] = useState(null) // completion id
   const [noteDraft, setNoteDraft] = useState('')
+  const [dayNoteEditing, setDayNoteEditing] = useState(null) // schedule id
+  const [dayNoteDraft, setDayNoteDraft] = useState('')
   const promptedRef = useRef(new Set())
 
   const startNote = (c) => {
@@ -753,6 +756,11 @@ function Schedule() {
   }
 
   const activityLabel = (schedule, subject) => schedule.title || subject.name
+
+  const saveDayNote = async (schedule) => {
+    setDayNoteEditing(null)
+    await saveScheduleDayNote(schedule.id, viewDate, dayNoteDraft)
+  }
 
   if (children.length === 0) {
     return (
@@ -861,13 +869,38 @@ function Schedule() {
         )}
 
         <div className="schedule-day-list">
-          {dayItems.map(({ subject, schedule, session, activity, finished }) => (
+          {dayItems.map(({ subject, schedule, session, activity, finished }) => {
+            const dayNote = scheduleDayNotes.find(
+              (n) => n.scheduleId === schedule.id && n.noteOn === viewDate
+            )
+            return (
             <div key={schedule.id} className={`schedule-day-item ${finished ? 'finished' : ''}`}
               style={{ '--subject-color': subject.color || '#8FB39A' }}>
               <div className="schedule-day-item-head">
                 <span className="subject-dot" />
-                <span className="subject-name">{subject.name}</span>
-                {!activity && schedule.title && <span className="subject-curriculum">{schedule.title}</span>}
+                <span className="subject-name">{schedule.title || subject.name}</span>
+                <div className="schedule-day-note">
+                  {dayNoteEditing === schedule.id ? (
+                    <form className="day-note-edit"
+                      onSubmit={(e) => { e.preventDefault(); saveDayNote(schedule) }}>
+                      <input type="text" className="form-input" autoFocus
+                        placeholder="Note for this day…"
+                        value={dayNoteDraft}
+                        onChange={(e) => setDayNoteDraft(e.target.value)}
+                        onBlur={() => saveDayNote(schedule)}
+                        onKeyDown={(e) => { if (e.key === 'Escape') setDayNoteEditing(null) }} />
+                    </form>
+                  ) : (
+                    <button type="button"
+                      className={`day-note-btn ${dayNote ? 'has-note' : ''}`}
+                      aria-label={dayNote ? 'Edit note for this day' : 'Add note for this day'}
+                      onClick={() => { setDayNoteEditing(schedule.id); setDayNoteDraft(dayNote?.notes || '') }}>
+                      <StickyNote size={14} />
+                      <span className="day-note-text">{dayNote ? dayNote.notes : 'Add note'}</span>
+                    </button>
+                  )}
+                </div>
+                {schedule.title && <span className="subject-curriculum">{subject.name}</span>}
               </div>
 
               {activity ? (
@@ -997,7 +1030,8 @@ function Schedule() {
                 </div>
               )}
             </div>
-          ))}
+            )
+          })}
         </div>
         </>
         )}

@@ -15,6 +15,7 @@ const SCHEDULE_COLS = `id, child_id, subject_id, title, kind, unit_label,
   start_date::text, end_date::text, start_lesson, lessons_per_session, total_lessons, created_at`
 const BREAK_COLS = 'id, user_id, name, start_date::text, end_date::text, created_at'
 const COMPLETION_COLS = 'id, schedule_id, lesson_number, completed_on::text, notes, created_at'
+const DAY_NOTE_COLS = 'id, schedule_id, note_on::text, notes, created_at'
 
 const PROFILE_FIELDS = [
   'homeschool_name', 'parent_name', 'address', 'city',
@@ -68,14 +69,17 @@ export async function GET(request) {
       let samples = []
       let schedules = []
       let completions = []
+      let dayNotes = []
       if (childIds.length > 0) {
-        const [s, h, r, w, sch, comp] = await Promise.all([
+        const [s, h, r, w, sch, comp, dn] = await Promise.all([
           pool.query('select * from subjects where child_id = any($1) order by created_at asc', [childIds]),
           pool.query('select * from hour_logs where child_id = any($1) order by date desc', [childIds]),
           pool.query('select * from read_aloud_logs where child_id = any($1)', [childIds]),
           pool.query('select * from schoolwork_samples where child_id = any($1) order by uploaded_at desc', [childIds]),
           pool.query(`select ${SCHEDULE_COLS} from schedules where child_id = any($1)`, [childIds]),
           pool.query(`select ${COMPLETION_COLS} from lesson_completions
+                        where schedule_id in (select id from schedules where child_id = any($1))`, [childIds]),
+          pool.query(`select ${DAY_NOTE_COLS} from schedule_day_notes
                         where schedule_id in (select id from schedules where child_id = any($1))`, [childIds]),
         ])
         subjects = s.rows
@@ -84,6 +88,7 @@ export async function GET(request) {
         samples = w.rows
         schedules = sch.rows
         completions = comp.rows
+        dayNotes = dn.rows
       }
       const { rows: breaks } = await pool.query(
         `select ${BREAK_COLS} from schedule_breaks where user_id = $1 order by start_date asc`,
@@ -100,6 +105,7 @@ export async function GET(request) {
         schedules,
         schedule_breaks: breaks,
         lesson_completions: completions,
+        schedule_day_notes: dayNotes,
       })
     }
 
@@ -276,6 +282,37 @@ export async function POST(request) {
            notes = case when $4 is null then lesson_completions.notes else nullif($4, '') end
          returning ${COMPLETION_COLS}`,
         [schedule_id, lesson_number, completed_on, notes ?? null]
+      )
+      return json(row)
+    }
+
+    // Upsert the note for a schedule on one day; an empty note deletes it.
+    if (resource === 'schedule-day-notes') {
+      const { schedule_id, note_on, notes } = body
+      if (!schedule_id || !note_on) {
+        throw httpError(400, 'schedule_id and note_on are required')
+      }
+      const { rows: [owned] } = await pool.query(
+        `select s.id from schedules s
+           join children c on c.id = s.child_id
+          where s.id = $1 and c.user_id = $2`,
+        [schedule_id, user.id]
+      )
+      if (!owned) throw httpError(404, 'Schedule not found')
+      const text = (notes || '').trim()
+      if (!text) {
+        await pool.query(
+          'delete from schedule_day_notes where schedule_id = $1 and note_on = $2',
+          [schedule_id, note_on]
+        )
+        return json({ ok: true, deleted: true })
+      }
+      const { rows: [row] } = await pool.query(
+        `insert into schedule_day_notes (schedule_id, note_on, notes)
+         values ($1, $2, $3)
+         on conflict (schedule_id, note_on) do update set notes = excluded.notes
+         returning ${DAY_NOTE_COLS}`,
+        [schedule_id, note_on, text]
       )
       return json(row)
     }

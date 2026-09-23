@@ -119,6 +119,13 @@ const toSchedule = (s) => ({
   totalLessons: s.total_lessons || null
 })
 
+const toDayNote = (n) => ({
+  id: n.id,
+  scheduleId: n.schedule_id,
+  noteOn: n.note_on,
+  notes: n.notes
+})
+
 const toScheduleBreak = (b) => ({
   id: b.id,
   name: b.name,
@@ -171,6 +178,7 @@ export function DataProvider({ children: childrenProp }) {
   const [schedules, setSchedules] = useState([])
   const [scheduleBreaks, setScheduleBreaks] = useState([])
   const [lessonCompletions, setLessonCompletions] = useState([])
+  const [scheduleDayNotes, setScheduleDayNotes] = useState([])
 
   // Load public data (suggested books, resources)
   useEffect(() => {
@@ -235,6 +243,7 @@ export function DataProvider({ children: childrenProp }) {
     const savedSchedules = localStorage.getItem('homeschool_schedules')
     const savedBreaks = localStorage.getItem('homeschool_schedule_breaks')
     const savedCompletions = localStorage.getItem('homeschool_lesson_completions')
+    const savedDayNotes = localStorage.getItem('homeschool_schedule_day_notes')
 
     if (savedChildren) setChildren(JSON.parse(savedChildren))
     if (savedLogs) setHourLogs(JSON.parse(savedLogs))
@@ -250,6 +259,7 @@ export function DataProvider({ children: childrenProp }) {
     }
     if (savedBreaks) setScheduleBreaks(JSON.parse(savedBreaks))
     if (savedCompletions) setLessonCompletions(JSON.parse(savedCompletions))
+    if (savedDayNotes) setScheduleDayNotes(JSON.parse(savedDayNotes))
 
     setIsLoaded(true)
     setLoading(false)
@@ -269,6 +279,7 @@ export function DataProvider({ children: childrenProp }) {
       setSchedules((data?.schedules || []).map(toSchedule))
       setScheduleBreaks((data?.schedule_breaks || []).map(toScheduleBreak))
       setLessonCompletions((data?.lesson_completions || []).map(toCompletion))
+      setScheduleDayNotes((data?.schedule_day_notes || []).map(toDayNote))
 
       setIsLoaded(true)
     } catch (error) {
@@ -280,6 +291,7 @@ export function DataProvider({ children: childrenProp }) {
       setSchedules([])
       setScheduleBreaks([])
       setLessonCompletions([])
+      setScheduleDayNotes([])
       setIsLoaded(true)
     } finally {
       setLoading(false)
@@ -328,6 +340,12 @@ export function DataProvider({ children: childrenProp }) {
       localStorage.setItem('homeschool_schedule_breaks', JSON.stringify(scheduleBreaks))
     }
   }, [scheduleBreaks, isLoaded, isConfigured, user])
+
+  useEffect(() => {
+    if (isLoaded && (!isConfigured || !user)) {
+      localStorage.setItem('homeschool_schedule_day_notes', JSON.stringify(scheduleDayNotes))
+    }
+  }, [scheduleDayNotes, isLoaded, isConfigured, user])
 
   useEffect(() => {
     if (isLoaded && (!isConfigured || !user)) {
@@ -917,6 +935,27 @@ export function DataProvider({ children: childrenProp }) {
     }
     setSchedules(prev => prev.filter(s => s.id !== scheduleId))
     setLessonCompletions(prev => prev.filter(c => c.scheduleId !== scheduleId))
+    setScheduleDayNotes(prev => prev.filter(n => n.scheduleId !== scheduleId))
+  }
+
+  // One note per schedule per day; an empty note clears it.
+  const saveScheduleDayNote = async (scheduleId, noteOn, notes) => {
+    const text = (notes || '').trim()
+    if (isConfigured && user) {
+      const data = await api('/api/data/schedule-day-notes', {
+        method: 'POST',
+        body: { schedule_id: scheduleId, note_on: noteOn, notes: text }
+      })
+      setScheduleDayNotes(prev => {
+        const rest = prev.filter(n => !(n.scheduleId === scheduleId && n.noteOn === noteOn))
+        return text ? [...rest, toDayNote(data)] : rest
+      })
+      return
+    }
+    setScheduleDayNotes(prev => {
+      const rest = prev.filter(n => !(n.scheduleId === scheduleId && n.noteOn === noteOn))
+      return text ? [...rest, { id: `local-${Date.now()}`, scheduleId, noteOn, notes: text }] : rest
+    })
   }
 
   const addScheduleBreak = async (name, startDate, endDate) => {
@@ -1134,6 +1173,8 @@ export function DataProvider({ children: childrenProp }) {
     deleteScheduleBreak,
     completeLesson,
     uncompleteLesson,
+    scheduleDayNotes,
+    saveScheduleDayNote,
     addSchoolworkSample,
     deleteSchoolworkSample,
     getSchoolworkSamples,

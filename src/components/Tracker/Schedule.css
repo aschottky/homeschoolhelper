@@ -132,6 +132,54 @@
   margin-left: 6px;
 }
 
+/* Per-day note in the middle of the card head */
+.schedule-day-note {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  min-width: 140px;
+}
+
+.day-note-btn {
+  border: none;
+  background: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: var(--radius-md);
+  color: var(--sage);
+  font-size: 0.8125rem;
+  cursor: pointer;
+  max-width: 100%;
+}
+
+.day-note-btn:hover {
+  color: var(--forest);
+  background: var(--sage-light);
+}
+
+.day-note-btn.has-note {
+  color: var(--forest-dark);
+  background: var(--sage-light);
+}
+
+.day-note-btn .day-note-text {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.day-note-edit {
+  flex: 1;
+  max-width: 420px;
+}
+
+.day-note-edit .form-input {
+  padding: 6px 10px;
+  font-size: 0.8125rem;
+}
+
 .lesson-list {
   list-style: none;
   margin: 0;
