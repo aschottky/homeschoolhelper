@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom'
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import { DataProvider } from './context/DataContext'
 import { SubscriptionProvider } from './context/SubscriptionContext'
@@ -42,12 +42,10 @@ function ScrollToTop() {
 function TrackerGate({ children }) {
   const { user, loading, isConfigured } = useAuth()
   const location = useLocation()
-  const navigate = useNavigate()
 
   if (!isConfigured) return children
   if (!loading && !user && location.pathname.startsWith('/tracker')) {
-    navigate('/auth?redirect=' + encodeURIComponent(location.pathname + location.search), { replace: true })
-    return null
+    return <Navigate to={'/auth?redirect=' + encodeURIComponent(location.pathname + location.search)} replace />
   }
   return children
 }
