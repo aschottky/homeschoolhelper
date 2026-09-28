@@ -15,7 +15,7 @@ function Hero() {
       <div className="container hero-container">
         <div className="hero-content">
           <h1 className="hero-title animate-fade-in">
-            Where learning feels like an <span className="highlight">adventure</span>
+            All things homeschool, <span className="highlight">all in one place</span>
           </h1>
           
           <p className="hero-subtitle animate-fade-in">
