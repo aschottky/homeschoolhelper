@@ -4,8 +4,24 @@
     {
       "name": "vite-demo",
       "runtimeExecutable": "npx",
-      "runtimeArgs": ["vite", "--port", "5199", "--mode", "demo"],
+      "runtimeArgs": [
+        "vite",
+        "--port",
+        "5199",
+        "--mode",
+        "demo"
+      ],
       "port": 5199
+    },
+    {
+      "name": "vite-dev",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": [
+        "vite",
+        "--port",
+        "5198"
+      ],
+      "port": 5198
     }
   ]
 }
