@@ -126,6 +126,16 @@ const toDayNote = (n) => ({
   notes: n.notes
 })
 
+const toDayOverride = (o) => ({
+  id: o.id,
+  scheduleId: o.schedule_id,
+  overrideOn: o.override_on,
+  skip: !!o.skip,
+  movedTo: o.moved_to || null,
+  lessons: o.lessons == null ? null : Number(o.lessons),
+  title: o.title || ''
+})
+
 const toScheduleBreak = (b) => ({
   id: b.id,
   name: b.name,
@@ -179,6 +189,7 @@ export function DataProvider({ children: childrenProp }) {
   const [scheduleBreaks, setScheduleBreaks] = useState([])
   const [lessonCompletions, setLessonCompletions] = useState([])
   const [scheduleDayNotes, setScheduleDayNotes] = useState([])
+  const [scheduleDayOverrides, setScheduleDayOverrides] = useState([])
 
   // Load public data (suggested books, resources)
   useEffect(() => {
@@ -244,6 +255,7 @@ export function DataProvider({ children: childrenProp }) {
     const savedBreaks = localStorage.getItem('homeschool_schedule_breaks')
     const savedCompletions = localStorage.getItem('homeschool_lesson_completions')
     const savedDayNotes = localStorage.getItem('homeschool_schedule_day_notes')
+    const savedDayOverrides = localStorage.getItem('homeschool_schedule_day_overrides')
 
     if (savedChildren) setChildren(JSON.parse(savedChildren))
     if (savedLogs) setHourLogs(JSON.parse(savedLogs))
@@ -260,6 +272,7 @@ export function DataProvider({ children: childrenProp }) {
     if (savedBreaks) setScheduleBreaks(JSON.parse(savedBreaks))
     if (savedCompletions) setLessonCompletions(JSON.parse(savedCompletions))
     if (savedDayNotes) setScheduleDayNotes(JSON.parse(savedDayNotes))
+    if (savedDayOverrides) setScheduleDayOverrides(JSON.parse(savedDayOverrides))
 
     setIsLoaded(true)
     setLoading(false)
@@ -280,6 +293,7 @@ export function DataProvider({ children: childrenProp }) {
       setScheduleBreaks((data?.schedule_breaks || []).map(toScheduleBreak))
       setLessonCompletions((data?.lesson_completions || []).map(toCompletion))
       setScheduleDayNotes((data?.schedule_day_notes || []).map(toDayNote))
+      setScheduleDayOverrides((data?.schedule_day_overrides || []).map(toDayOverride))
 
       setIsLoaded(true)
     } catch (error) {
@@ -292,6 +306,7 @@ export function DataProvider({ children: childrenProp }) {
       setScheduleBreaks([])
       setLessonCompletions([])
       setScheduleDayNotes([])
+      setScheduleDayOverrides([])
       setIsLoaded(true)
     } finally {
       setLoading(false)
@@ -346,6 +361,12 @@ export function DataProvider({ children: childrenProp }) {
       localStorage.setItem('homeschool_schedule_day_notes', JSON.stringify(scheduleDayNotes))
     }
   }, [scheduleDayNotes, isLoaded, isConfigured, user])
+
+  useEffect(() => {
+    if (isLoaded && (!isConfigured || !user)) {
+      localStorage.setItem('homeschool_schedule_day_overrides', JSON.stringify(scheduleDayOverrides))
+    }
+  }, [scheduleDayOverrides, isLoaded, isConfigured, user])
 
   useEffect(() => {
     if (isLoaded && (!isConfigured || !user)) {
@@ -936,6 +957,7 @@ export function DataProvider({ children: childrenProp }) {
     setSchedules(prev => prev.filter(s => s.id !== scheduleId))
     setLessonCompletions(prev => prev.filter(c => c.scheduleId !== scheduleId))
     setScheduleDayNotes(prev => prev.filter(n => n.scheduleId !== scheduleId))
+    setScheduleDayOverrides(prev => prev.filter(o => o.scheduleId !== scheduleId))
   }
 
   // One note per schedule per day; an empty note clears it.
@@ -955,6 +977,46 @@ export function DataProvider({ children: childrenProp }) {
     setScheduleDayNotes(prev => {
       const rest = prev.filter(n => !(n.scheduleId === scheduleId && n.noteOn === noteOn))
       return text ? [...rest, { id: `local-${Date.now()}`, scheduleId, noteOn, notes: text }] : rest
+    })
+  }
+
+  // Edit one day of a schedule without touching the series. edit is
+  // { skip, movedTo, lessons, title }; null (or an edit that changes nothing)
+  // puts the day back on the series.
+  const saveScheduleDayOverride = async (scheduleId, overrideOn, edit) => {
+    const title = (edit?.title || '').trim()
+    const lessons = edit?.lessons == null || edit.lessons === '' ? null : Number(edit.lessons)
+    const clear = !edit || (!edit.skip && !edit.movedTo && lessons == null && !title)
+    if (isConfigured && user) {
+      const data = await api('/api/data/schedule-day-overrides', {
+        method: 'POST',
+        body: {
+          schedule_id: scheduleId,
+          override_on: overrideOn,
+          skip: !!edit?.skip,
+          moved_to: edit?.movedTo || null,
+          lessons,
+          title,
+          clear
+        }
+      })
+      setScheduleDayOverrides(prev => {
+        const rest = prev.filter(o => !(o.scheduleId === scheduleId && o.overrideOn === overrideOn))
+        return clear ? rest : [...rest, toDayOverride(data)]
+      })
+      return
+    }
+    setScheduleDayOverrides(prev => {
+      const rest = prev.filter(o => !(o.scheduleId === scheduleId && o.overrideOn === overrideOn))
+      return clear ? rest : [...rest, {
+        id: `local-${Date.now()}`,
+        scheduleId,
+        overrideOn,
+        skip: !!edit.skip,
+        movedTo: edit.movedTo || null,
+        lessons,
+        title
+      }]
     })
   }
 
@@ -1175,6 +1237,8 @@ export function DataProvider({ children: childrenProp }) {
     uncompleteLesson,
     scheduleDayNotes,
     saveScheduleDayNote,
+    scheduleDayOverrides,
+    saveScheduleDayOverride,
     addSchoolworkSample,
     deleteSchoolworkSample,
     getSchoolworkSamples,

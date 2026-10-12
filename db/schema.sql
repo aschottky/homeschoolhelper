@@ -298,6 +298,23 @@ create table if not exists schedule_day_notes (
 create index if not exists schedule_day_notes_schedule_id_idx on schedule_day_notes(schedule_id);
 
 -- =============================================
+-- SCHEDULE DAY OVERRIDES (edit one day without touching the series)
+-- =============================================
+create table if not exists schedule_day_overrides (
+  id uuid default gen_random_uuid() primary key,
+  schedule_id uuid references schedules(id) on delete cascade not null,
+  override_on date not null,
+  skip boolean default false not null,
+  moved_to date,  -- the session happens on this date instead
+  lessons integer, -- lessons served that day (null = the series default)
+  title text,      -- label shown that day (null = the series title)
+  created_at timestamptz default now() not null,
+  unique (schedule_id, override_on)
+);
+
+create index if not exists schedule_day_overrides_schedule_id_idx on schedule_day_overrides(schedule_id);
+
+-- =============================================
 -- HOMEPAGE RESOURCES (admin-managed, public read)
 -- =============================================
 create table if not exists resources (

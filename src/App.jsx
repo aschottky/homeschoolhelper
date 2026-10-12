@@ -3,6 +3,8 @@ import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import { DataProvider } from './context/DataContext'
 import { SubscriptionProvider } from './context/SubscriptionContext'
+import { TimerProvider } from './context/TimerContext'
+import GlobalTimer from './components/Timer/GlobalTimer'
 import Navbar from './components/Navbar'
 import Hero from './components/Hero'
 import Features from './components/Features'
@@ -77,9 +79,10 @@ function AppContent() {
   }
 
   return (
-    <>
+    <TimerProvider>
       <ReferralCapture />
       <ScrollToTop />
+      <GlobalTimer />
       <Routes>
         <Route path="/" element={
           <DataProvider>
@@ -145,7 +148,7 @@ function AppContent() {
         } />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
-    </>
+    </TimerProvider>
   )
 }
 

@@ -25,6 +25,7 @@ import Reports from './Reports'
 import Upgrade from './Upgrade'
 import Referrals from './Referrals'
 import SchoolworkReminder from './SchoolworkReminder'
+import TimerApproval from '../Timer/TimerApproval'
 import {
   LayoutDashboard, Users, Clock, History, Trophy, GraduationCap, BookOpen, Sun, Lightbulb,
   Heart, CreditCard, MapPin, BookMarked, MessageSquare, Crown, Sparkles, Shield, DollarSign,
@@ -357,6 +358,7 @@ function Tracker() {
         {renderContent()}
       </div>
       <SchoolworkReminder />
+      <TimerApproval />
     </div>
   )
 }

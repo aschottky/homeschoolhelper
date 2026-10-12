@@ -73,10 +73,58 @@ export function matchesPattern(schedule, dateStr, breaks) {
   return true
 }
 
-// Is this a day the subject meets? (pattern match, inside the year)
-export function isScheduledDay(schedule, dateStr, breaks) {
-  if (dateStr < schedule.startDate || dateStr > schedule.endDate) return false
+// ── Per-day edits ──────────────────────────────────────────────
+// A day override changes one date without touching the series: skip it,
+// move it to another date, change how many lessons it serves, or relabel it.
+// withOverrides() indexes a schedule's overrides onto the schedule object so
+// every function below picks them up without extra arguments.
+export function withOverrides(schedule, overrides) {
+  const mine = overrides.filter((o) => o.scheduleId === schedule.id)
+  if (mine.length === 0) return schedule
+  const dayOverrides = new Map()
+  const movedIn = new Map()
+  for (const o of mine) {
+    dayOverrides.set(o.overrideOn, o)
+    if (o.movedTo) movedIn.set(o.movedTo, [...(movedIn.get(o.movedTo) || []), o])
+  }
+  return { ...schedule, dayOverrides, movedIn }
+}
+
+export function overrideFor(schedule, dateStr) {
+  return schedule.dayOverrides?.get(dateStr) || null
+}
+
+// Sessions moved onto this date from elsewhere (only from days the series
+// actually met, so a stale move can't conjure a session from nowhere).
+export function movedInFor(schedule, dateStr, breaks) {
+  return (schedule.movedIn?.get(dateStr) || []).filter((o) => isPatternDay(schedule, o.overrideOn, breaks))
+}
+
+// Does the series itself meet on this date (before any per-day edits)?
+export function isPatternDay(schedule, dateStr, breaks, ignoreRange = false) {
+  if (!ignoreRange && (dateStr < schedule.startDate || dateStr > schedule.endDate)) return false
   return matchesPattern(schedule, dateStr, breaks)
+}
+
+// How many lessons the schedule serves on a date once per-day edits are
+// applied; 0 means it doesn't meet. ignoreRange lets projections walk past
+// endDate the way matchesPattern does.
+export function sessionSize(schedule, dateStr, breaks, ignoreRange = false) {
+  const o = overrideFor(schedule, dateStr)
+  let size = 0
+  if (!o?.skip && !o?.movedTo && isPatternDay(schedule, dateStr, breaks, ignoreRange)) {
+    size = o?.lessons ?? schedule.lessonsPerSession
+  }
+  for (const m of movedInFor(schedule, dateStr, breaks)) {
+    size += m.lessons ?? schedule.lessonsPerSession
+  }
+  return size
+}
+
+// Is this a day the subject meets? (pattern match inside the year, plus
+// per-day skips and moves)
+export function isScheduledDay(schedule, dateStr, breaks) {
+  return sessionSize(schedule, dateStr, breaks) > 0
 }
 
 // Stable per-date completion key for activity schedules: 2026-09-02 -> 20260902.
@@ -127,7 +175,7 @@ export function sessionForDate(schedule, dateStr, completions, breaks, today = t
 
   if (dateStr <= today) {
     const done = onDate(dateStr)
-    const slots = Math.max(0, schedule.lessonsPerSession - done.length)
+    const slots = Math.max(0, sessionSize(schedule, dateStr, breaks) - done.length)
     return {
       type: dateStr === today ? 'today' : 'past',
       done,
@@ -136,22 +184,21 @@ export function sessionForDate(schedule, dateStr, completions, breaks, today = t
   }
   const doneToday = onDate(today)
 
-  // Future: walk scheduled days from today to the target date, dealing
-  // lessonsPerSession uncompleted lessons per day (today gets only its
-  // remaining slots).
+  // Future: walk scheduled days from today to the target date, dealing each
+  // day's session size of uncompleted lessons (today gets only its remaining
+  // slots).
   let queue = nextLessons(schedule, completedSet, 10000)
   let d = today < schedule.startDate ? schedule.startDate : today
   let guard = 0
   while (d < dateStr && guard++ < 800) {
-    if (isScheduledDay(schedule, d, breaks)) {
-      const cap = d === today
-        ? Math.max(0, schedule.lessonsPerSession - doneToday.length)
-        : schedule.lessonsPerSession
+    const size = sessionSize(schedule, d, breaks)
+    if (size > 0) {
+      const cap = d === today ? Math.max(0, size - doneToday.length) : size
       queue = queue.slice(cap)
     }
     d = addDays(d, 1)
   }
-  return { type: 'future', lessons: queue.slice(0, schedule.lessonsPerSession) }
+  return { type: 'future', lessons: queue.slice(0, sessionSize(schedule, dateStr, breaks)) }
 }
 
 // A numbered curriculum with a known total is "finished" once every lesson
@@ -194,10 +241,9 @@ export function projectedFinish(schedule, completions, breaks, today = todayStr(
   let guard = 0
   // Beyond endDate the recurrence pattern continues but breaks still apply.
   while (guard++ < 1500) {
-    if (matchesPattern(schedule, d, breaks)) {
-      const cap = d === today
-        ? Math.max(0, schedule.lessonsPerSession - doneToday)
-        : schedule.lessonsPerSession
+    const size = sessionSize(schedule, d, breaks, true)
+    if (size > 0) {
+      const cap = d === today ? Math.max(0, size - doneToday) : size
       remaining -= cap
       if (remaining <= 0) {
         return { date: d, done: false, pastYearEnd: d > schedule.endDate }

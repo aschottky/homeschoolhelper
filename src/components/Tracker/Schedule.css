@@ -132,6 +132,48 @@
   margin-left: 6px;
 }
 
+/* Single-day edits */
+.day-edited-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--sage-light);
+  color: var(--forest);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.day-edit-btn {
+  color: var(--sage);
+}
+
+.day-edit-btn:hover {
+  color: var(--forest);
+}
+
+.schedule-day-item.off {
+  border-style: dashed;
+  border-left-style: solid;
+  opacity: 0.85;
+}
+
+.schedule-day-off {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  color: var(--text-muted);
+  font-size: 0.9375rem;
+}
+
+.day-mode-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
 /* Per-day note in the middle of the card head */
 .schedule-day-note {
   flex: 1;

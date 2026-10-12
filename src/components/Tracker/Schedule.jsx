@@ -2,12 +2,13 @@ import { useState, useMemo, useRef, useEffect } from 'react'
 import { useData } from '../../context/DataContext'
 import {
   CalendarDays, ChevronLeft, ChevronRight, Plus, Pencil, Trash2, X,
-  Palmtree, Clock, CheckCircle2, StickyNote,
+  Palmtree, Clock, CheckCircle2, StickyNote, Undo2, CalendarClock,
 } from 'lucide-react'
 import {
   DAY_LABELS, todayStr, addDays, toDate, isScheduledDay,
   sessionForDate, activityForDate, activityKey, projectedFinish,
   scheduleProgress, describeRecurrence, isScheduleFinished, lastCompletionDate,
+  withOverrides, overrideFor, movedInFor, isPatternDay,
 } from '../../lib/scheduler'
 import './Schedule.css'
 
@@ -351,6 +352,136 @@ function HourPromptModal({ subjectName, label, date, onLog, onSkip }) {
   )
 }
 
+// Edit one date of a schedule without changing the rest of the series:
+// meet as usual (optionally with a different lesson count or label), skip
+// the day, or move the session to another date.
+function DayEditor({ subject, schedule, date, viewDate, override, doneOnDate, onSave, onEditSeries, onClose }) {
+  const isActivity = schedule.kind === 'activity'
+  const [mode, setMode] = useState(override?.skip ? 'skip' : override?.movedTo ? 'move' : 'meet')
+  const [movedTo, setMovedTo] = useState(override?.movedTo || addDays(date, 1))
+  const [lessons, setLessons] = useState(override?.lessons ?? schedule.lessonsPerSession)
+  const [title, setTitle] = useState(override?.title || '')
+  const [error, setError] = useState('')
+  const [saving, setSaving] = useState(false)
+  const seriesLabel = schedule.title || subject.name
+  const unit = schedule.unitLabel.toLowerCase()
+
+  const save = async (edit) => {
+    setError('')
+    setSaving(true)
+    try {
+      await onSave(edit)
+      onClose()
+    } catch (err) {
+      setError(err.message || 'Could not save this day.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const submit = (e) => {
+    e.preventDefault()
+    if (mode !== 'meet' && doneOnDate > 0) {
+      return setError(`Un-check what was already done on ${shortDate(date)} before skipping or moving it.`)
+    }
+    if (mode === 'move' && (!movedTo || movedTo === date)) {
+      return setError('Pick a different day to move it to.')
+    }
+    const count = Math.max(1, Number(lessons) || 1)
+    save({
+      skip: mode === 'skip',
+      movedTo: mode === 'move' ? movedTo : null,
+      // Only store a lesson count that differs from the series.
+      lessons: isActivity || mode === 'skip' || count === schedule.lessonsPerSession ? null : count,
+      title: mode === 'skip' ? '' : title,
+    })
+  }
+
+  return (
+    <div className="schedule-modal-overlay" onClick={onClose}>
+      <div className="schedule-modal" onClick={(e) => e.stopPropagation()}>
+        <div className="schedule-modal-header">
+          <h3>Edit this day — {seriesLabel}</h3>
+          <button type="button" className="btn-icon-only" onClick={onClose} aria-label="Close">
+            <X size={20} />
+          </button>
+        </div>
+        <p className="schedule-modal-subtitle">
+          {prettyDate(date)}
+          {date !== viewDate && <> · originally scheduled day</>}
+          {' · '}only this day changes; the rest of the series stays as it is.
+        </p>
+
+        <form onSubmit={submit}>
+          <div className="form-group">
+            <label>On this day</label>
+            <div className="day-mode-chips" role="radiogroup">
+              {[['meet', 'Do it as planned'], ['skip', 'Skip this day'], ['move', 'Move to another day']].map(([v, lbl]) => (
+                <button key={v} type="button" role="radio" aria-checked={mode === v}
+                  className={`day-chip ${mode === v ? 'selected' : ''}`}
+                  onClick={() => setMode(v)}>
+                  {lbl}
+                </button>
+              ))}
+            </div>
+            {mode === 'skip' && (
+              <p className="schedule-field-hint">
+                {isActivity
+                  ? 'Nothing is scheduled this day.'
+                  : `No ${unit}s this day — the next ${unit}s roll forward to the following school day.`}
+              </p>
+            )}
+          </div>
+
+          {mode === 'move' && (
+            <div className="form-group">
+              <label>Move to</label>
+              <input type="date" className="form-input" value={movedTo}
+                onChange={(e) => setMovedTo(e.target.value)} />
+            </div>
+          )}
+
+          {mode !== 'skip' && (
+            <div className="form-row">
+              {!isActivity && (
+                <div className="form-group">
+                  <label>{schedule.unitLabel}s this day</label>
+                  <input type="number" min="1" className="form-input" value={lessons}
+                    onChange={(e) => setLessons(e.target.value)} />
+                </div>
+              )}
+              <div className="form-group">
+                <label>Label for this day (optional)</label>
+                <input type="text" className="form-input" placeholder={seriesLabel}
+                  value={title} onChange={(e) => setTitle(e.target.value)} />
+              </div>
+            </div>
+          )}
+
+          {error && <p className="schedule-form-error">{error}</p>}
+
+          <div className="schedule-modal-actions">
+            <button type="button" className="btn-tracker btn-secondary" onClick={onEditSeries}>
+              <Pencil size={16} /> Edit entire series
+            </button>
+            <div className="schedule-modal-actions-right">
+              {override && (
+                <button type="button" className="btn-tracker btn-secondary" disabled={saving}
+                  onClick={() => save(null)}>
+                  <Undo2 size={16} /> Reset day
+                </button>
+              )}
+              <button type="submit" className="btn-tracker btn-primary" disabled={saving}>
+                {saving ? 'Saving…' : 'Save this day'}
+              </button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  )
+}
+
 function BreaksCard() {
   const { scheduleBreaks, addScheduleBreak, deleteScheduleBreak } = useData()
   const [adding, setAdding] = useState(false)
@@ -650,7 +781,7 @@ function Schedule() {
   const {
     children, schedules, scheduleBreaks, lessonCompletions,
     saveSchedule, deleteSchedule, completeLesson, uncompleteLesson, logHours, addSubject,
-    scheduleDayNotes, saveScheduleDayNote,
+    scheduleDayNotes, saveScheduleDayNote, scheduleDayOverrides, saveScheduleDayOverride,
   } = useData()
 
   const today = todayStr()
@@ -660,6 +791,8 @@ function Schedule() {
   // { subject?, schedule?, pick?, newSubject? } — which editor flavor is open.
   const [editing, setEditing] = useState(null)
   const [hourPrompt, setHourPrompt] = useState(null)
+  // { subject, schedule, date } — the single-day editor.
+  const [dayEditing, setDayEditing] = useState(null)
   const [noteEditing, setNoteEditing] = useState(null) // completion id
   const [noteDraft, setNoteDraft] = useState('')
   const [dayNoteEditing, setDayNoteEditing] = useState(null) // schedule id
@@ -686,9 +819,12 @@ function Schedule() {
 
   const child = children.find((c) => c.id === childId)
 
+  // Per-day edits ride along on each schedule so every projection sees them.
   const childSchedules = useMemo(
-    () => schedules.filter((s) => s.childId === childId),
-    [schedules, childId]
+    () => schedules
+      .filter((s) => s.childId === childId)
+      .map((s) => withOverrides(s, scheduleDayOverrides)),
+    [schedules, childId, scheduleDayOverrides]
   )
 
   // A subject can carry several schedules (e.g. two math curricula).
@@ -721,6 +857,12 @@ function Schedule() {
     const items = []
     for (const subject of child.subjects) {
       for (const schedule of schedulesBySubject.get(subject.id) || []) {
+        // A day skipped or moved away still gets a card, so it can be undone.
+        const ov = overrideFor(schedule, viewDate)
+        if ((ov?.skip || ov?.movedTo) && !isScheduledDay(schedule, viewDate, scheduleBreaks)) {
+          items.push({ subject, schedule, off: ov })
+          continue
+        }
         if (schedule.kind === 'activity') {
           const activity = activityForDate(schedule, viewDate, lessonCompletions, scheduleBreaks, today)
           if (activity) items.push({ subject, schedule, activity })
@@ -755,7 +897,20 @@ function Schedule() {
     }
   }
 
-  const activityLabel = (schedule, subject) => schedule.title || subject.name
+  // A day's own label wins over the series title (a moved session keeps its label).
+  const dayLabel = (schedule, subject) => {
+    const own = overrideFor(schedule, viewDate)?.title
+      || movedInFor(schedule, viewDate, scheduleBreaks).find((o) => o.title)?.title
+    return own || schedule.title || subject.name
+  }
+  const activityLabel = dayLabel
+
+  // Which date's edit a card opens: a session moved here from another day is
+  // edited at its origin, so "move it back" is one click.
+  const editDateFor = (schedule) => {
+    if (overrideFor(schedule, viewDate) || isPatternDay(schedule, viewDate, scheduleBreaks)) return viewDate
+    return movedInFor(schedule, viewDate, scheduleBreaks)[0]?.overrideOn || viewDate
+  }
 
   const saveDayNote = async (schedule) => {
     setDayNoteEditing(null)
@@ -869,16 +1024,28 @@ function Schedule() {
         )}
 
         <div className="schedule-day-list">
-          {dayItems.map(({ subject, schedule, session, activity, finished }) => {
+          {dayItems.map(({ subject, schedule, session, activity, finished, off }) => {
             const dayNote = scheduleDayNotes.find(
               (n) => n.scheduleId === schedule.id && n.noteOn === viewDate
             )
+            const label = dayLabel(schedule, subject)
+            const ownEdit = overrideFor(schedule, viewDate)
+            const movedFrom = movedInFor(schedule, viewDate, scheduleBreaks)
             return (
-            <div key={schedule.id} className={`schedule-day-item ${finished ? 'finished' : ''}`}
+            <div key={schedule.id}
+              className={`schedule-day-item ${finished ? 'finished' : ''} ${off ? 'off' : ''}`}
               style={{ '--subject-color': subject.color || '#8FB39A' }}>
               <div className="schedule-day-item-head">
                 <span className="subject-dot" />
-                <span className="subject-name">{schedule.title || subject.name}</span>
+                <span className="subject-name">{label}</span>
+                {!off && (ownEdit || movedFrom.length > 0) && (
+                  <span className="day-edited-tag" title="Changed for this day only">
+                    <CalendarClock size={12} />
+                    {movedFrom.length > 0 && !ownEdit
+                      ? `moved from ${shortDate(movedFrom[0].overrideOn)}`
+                      : 'edited for this day'}
+                  </span>
+                )}
                 <div className="schedule-day-note">
                   {dayNoteEditing === schedule.id ? (
                     <form className="day-note-edit"
@@ -900,10 +1067,34 @@ function Schedule() {
                     </button>
                   )}
                 </div>
-                {schedule.title && <span className="subject-curriculum">{subject.name}</span>}
+                {label !== subject.name && <span className="subject-curriculum">{subject.name}</span>}
+                <button type="button" className="btn-icon-only day-edit-btn"
+                  aria-label={`Edit ${label} on this day`}
+                  title="Edit this day"
+                  onClick={() => setDayEditing({ subject, schedule, date: editDateFor(schedule) })}>
+                  <Pencil size={15} />
+                </button>
               </div>
 
-              {activity ? (
+              {off ? (
+                <div className="schedule-day-off">
+                  <span>
+                    {off.skip
+                      ? 'Skipped this day.'
+                      : <>Moved to <strong>{prettyDate(off.movedTo)}</strong>.</>}
+                  </span>
+                  {off.movedTo && (
+                    <button type="button" className="schedule-today-link"
+                      onClick={() => setViewDate(off.movedTo)}>
+                      Go to that day
+                    </button>
+                  )}
+                  <button type="button" className="btn-tracker btn-secondary btn-sm"
+                    onClick={() => saveScheduleDayOverride(schedule.id, viewDate, null)}>
+                    <Undo2 size={14} /> Undo
+                  </button>
+                </div>
+              ) : activity ? (
                 <ul className="lesson-list">
                   {activity.comp ? (
                     <li className="lesson-row done">
@@ -1146,6 +1337,25 @@ function Schedule() {
           }}
           onDelete={() => editing.schedule ? deleteSchedule(editing.schedule.id) : Promise.resolve()}
           onClose={() => setEditing(null)}
+        />
+      )}
+
+      {dayEditing && child && (
+        <DayEditor
+          subject={dayEditing.subject}
+          schedule={dayEditing.schedule}
+          date={dayEditing.date}
+          viewDate={viewDate}
+          override={overrideFor(dayEditing.schedule, dayEditing.date)}
+          doneOnDate={lessonCompletions.filter(
+            (c) => c.scheduleId === dayEditing.schedule.id && c.completedOn === dayEditing.date
+          ).length}
+          onSave={(edit) => saveScheduleDayOverride(dayEditing.schedule.id, dayEditing.date, edit)}
+          onEditSeries={() => {
+            setEditing({ subject: dayEditing.subject, schedule: dayEditing.schedule })
+            setDayEditing(null)
+          }}
+          onClose={() => setDayEditing(null)}
         />
       )}
 

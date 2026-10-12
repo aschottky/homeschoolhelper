@@ -1,0 +1,226 @@
+/* ══════════════════════════════════════
+   Study timer: floating dock + pop-out window
+══════════════════════════════════════ */
+.timer-dock {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  z-index: 900;
+  background: white;
+  border: 2px solid var(--sage-light);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  padding: 12px 14px;
+  width: min(300px, calc(100vw - 32px));
+  box-sizing: border-box;
+  font-family: var(--font-body);
+}
+
+.timer-dock-mini {
+  width: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px 6px 14px;
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+}
+
+.timer-dock-actions {
+  display: inline-flex;
+  gap: 4px;
+  margin-left: auto;
+}
+
+.timer-dock-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--sage);
+  cursor: pointer;
+}
+
+.timer-dock-icon:hover {
+  background: var(--cream-light);
+  color: var(--forest);
+}
+
+.timer-face {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.timer-face-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.timer-face-time {
+  font-family: ui-monospace, 'SFMono-Regular', 'SF Mono', Menlo, Consolas, 'Courier New', monospace;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  font-size: 2rem;
+  color: var(--forest-dark);
+  line-height: 1;
+}
+
+.timer-face.compact .timer-face-time {
+  font-size: 1.5rem;
+}
+
+.timer-face-time.paused {
+  color: var(--text-muted);
+}
+
+.timer-face-context {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  font-size: 0.8125rem;
+}
+
+.timer-face-child {
+  color: white;
+  font-weight: 700;
+  padding: 2px 10px;
+  border-radius: 999px;
+}
+
+.timer-face-subject {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-weight: 600;
+  color: var(--forest-dark);
+}
+
+.timer-face-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.timer-face-paused {
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+.timer-face-controls {
+  display: flex;
+  gap: 8px;
+}
+
+.timer-face-btn {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 10px;
+  border: 2px solid var(--sage-light);
+  border-radius: var(--radius-sm);
+  background: white;
+  color: var(--forest-dark);
+  font-family: var(--font-body);
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.timer-face-btn:hover {
+  border-color: var(--forest);
+}
+
+.timer-face-btn.primary {
+  background: var(--forest);
+  border-color: var(--forest);
+  color: white;
+}
+
+.timer-face-btn.done {
+  background: #16a34a;
+  border-color: #16a34a;
+  color: white;
+}
+
+.timer-approval-error {
+  color: #C0532F !important;
+  font-size: 0.875rem;
+  margin-bottom: 12px !important;
+}
+
+/* Pop-out window document */
+.timer-popout-body {
+  margin: 0;
+  background: var(--cream-light);
+  font-family: var(--font-body);
+}
+
+.timer-popout {
+  padding: 16px;
+}
+
+.timer-popout .timer-modal {
+  padding: 16px;
+  box-shadow: none;
+  border-radius: var(--radius-md);
+}
+
+.timer-popout .timer-modal-icon {
+  font-size: 2rem;
+  margin-bottom: 4px;
+}
+
+.timer-popout .timer-modal h3 {
+  font-size: 1.125rem;
+  margin-bottom: 6px;
+}
+
+.timer-popout .timer-modal p {
+  margin-bottom: 12px;
+  font-size: 0.875rem;
+}
+
+.timer-popout-note {
+  margin: 12px 0 0;
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+}
+
+.timer-pop-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+@media (max-width: 640px) {
+  .timer-dock {
+    right: 16px;
+    bottom: 16px;
+  }
+}
+
+.timer-toast {
+  position: fixed;
+  left: 50%;
+  bottom: 24px;
+  transform: translateX(-50%);
+  z-index: 1001;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  border-radius: 999px;
+  background: var(--forest);
+  color: white;
+  font-weight: 600;
+  box-shadow: var(--shadow-md);
+}
