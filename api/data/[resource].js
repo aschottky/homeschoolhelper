@@ -4,7 +4,8 @@ import { requireUser } from '../_lib/session.js'
 
 // Authenticated CRUD for the signed-in user's data.
 // Resources: bootstrap, profile, children, subjects, hour-logs, samples,
-// read-alouds, schedules, schedule-breaks, lesson-completions
+// read-alouds, schedules, schedule-breaks, lesson-completions,
+// schedule-day-notes, schedule-day-overrides
 // All rows are returned snake_case, exactly as Postgres emits them.
 
 // Date columns are cast to 'YYYY-MM-DD' text in scheduler queries: pg returns
@@ -16,6 +17,7 @@ const SCHEDULE_COLS = `id, child_id, subject_id, title, kind, unit_label,
 const BREAK_COLS = 'id, user_id, name, start_date::text, end_date::text, created_at'
 const COMPLETION_COLS = 'id, schedule_id, lesson_number, completed_on::text, notes, created_at'
 const DAY_NOTE_COLS = 'id, schedule_id, note_on::text, notes, created_at'
+const OVERRIDE_COLS = 'id, schedule_id, override_on::text, skip, moved_to::text, lessons, title, created_at'
 
 const PROFILE_FIELDS = [
   'homeschool_name', 'parent_name', 'address', 'city',
@@ -70,8 +72,9 @@ export async function GET(request) {
       let schedules = []
       let completions = []
       let dayNotes = []
+      let dayOverrides = []
       if (childIds.length > 0) {
-        const [s, h, r, w, sch, comp, dn] = await Promise.all([
+        const [s, h, r, w, sch, comp, dn, dov] = await Promise.all([
           pool.query('select * from subjects where child_id = any($1) order by created_at asc', [childIds]),
           pool.query('select * from hour_logs where child_id = any($1) order by date desc', [childIds]),
           pool.query('select * from read_aloud_logs where child_id = any($1)', [childIds]),
@@ -81,6 +84,14 @@ export async function GET(request) {
                         where schedule_id in (select id from schedules where child_id = any($1))`, [childIds]),
           pool.query(`select ${DAY_NOTE_COLS} from schedule_day_notes
                         where schedule_id in (select id from schedules where child_id = any($1))`, [childIds]),
+          // Tolerate a DB that hasn't run db/migrate-day-overrides.sql yet
+          // (42P01 = undefined table) so the rest of the app still loads.
+          pool.query(`select ${OVERRIDE_COLS} from schedule_day_overrides
+                        where schedule_id in (select id from schedules where child_id = any($1))`, [childIds])
+            .catch((err) => {
+              if (err.code === '42P01') return { rows: [] }
+              throw err
+            }),
         ])
         subjects = s.rows
         hourLogs = h.rows
@@ -89,6 +100,7 @@ export async function GET(request) {
         schedules = sch.rows
         completions = comp.rows
         dayNotes = dn.rows
+        dayOverrides = dov.rows
       }
       const { rows: breaks } = await pool.query(
         `select ${BREAK_COLS} from schedule_breaks where user_id = $1 order by start_date asc`,
@@ -106,6 +118,7 @@ export async function GET(request) {
         schedule_breaks: breaks,
         lesson_completions: completions,
         schedule_day_notes: dayNotes,
+        schedule_day_overrides: dayOverrides,
       })
     }
 
@@ -313,6 +326,47 @@ export async function POST(request) {
          on conflict (schedule_id, note_on) do update set notes = excluded.notes
          returning ${DAY_NOTE_COLS}`,
         [schedule_id, note_on, text]
+      )
+      return json(row)
+    }
+
+    // Upsert the edit for one day of a schedule; an edit that changes
+    // nothing (or clear: true) deletes it, putting the day back on the series.
+    if (resource === 'schedule-day-overrides') {
+      const { schedule_id, override_on, skip, moved_to, lessons, title, clear } = body
+      if (!schedule_id || !override_on) {
+        throw httpError(400, 'schedule_id and override_on are required')
+      }
+      const { rows: [owned] } = await pool.query(
+        `select s.id from schedules s
+           join children c on c.id = s.child_id
+          where s.id = $1 and c.user_id = $2`,
+        [schedule_id, user.id]
+      )
+      if (!owned) throw httpError(404, 'Schedule not found')
+      const lessonCount = lessons == null || lessons === '' ? null : Number(lessons)
+      if (lessonCount != null && (!Number.isInteger(lessonCount) || lessonCount < 1)) {
+        throw httpError(400, 'lessons must be a whole number of at least 1')
+      }
+      if (moved_to && moved_to === override_on) {
+        throw httpError(400, 'moved_to must be a different day')
+      }
+      const text = (title || '').trim()
+      if (clear || (!skip && !moved_to && lessonCount == null && !text)) {
+        await pool.query(
+          'delete from schedule_day_overrides where schedule_id = $1 and override_on = $2',
+          [schedule_id, override_on]
+        )
+        return json({ ok: true, deleted: true })
+      }
+      const { rows: [row] } = await pool.query(
+        `insert into schedule_day_overrides (schedule_id, override_on, skip, moved_to, lessons, title)
+         values ($1, $2, $3, $4, $5, $6)
+         on conflict (schedule_id, override_on) do update set
+           skip = excluded.skip, moved_to = excluded.moved_to,
+           lessons = excluded.lessons, title = excluded.title
+         returning ${OVERRIDE_COLS}`,
+        [schedule_id, override_on, !!skip, moved_to || null, lessonCount, text || null]
       )
       return json(row)
     }
